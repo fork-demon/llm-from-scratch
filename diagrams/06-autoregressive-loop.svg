@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 380" font-family="sans-serif">
+  <rect width="760" height="380" fill="#ffffff"/>
+  <text x="380" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">Autoregressive generation: the loop that IS ChatGPT</text>
+
+  <defs>
+    <marker id="ag" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#888"/>
+    </marker>
+    <marker id="agb" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#9b59b6"/>
+    </marker>
+  </defs>
+
+  <!-- context -->
+  <rect x="60" y="90" width="180" height="70" rx="10" fill="#f6f8fa" stroke="#bbb" stroke-width="2"/>
+  <text x="150" y="118" text-anchor="middle" font-size="13" fill="#333">context so far</text>
+  <text x="150" y="140" text-anchor="middle" font-size="13" fill="#666" font-family="monospace">"the cat s"</text>
+
+  <!-- model -->
+  <rect x="300" y="90" width="160" height="70" rx="10" fill="#eef4fb" stroke="#4A90D9" stroke-width="2"/>
+  <text x="380" y="118" text-anchor="middle" font-size="13" fill="#333">model</text>
+  <text x="380" y="140" text-anchor="middle" font-size="11" fill="#888">P(next | context)</text>
+
+  <!-- distribution -->
+  <rect x="520" y="70" width="180" height="120" rx="10" fill="#fcfcfc" stroke="#ddd"/>
+  <text x="610" y="90" text-anchor="middle" font-size="11" fill="#888">distribution over next char</text>
+  <g font-size="11" font-family="monospace" fill="#333">
+    <rect x="540" y="100" width="98" height="13" fill="#4A90D9" opacity="0.7"/><text x="644" y="111">a  0.49</text>
+    <rect x="540" y="118" width="50" height="13" fill="#4A90D9" opacity="0.5"/><text x="644" y="129">i  0.25</text>
+    <rect x="540" y="136" width="30" height="13" fill="#4A90D9" opacity="0.4"/><text x="644" y="147">o  0.15</text>
+    <rect x="540" y="154" width="14" height="13" fill="#4A90D9" opacity="0.3"/><text x="644" y="165">u  0.07</text>
+  </g>
+
+  <line x1="240" y1="125" x2="292" y2="125" stroke="#888" stroke-width="2.5" marker-end="url(#ag)"/>
+  <line x1="460" y1="125" x2="512" y2="125" stroke="#888" stroke-width="2.5" marker-end="url(#ag)"/>
+
+  <!-- sample -->
+  <rect x="545" y="230" width="130" height="54" rx="10" fill="#eefaf1" stroke="#55A868" stroke-width="2"/>
+  <text x="610" y="252" text-anchor="middle" font-size="13" fill="#333">sample: 'a'</text>
+  <text x="610" y="272" text-anchor="middle" font-size="11" fill="#888">roll the weighted die</text>
+  <line x1="610" y1="190" x2="610" y2="222" stroke="#888" stroke-width="2.5" marker-end="url(#ag)"/>
+
+  <!-- feedback loop -->
+  <path d="M 545 262 C 220 262 150 240 150 168" fill="none" stroke="#9b59b6" stroke-width="2.5" marker-end="url(#agb)"/>
+  <text x="330" y="248" text-anchor="middle" font-size="12" fill="#9b59b6" font-weight="bold">append output to context, go again</text>
+  <text x="330" y="290" text-anchor="middle" font-size="12" fill="#666" font-family="monospace">"the cat s" → "the cat sa" → "the cat sat" → ...</text>
+
+  <rect x="60" y="315" width="640" height="50" rx="10" fill="#f6f8fa" stroke="#ddd"/>
+  <text x="380" y="336" text-anchor="middle" font-size="12" fill="#333">One token per iteration; no plan, no lookahead — each token is one draw from a conditional distribution.</text>
+  <text x="380" y="355" text-anchor="middle" font-size="12" fill="#888">When ChatGPT streams words at you, this exact loop is running. Only the model in the blue box gets bigger.</text>
+</svg>

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 460" font-family="sans-serif">
+  <rect width="760" height="460" fill="#ffffff"/>
+  <text x="380" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">Self-attention: "bank" queries its context and blends the relevant values</text>
+
+  <defs>
+    <marker id="qa" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#4A90D9"/>
+    </marker>
+    <marker id="va" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#55A868"/>
+    </marker>
+  </defs>
+
+  <!-- tokens -->
+  <g text-anchor="middle">
+    <rect x="60" y="60" width="120" height="44" rx="8" fill="#f6f8fa" stroke="#bbb"/>
+    <text x="120" y="88" font-size="15" fill="#333">the</text>
+    <rect x="320" y="60" width="120" height="44" rx="8" fill="#f6f8fa" stroke="#bbb"/>
+    <text x="380" y="88" font-size="15" fill="#333">river</text>
+    <rect x="580" y="60" width="120" height="44" rx="8" fill="#fdf3ee" stroke="#E8734A" stroke-width="2"/>
+    <text x="640" y="88" font-size="15" fill="#333">bank ?</text>
+  </g>
+
+  <!-- keys row -->
+  <g text-anchor="middle">
+    <rect x="75" y="150" width="90" height="34" rx="6" fill="#eef4fb" stroke="#4A90D9"/>
+    <text x="120" y="172" font-size="12" fill="#333">K: "article"</text>
+    <rect x="335" y="150" width="90" height="34" rx="6" fill="#eef4fb" stroke="#4A90D9"/>
+    <text x="380" y="172" font-size="12" fill="#333">K: "watery"</text>
+    <rect x="595" y="150" width="90" height="34" rx="6" fill="#eef4fb" stroke="#4A90D9"/>
+    <text x="640" y="172" font-size="12" fill="#333">K: "noun"</text>
+    <line x1="120" y1="104" x2="120" y2="146" stroke="#bbb" stroke-width="1.5"/>
+    <line x1="380" y1="104" x2="380" y2="146" stroke="#bbb" stroke-width="1.5"/>
+    <line x1="640" y1="104" x2="640" y2="146" stroke="#bbb" stroke-width="1.5"/>
+  </g>
+
+  <!-- bank's query probing each key -->
+  <rect x="530" y="215" width="220" height="36" rx="6" fill="#fdf3ee" stroke="#E8734A"/>
+  <text x="640" y="238" text-anchor="middle" font-size="12" fill="#333">Q of "bank": seeking disambiguation</text>
+  <line x1="545" y1="215" x2="145" y2="190" stroke="#4A90D9" stroke-width="2" marker-end="url(#qa)"/>
+  <line x1="560" y1="215" x2="400" y2="190" stroke="#4A90D9" stroke-width="2.5" marker-end="url(#qa)"/>
+  <line x1="640" y1="215" x2="640" y2="190" stroke="#4A90D9" stroke-width="2" marker-end="url(#qa)"/>
+  <text x="330" y="215" font-size="11" fill="#4A90D9">dot products = relevance scores</text>
+
+  <!-- softmax weights -->
+  <rect x="130" y="285" width="500" height="36" rx="8" fill="#f6f8fa" stroke="#ddd"/>
+  <text x="380" y="308" text-anchor="middle" font-size="13" fill="#333" font-family="monospace">softmax → weights:  the 0.06   river 0.47   bank 0.47   (sum = 1)</text>
+
+  <!-- values blending -->
+  <g text-anchor="middle">
+    <rect x="75" y="345" width="90" height="34" rx="6" fill="#eefaf1" stroke="#55A868"/>
+    <text x="120" y="367" font-size="12" fill="#333">V of "the"</text>
+    <rect x="335" y="345" width="90" height="34" rx="6" fill="#eefaf1" stroke="#55A868"/>
+    <text x="380" y="367" font-size="12" fill="#333">V of "river"</text>
+    <rect x="595" y="345" width="90" height="34" rx="6" fill="#eefaf1" stroke="#55A868"/>
+    <text x="640" y="367" font-size="12" fill="#333">V of "bank"</text>
+  </g>
+  <line x1="140" y1="379" x2="350" y2="412" stroke="#55A868" stroke-width="1.5" marker-end="url(#va)" opacity="0.5"/>
+  <line x1="390" y1="379" x2="400" y2="408" stroke="#55A868" stroke-width="3" marker-end="url(#va)"/>
+  <line x1="620" y1="379" x2="450" y2="412" stroke="#55A868" stroke-width="3" marker-end="url(#va)"/>
+  <text x="120" y="400" font-size="11" fill="#888">× 0.06</text>
+  <text x="410" y="398" font-size="11" fill="#55A868" font-weight="bold">× 0.47</text>
+  <text x="545" y="400" font-size="11" fill="#55A868" font-weight="bold">× 0.47</text>
+
+  <rect x="290" y="412" width="220" height="38" rx="8" fill="#fdf3ee" stroke="#E8734A" stroke-width="2"/>
+  <text x="400" y="436" text-anchor="middle" font-size="13" fill="#333">new "bank" vector: river-flavored</text>
+</svg>

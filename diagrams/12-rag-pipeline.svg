@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 460" font-family="sans-serif">
+  <rect width="760" height="460" fill="#ffffff"/>
+  <text x="380" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">RAG: fetch knowledge at request time; the LLM does reading comprehension, not recall</text>
+
+  <defs>
+    <marker id="flow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#888"/>
+    </marker>
+  </defs>
+
+  <!-- ingest lane -->
+  <text x="60" y="70" font-size="13" fill="#4A90D9" font-weight="bold">INGEST (offline)</text>
+  <rect x="60" y="85" width="110" height="46" rx="8" fill="#f6f8fa" stroke="#bbb"/>
+  <text x="115" y="105" text-anchor="middle" font-size="12" fill="#333">your docs</text>
+  <text x="115" y="121" text-anchor="middle" font-size="10" fill="#888">wiki, PDFs, tickets</text>
+
+  <rect x="220" y="85" width="110" height="46" rx="8" fill="#f6f8fa" stroke="#bbb"/>
+  <text x="275" y="105" text-anchor="middle" font-size="12" fill="#333">chunk</text>
+  <text x="275" y="121" text-anchor="middle" font-size="10" fill="#888">~100s of tokens + overlap</text>
+
+  <rect x="380" y="85" width="110" height="46" rx="8" fill="#eef4fb" stroke="#4A90D9"/>
+  <text x="435" y="105" text-anchor="middle" font-size="12" fill="#333">embed</text>
+  <text x="435" y="121" text-anchor="middle" font-size="10" fill="#888">text → vector (mod 05/11)</text>
+
+  <rect x="540" y="85" width="130" height="46" rx="8" fill="#eef4fb" stroke="#4A90D9" stroke-width="2"/>
+  <text x="605" y="105" text-anchor="middle" font-size="12" fill="#333">vector DB</text>
+  <text x="605" y="121" text-anchor="middle" font-size="10" fill="#888">IVF index (mod 11)</text>
+
+  <line x1="170" y1="108" x2="212" y2="108" stroke="#888" stroke-width="2" marker-end="url(#flow)"/>
+  <line x1="330" y1="108" x2="372" y2="108" stroke="#888" stroke-width="2" marker-end="url(#flow)"/>
+  <line x1="490" y1="108" x2="532" y2="108" stroke="#888" stroke-width="2" marker-end="url(#flow)"/>
+
+  <!-- query lane -->
+  <text x="60" y="205" font-size="13" fill="#55A868" font-weight="bold">QUERY (online)</text>
+  <rect x="60" y="220" width="110" height="46" rx="8" fill="#f6f8fa" stroke="#bbb"/>
+  <text x="115" y="240" text-anchor="middle" font-size="12" fill="#333">question</text>
+  <text x="115" y="256" text-anchor="middle" font-size="10" fill="#888">"when do deploys freeze?"</text>
+
+  <rect x="220" y="220" width="110" height="46" rx="8" fill="#eef4fb" stroke="#4A90D9"/>
+  <text x="275" y="240" text-anchor="middle" font-size="12" fill="#333">embed</text>
+  <text x="275" y="256" text-anchor="middle" font-size="10" fill="#888">same model as ingest!</text>
+
+  <rect x="380" y="220" width="110" height="46" rx="8" fill="#eefaf1" stroke="#55A868"/>
+  <text x="435" y="240" text-anchor="middle" font-size="12" fill="#333">top-k search</text>
+  <text x="435" y="256" text-anchor="middle" font-size="10" fill="#888">nearest chunks by dot product</text>
+
+  <line x1="170" y1="243" x2="212" y2="243" stroke="#888" stroke-width="2" marker-end="url(#flow)"/>
+  <line x1="330" y1="243" x2="372" y2="243" stroke="#888" stroke-width="2" marker-end="url(#flow)"/>
+  <line x1="605" y1="131" x2="465" y2="212" stroke="#4A90D9" stroke-width="2" marker-end="url(#flow)" stroke-dasharray="5,4"/>
+
+  <!-- prompt assembly -->
+  <rect x="540" y="200" width="160" height="90" rx="8" fill="#f6f8fa" stroke="#bbb"/>
+  <text x="620" y="222" text-anchor="middle" font-size="12" fill="#333" font-weight="bold">assemble prompt</text>
+  <text x="620" y="242" text-anchor="middle" font-size="10" fill="#666">"Answer ONLY from this</text>
+  <text x="620" y="256" text-anchor="middle" font-size="10" fill="#666">context: [chunk1][chunk2]...</text>
+  <text x="620" y="270" text-anchor="middle" font-size="10" fill="#666">Question: ..."</text>
+  <line x1="490" y1="243" x2="532" y2="243" stroke="#888" stroke-width="2" marker-end="url(#flow)"/>
+
+  <!-- LLM + answer -->
+  <rect x="280" y="340" width="200" height="52" rx="10" fill="#fdf3ee" stroke="#E8734A" stroke-width="2"/>
+  <text x="380" y="362" text-anchor="middle" font-size="13" fill="#333" font-weight="bold">LLM (modules 06–09)</text>
+  <text x="380" y="380" text-anchor="middle" font-size="10" fill="#888">reads the context, not its weights</text>
+  <line x1="600" y1="290" x2="465" y2="338" stroke="#888" stroke-width="2" marker-end="url(#flow)"/>
+
+  <rect x="60" y="340" width="160" height="52" rx="8" fill="#eefaf1" stroke="#55A868" stroke-width="2"/>
+  <text x="140" y="362" text-anchor="middle" font-size="12" fill="#333">grounded answer</text>
+  <text x="140" y="380" text-anchor="middle" font-size="10" fill="#888">with citations to chunks</text>
+  <line x1="272" y1="366" x2="228" y2="366" stroke="#888" stroke-width="2" marker-end="url(#flow)"/>
+
+  <text x="380" y="435" text-anchor="middle" font-size="12" fill="#888">When a RAG system is bad, it is almost always retrieval (left half), not the LLM — debug there first.</text>
+</svg>

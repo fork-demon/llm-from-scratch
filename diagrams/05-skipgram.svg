@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" font-family="sans-serif">
+  <rect width="760" height="400" fill="#ffffff"/>
+  <text x="380" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">The fake task that trains embeddings: predict a nearby word</text>
+
+  <defs>
+    <marker id="sg" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#888"/>
+    </marker>
+  </defs>
+
+  <!-- training sentence -->
+  <text x="60" y="70" font-size="12" fill="#666">training text:</text>
+  <g font-size="13" font-family="monospace">
+    <text x="160" y="70" fill="#999">feed the</text>
+    <rect x="238" y="52" width="44" height="26" rx="5" fill="#fdf3ee" stroke="#E8734A" stroke-width="2"/>
+    <text x="260" y="70" fill="#333" text-anchor="middle">cat</text>
+    <rect x="290" y="52" width="52" height="26" rx="5" fill="#eefaf1" stroke="#55A868" stroke-width="2"/>
+    <text x="316" y="70" fill="#333" text-anchor="middle">some</text>
+    <text x="352" y="70" fill="#999">fish</text>
+  </g>
+  <text x="430" y="63" font-size="11" fill="#E8734A">center word (input)</text>
+  <text x="430" y="79" font-size="11" fill="#55A868">context word (target to predict)</text>
+
+  <!-- pipeline -->
+  <rect x="60" y="120" width="150" height="60" rx="8" fill="#fdf3ee" stroke="#E8734A" stroke-width="2"/>
+  <text x="135" y="145" text-anchor="middle" font-size="13" fill="#333">"cat" = id 12</text>
+  <text x="135" y="165" text-anchor="middle" font-size="11" fill="#888">just an integer (mod 04)</text>
+
+  <rect x="270" y="120" width="170" height="60" rx="8" fill="#eef4fb" stroke="#4A90D9" stroke-width="2"/>
+  <text x="355" y="141" text-anchor="middle" font-size="13" fill="#333">E[12] — row lookup</text>
+  <text x="355" y="159" text-anchor="middle" font-size="11" fill="#888">embedding matrix E</text>
+  <text x="355" y="173" text-anchor="middle" font-size="11" fill="#4A90D9" font-weight="bold">THE PRODUCT — we keep this</text>
+
+  <rect x="500" y="120" width="200" height="60" rx="8" fill="#f6f8fa" stroke="#bbb" stroke-dasharray="6,4"/>
+  <text x="600" y="141" text-anchor="middle" font-size="13" fill="#333">W → softmax over vocab</text>
+  <text x="600" y="159" text-anchor="middle" font-size="11" fill="#888">P(context word | cat)</text>
+  <text x="600" y="173" text-anchor="middle" font-size="11" fill="#999" font-weight="bold">SCAFFOLDING — thrown away</text>
+
+  <line x1="210" y1="150" x2="262" y2="150" stroke="#888" stroke-width="2.5" marker-end="url(#sg)"/>
+  <line x1="440" y1="150" x2="492" y2="150" stroke="#888" stroke-width="2.5" marker-end="url(#sg)"/>
+
+  <!-- loss feedback -->
+  <path d="M 600 180 C 600 240 355 240 355 186" fill="none" stroke="#E8734A" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#sg)"/>
+  <text x="480" y="230" text-anchor="middle" font-size="11" fill="#E8734A">wrong prediction? gradient nudges cat's row of E (mod 02/03)</text>
+
+  <!-- why it works -->
+  <rect x="60" y="270" width="640" height="105" rx="10" fill="#f6f8fa" stroke="#ddd"/>
+  <text x="380" y="296" text-anchor="middle" font-size="13" fill="#333" font-weight="bold">Why similar words end up close:</text>
+  <text x="380" y="318" text-anchor="middle" font-size="12" fill="#666">"cat" and "dog" appear in the same neighborhoods (feed the ___, my pet ___), so they must produce</text>
+  <text x="380" y="336" text-anchor="middle" font-size="12" fill="#666">the same predictions. The CHEAPEST way for gradient descent to achieve that: give them nearly the same row of E.</text>
+  <text x="380" y="360" text-anchor="middle" font-size="12" fill="#888">Similarity isn't rewarded — it's the path of least resistance for minimizing surprise.</text>
+</svg>

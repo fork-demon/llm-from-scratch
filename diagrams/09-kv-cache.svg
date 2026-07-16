@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 440" font-family="sans-serif">
+  <rect width="760" height="440" fill="#ffffff"/>
+  <text x="380" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">KV cache: old tokens' K,V never change — stop recomputing them</text>
+
+  <!-- naive panel -->
+  <text x="60" y="62" font-size="14" fill="#E8734A" font-weight="bold">NAIVE: every step reprocesses everything</text>
+  <g font-size="12" text-anchor="middle">
+    <text x="45" y="100" fill="#666" text-anchor="start">step 3:</text>
+    <rect x="110" y="82" width="50" height="28" rx="5" fill="#fdf3ee" stroke="#E8734A"/><text x="135" y="101" fill="#333">the</text>
+    <rect x="166" y="82" width="50" height="28" rx="5" fill="#fdf3ee" stroke="#E8734A"/><text x="191" y="101" fill="#333">cat</text>
+    <rect x="222" y="82" width="50" height="28" rx="5" fill="#fdf3ee" stroke="#E8734A" stroke-width="2"/><text x="247" y="101" fill="#333">sat</text>
+
+    <text x="45" y="145" fill="#666" text-anchor="start">step 4:</text>
+    <rect x="110" y="127" width="50" height="28" rx="5" fill="#fdf3ee" stroke="#E8734A"/><text x="135" y="146" fill="#333">the</text>
+    <rect x="166" y="127" width="50" height="28" rx="5" fill="#fdf3ee" stroke="#E8734A"/><text x="191" y="146" fill="#333">cat</text>
+    <rect x="222" y="127" width="50" height="28" rx="5" fill="#fdf3ee" stroke="#E8734A"/><text x="247" y="146" fill="#333">sat</text>
+    <rect x="278" y="127" width="50" height="28" rx="5" fill="#fdf3ee" stroke="#E8734A" stroke-width="2"/><text x="303" y="146" fill="#333">on</text>
+  </g>
+  <text x="360" y="101" font-size="11" fill="#E8734A">← ALL recomputed</text>
+  <text x="360" y="146" font-size="11" fill="#E8734A">← ALL recomputed again (identical results!)</text>
+  <text x="60" y="185" font-size="12" fill="#888">work per token grows with T → O(T²)-ish generation</text>
+
+  <!-- cached panel -->
+  <text x="60" y="235" font-size="14" fill="#55A868" font-weight="bold">CACHED: run only the new token; read the past from the cache</text>
+  <g font-size="12" text-anchor="middle">
+    <text x="45" y="285" fill="#666" text-anchor="start">step 4:</text>
+    <rect x="110" y="262" width="162" height="34" rx="5" fill="#eefaf1" stroke="#55A868" stroke-dasharray="5,3"/>
+    <text x="191" y="283" fill="#55A868">K,V cache: the, cat, sat</text>
+    <rect x="278" y="262" width="50" height="34" rx="5" fill="#eefaf1" stroke="#55A868" stroke-width="2.5"/>
+    <text x="303" y="283" fill="#333">on</text>
+  </g>
+  <defs>
+    <marker id="ka" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#55A868"/>
+    </marker>
+  </defs>
+  <line x1="290" y1="262" x2="230" y2="245" stroke="#55A868" stroke-width="2" marker-end="url(#ka)"/>
+  <text x="340" y="252" font-size="11" fill="#55A868">new token's Q attends to cached K,V,</text>
+  <text x="340" y="266" font-size="11" fill="#55A868">then appends its own K,V to the cache</text>
+  <text x="60" y="325" font-size="12" fill="#888">work per token ~constant in model size → O(T) attention reads; Q is never cached (used once)</text>
+
+  <!-- memory formula -->
+  <rect x="60" y="350" width="640" height="66" rx="10" fill="#f6f8fa" stroke="#ddd"/>
+  <text x="380" y="378" text-anchor="middle" font-size="14" fill="#333" font-family="monospace">cache bytes = layers × 2 × context_len × dim × bytes_per_float</text>
+  <text x="380" y="402" text-anchor="middle" font-size="12" fill="#888">grows linearly with context — THE GPU-memory constraint of long-context serving, and why prefill vs decode are different regimes</text>
+</svg>

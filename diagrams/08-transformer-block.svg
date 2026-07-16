@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 560" font-family="sans-serif">
+  <rect width="760" height="560" fill="#ffffff"/>
+  <text x="380" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">The GPT stack: communicate (attention), compute (FFN), repeat</text>
+
+  <defs>
+    <marker id="up" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#888"/>
+    </marker>
+    <marker id="res" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#9b59b6"/>
+    </marker>
+  </defs>
+
+  <!-- bottom: embeddings -->
+  <rect x="230" y="480" width="300" height="44" rx="8" fill="#f6f8fa" stroke="#bbb"/>
+  <text x="380" y="503" text-anchor="middle" font-size="13" fill="#333">token embedding + position embedding</text>
+  <text x="380" y="518" text-anchor="middle" font-size="11" fill="#888">(modules 05 + 07)</text>
+  <line x1="380" y1="480" x2="380" y2="448" stroke="#888" stroke-width="2.5" marker-end="url(#up)"/>
+
+  <!-- block container -->
+  <rect x="180" y="120" width="400" height="326" rx="12" fill="none" stroke="#4A90D9" stroke-width="2" stroke-dasharray="7,5"/>
+  <text x="196" y="143" font-size="13" fill="#4A90D9" font-weight="bold">one Block  (× N layers)</text>
+
+  <!-- sublayer 1: attention -->
+  <rect x="270" y="360" width="220" height="40" rx="8" fill="#eef4fb" stroke="#4A90D9"/>
+  <text x="380" y="385" text-anchor="middle" font-size="13" fill="#333">LayerNorm → Multi-Head Attention</text>
+  <text x="500" y="385" font-size="11" fill="#4A90D9"></text>
+
+  <circle cx="380" cy="315" r="14" fill="#fff" stroke="#9b59b6" stroke-width="2"/>
+  <text x="380" y="320" text-anchor="middle" font-size="16" fill="#9b59b6">+</text>
+
+  <line x1="380" y1="448" x2="380" y2="402" stroke="#888" stroke-width="2.5" marker-end="url(#up)"/>
+  <line x1="380" y1="360" x2="380" y2="331" stroke="#888" stroke-width="2.5" marker-end="url(#up)"/>
+  <!-- residual skip 1 -->
+  <path d="M 380 430 C 230 430 230 315 364 315" fill="none" stroke="#9b59b6" stroke-width="2.5" marker-end="url(#res)"/>
+  <text x="212" y="378" font-size="11" fill="#9b59b6">residual:</text>
+  <text x="212" y="392" font-size="11" fill="#9b59b6">x + attn(ln(x))</text>
+
+  <!-- sublayer 2: ffn -->
+  <rect x="270" y="230" width="220" height="40" rx="8" fill="#eefaf1" stroke="#55A868"/>
+  <text x="380" y="255" text-anchor="middle" font-size="13" fill="#333">LayerNorm → FeedForward (MLP)</text>
+
+  <circle cx="380" cy="185" r="14" fill="#fff" stroke="#9b59b6" stroke-width="2"/>
+  <text x="380" y="190" text-anchor="middle" font-size="16" fill="#9b59b6">+</text>
+
+  <line x1="380" y1="301" x2="380" y2="272" stroke="#888" stroke-width="2.5" marker-end="url(#up)"/>
+  <line x1="380" y1="230" x2="380" y2="201" stroke="#888" stroke-width="2.5" marker-end="url(#up)"/>
+  <!-- residual skip 2 -->
+  <path d="M 380 290 C 230 290 230 185 364 185" fill="none" stroke="#9b59b6" stroke-width="2.5" marker-end="url(#res)"/>
+
+  <line x1="380" y1="171" x2="380" y2="120" stroke="#888" stroke-width="2.5"/>
+  <line x1="380" y1="120" x2="380" y2="92" stroke="#888" stroke-width="2.5" marker-end="url(#up)"/>
+
+  <!-- top: logits -->
+  <rect x="230" y="48" width="300" height="44" rx="8" fill="#fdf3ee" stroke="#E8734A"/>
+  <text x="380" y="70" text-anchor="middle" font-size="13" fill="#333">final LayerNorm → project to vocab logits</text>
+  <text x="380" y="86" text-anchor="middle" font-size="11" fill="#888">softmax → P(next token) — module 06's loop</text>
+
+  <!-- side annotations -->
+  <text x="600" y="380" font-size="12" fill="#4A90D9" font-weight="bold">COMMUNICATE</text>
+  <text x="600" y="396" font-size="11" fill="#666">tokens exchange info</text>
+  <text x="600" y="410" font-size="11" fill="#666">(module 07)</text>
+  <text x="600" y="250" font-size="12" fill="#55A868" font-weight="bold">COMPUTE</text>
+  <text x="600" y="266" font-size="11" fill="#666">each token thinks alone</text>
+  <text x="600" y="280" font-size="11" fill="#666">(module 03's MLP;</text>
+  <text x="600" y="294" font-size="11" fill="#666">most params + facts live here)</text>
+  <text x="600" y="180" font-size="11" fill="#9b59b6">the '+' is the gradient</text>
+  <text x="600" y="194" font-size="11" fill="#9b59b6">highway that makes</text>
+  <text x="600" y="208" font-size="11" fill="#9b59b6">deep stacks trainable</text>
+</svg>

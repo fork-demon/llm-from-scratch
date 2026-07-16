@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 420" font-family="sans-serif">
+  <rect width="760" height="420" fill="#ffffff"/>
+  <text x="380" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">Matrix × vector = a batch of dot products (one per row)</text>
+
+  <!-- W matrix -->
+  <text x="120" y="70" font-size="13" fill="#666" text-anchor="middle">W  (2 rows, 3 cols)</text>
+  <rect x="55" y="85" width="130" height="45" rx="6" fill="#eef4fb" stroke="#4A90D9" stroke-width="2"/>
+  <text x="120" y="113" text-anchor="middle" font-size="15" fill="#333" font-family="monospace">1  0  2</text>
+  <rect x="55" y="135" width="130" height="45" rx="6" fill="#eefaf1" stroke="#55A868" stroke-width="2"/>
+  <text x="120" y="163" text-anchor="middle" font-size="15" fill="#333" font-family="monospace">0  3  1</text>
+
+  <text x="215" y="140" font-size="20" fill="#666">@</text>
+
+  <!-- x vector -->
+  <text x="285" y="70" font-size="13" fill="#666" text-anchor="middle">x  (3 numbers)</text>
+  <rect x="255" y="85" width="60" height="95" rx="6" fill="#fdf3ee" stroke="#E8734A" stroke-width="2"/>
+  <text x="285" y="112" text-anchor="middle" font-size="15" fill="#333" font-family="monospace">2</text>
+  <text x="285" y="137" text-anchor="middle" font-size="15" fill="#333" font-family="monospace">1</text>
+  <text x="285" y="162" text-anchor="middle" font-size="15" fill="#333" font-family="monospace">1</text>
+
+  <text x="345" y="140" font-size="20" fill="#666">=</text>
+
+  <!-- output -->
+  <text x="420" y="70" font-size="13" fill="#666" text-anchor="middle">out  (2 numbers)</text>
+  <rect x="390" y="85" width="60" height="45" rx="6" fill="#eef4fb" stroke="#4A90D9" stroke-width="2"/>
+  <text x="420" y="113" text-anchor="middle" font-size="15" fill="#333" font-family="monospace">4</text>
+  <rect x="390" y="135" width="60" height="45" rx="6" fill="#eefaf1" stroke="#55A868" stroke-width="2"/>
+  <text x="420" y="163" text-anchor="middle" font-size="15" fill="#333" font-family="monospace">4</text>
+
+  <!-- the two dot products spelled out -->
+  <text x="500" y="108" font-size="13" fill="#4A90D9" font-family="monospace">row1·x = 1×2+0×1+2×1 = 4</text>
+  <text x="500" y="163" font-size="13" fill="#55A868" font-family="monospace">row2·x = 0×2+3×1+1×1 = 4</text>
+
+  <!-- shape rule -->
+  <rect x="60" y="230" width="640" height="70" rx="10" fill="#f6f8fa" stroke="#ddd"/>
+  <text x="380" y="258" text-anchor="middle" font-size="15" fill="#333" font-family="monospace">(2, 3) @ (3,) → (2,)      general rule: (m, n) @ (n, p) → (m, p)</text>
+  <text x="380" y="284" text-anchor="middle" font-size="12" fill="#888">inner numbers must MATCH (or NumPy throws — it's a type error); outer numbers are the output shape</text>
+
+  <!-- reading -->
+  <text x="380" y="340" text-anchor="middle" font-size="13" fill="#333">Reading: each row of W is one output feature's <tspan font-weight="bold">weighted opinion poll</tspan> over all inputs.</text>
+  <text x="380" y="362" text-anchor="middle" font-size="13" fill="#333">A layer with 64 outputs = 64 rows = 64 polls, computed in ONE multiply.</text>
+  <text x="380" y="392" text-anchor="middle" font-size="12" fill="#888">Stack many x's as rows of a matrix X, and X @ W transforms every token at once — the vectorized for-loop GPUs were built for.</text>
+</svg>

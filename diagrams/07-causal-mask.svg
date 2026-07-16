@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" font-family="sans-serif">
+  <rect width="760" height="360" fill="#ffffff"/>
+  <text x="380" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">Causal mask: no token may look at its future</text>
+
+  <!-- matrix grid: 5x5 -->
+  <text x="215" y="65" text-anchor="middle" font-size="12" fill="#666">attention scores (T×T), sentence: "the cat sat on mats"</text>
+  <!-- col labels -->
+  <g font-size="11" fill="#888" text-anchor="middle">
+    <text x="140" y="95">the</text><text x="185" y="95">cat</text><text x="230" y="95">sat</text><text x="275" y="95">on</text><text x="320" y="95">mats</text>
+  </g>
+  <!-- row labels -->
+  <g font-size="11" fill="#888" text-anchor="end">
+    <text x="112" y="128">the</text><text x="112" y="173">cat</text><text x="112" y="218">sat</text><text x="112" y="263">on</text><text x="112" y="308">mats</text>
+  </g>
+  <!-- cells: allowed lower triangle, blocked upper -->
+  <g>
+    <!-- row 0 -->
+    <rect x="118" y="105" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="163" y="105" width="44" height="44" fill="#f3d1c8" stroke="#fff"/>
+    <rect x="208" y="105" width="44" height="44" fill="#f3d1c8" stroke="#fff"/>
+    <rect x="253" y="105" width="44" height="44" fill="#f3d1c8" stroke="#fff"/>
+    <rect x="298" y="105" width="44" height="44" fill="#f3d1c8" stroke="#fff"/>
+    <!-- row 1 -->
+    <rect x="118" y="150" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="163" y="150" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="208" y="150" width="44" height="44" fill="#f3d1c8" stroke="#fff"/>
+    <rect x="253" y="150" width="44" height="44" fill="#f3d1c8" stroke="#fff"/>
+    <rect x="298" y="150" width="44" height="44" fill="#f3d1c8" stroke="#fff"/>
+    <!-- row 2 -->
+    <rect x="118" y="195" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="163" y="195" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="208" y="195" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="253" y="195" width="44" height="44" fill="#f3d1c8" stroke="#fff"/>
+    <rect x="298" y="195" width="44" height="44" fill="#f3d1c8" stroke="#fff"/>
+    <!-- row 3 -->
+    <rect x="118" y="240" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="163" y="240" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="208" y="240" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="253" y="240" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="298" y="240" width="44" height="44" fill="#f3d1c8" stroke="#fff"/>
+    <!-- row 4 -->
+    <rect x="118" y="285" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="163" y="285" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="208" y="285" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="253" y="285" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+    <rect x="298" y="285" width="44" height="44" fill="#eef4fb" stroke="#fff"/>
+  </g>
+  <!-- -inf labels on a few blocked cells -->
+  <g font-size="11" fill="#c0563a" text-anchor="middle" font-family="monospace">
+    <text x="230" y="132">-∞</text><text x="275" y="132">-∞</text><text x="320" y="132">-∞</text>
+    <text x="275" y="177">-∞</text><text x="320" y="177">-∞</text><text x="320" y="222">-∞</text>
+  </g>
+  <text x="185" y="132" font-size="11" fill="#4A90D9" text-anchor="middle" font-family="monospace">-∞</text>
+
+  <!-- legend / explanation -->
+  <rect x="420" y="105" width="16" height="16" fill="#eef4fb" stroke="#bbb"/>
+  <text x="444" y="118" font-size="12" fill="#333">allowed: the past (and self)</text>
+  <rect x="420" y="132" width="16" height="16" fill="#f3d1c8" stroke="#bbb"/>
+  <text x="444" y="145" font-size="12" fill="#333">blocked: the future → set to −∞</text>
+
+  <text x="420" y="185" font-size="12" fill="#666">−∞ before softmax → weight exactly 0.</text>
+  <text x="420" y="205" font-size="12" fill="#666">Row i = what token i may attend to:</text>
+  <text x="420" y="225" font-size="12" fill="#666">"sat" sees the, cat, sat — never on, mats.</text>
+
+  <text x="420" y="265" font-size="12" fill="#333" font-weight="bold">Why: training predicts the next token.</text>
+  <text x="420" y="285" font-size="12" fill="#666">Seeing the future = reading the answer key.</text>
+  <text x="420" y="305" font-size="12" fill="#666">At inference the future genuinely doesn't</text>
+  <text x="420" y="322" font-size="12" fill="#666">exist yet — the mask keeps training honest.</text>
+
+  <text x="380" y="352" text-anchor="middle" font-size="11" fill="#888" font-family="monospace">code: scores[i, j&gt;i] = -inf   (one line — the entire "decoder-only" in decoder-only GPT)</text>
+</svg>

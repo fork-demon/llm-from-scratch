@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 360" font-family="sans-serif">
+  <rect width="760" height="360" fill="#ffffff"/>
+  <text x="380" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">Memorization vs generalization: the two loss curves tell you which is happening</text>
+
+  <!-- axes -->
+  <line x1="80" y1="300" x2="700" y2="300" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="80" y1="300" x2="80" y2="60" stroke="#bbb" stroke-width="1.5"/>
+  <text x="620" y="322" font-size="12" fill="#999">training steps →</text>
+  <text x="40" y="70" font-size="12" fill="#999" transform="rotate(-90 40 70)">loss (surprise)</text>
+
+  <!-- train loss: keeps falling -->
+  <path d="M 90 90 Q 200 140 300 190 Q 450 250 690 280" fill="none" stroke="#4A90D9" stroke-width="3"/>
+  <text x="600" y="265" font-size="12" fill="#4A90D9" font-weight="bold">training loss: keeps falling</text>
+
+  <!-- val loss: falls then rises -->
+  <path d="M 90 95 Q 200 150 320 200 Q 400 225 450 222 Q 560 215 690 150" fill="none" stroke="#E8734A" stroke-width="3"/>
+  <text x="560" y="130" font-size="12" fill="#E8734A" font-weight="bold">held-out (validation) loss</text>
+
+  <!-- divergence marker -->
+  <line x1="430" y1="60" x2="430" y2="300" stroke="#9b59b6" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="430" y="52" text-anchor="middle" font-size="12" fill="#9b59b6" font-weight="bold">the turn</text>
+
+  <!-- zone labels -->
+  <text x="240" y="90" font-size="12" fill="#55A868" font-weight="bold">GENERALIZING</text>
+  <text x="240" y="107" font-size="11" fill="#666">both curves fall together:</text>
+  <text x="240" y="122" font-size="11" fill="#666">learning transferable patterns</text>
+
+  <text x="530" y="80" font-size="12" fill="#c0563a" font-weight="bold">MEMORIZING</text>
+  <text x="530" y="97" font-size="11" fill="#666">train falls, val rises: reproducing</text>
+  <text x="530" y="112" font-size="11" fill="#666">the corpus, not learning from it</text>
+
+  <text x="380" y="345" text-anchor="middle" font-size="12" fill="#888">You created both regimes yourself in module 08, exercise 4. Real LLMs sit on both ends at once: memorized quotes AND generalized grammar.</text>
+</svg>

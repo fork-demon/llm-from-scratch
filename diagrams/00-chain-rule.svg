@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" font-family="sans-serif">
+  <rect width="760" height="300" fill="#ffffff"/>
+  <text x="380" y="26" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">Chain rule: amplification factors through a pipeline just multiply</text>
+
+  <defs>
+    <marker id="cf" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#888"/>
+    </marker>
+  </defs>
+
+  <!-- pipeline -->
+  <rect x="60" y="90" width="110" height="60" rx="8" fill="#f6f8fa" stroke="#bbb"/>
+  <text x="115" y="118" text-anchor="middle" font-size="14" fill="#333">x = 2</text>
+  <text x="115" y="138" text-anchor="middle" font-size="11" fill="#888">input</text>
+
+  <rect x="240" y="90" width="150" height="60" rx="8" fill="#eef4fb" stroke="#4A90D9" stroke-width="2"/>
+  <text x="315" y="115" text-anchor="middle" font-size="14" fill="#333" font-family="monospace">square: x²</text>
+  <text x="315" y="138" text-anchor="middle" font-size="12" fill="#4A90D9">amplifies wiggles ×4</text>
+
+  <rect x="460" y="90" width="150" height="60" rx="8" fill="#eefaf1" stroke="#55A868" stroke-width="2"/>
+  <text x="535" y="115" text-anchor="middle" font-size="14" fill="#333" font-family="monospace">times 5: 5u</text>
+  <text x="535" y="138" text-anchor="middle" font-size="12" fill="#55A868">amplifies wiggles ×5</text>
+
+  <rect x="660" y="90" width="70" height="60" rx="8" fill="#fdf3ee" stroke="#E8734A"/>
+  <text x="695" y="118" text-anchor="middle" font-size="14" fill="#333">out</text>
+  <text x="695" y="138" text-anchor="middle" font-size="11" fill="#888">= 20</text>
+
+  <line x1="170" y1="120" x2="232" y2="120" stroke="#888" stroke-width="2.5" marker-end="url(#cf)"/>
+  <line x1="390" y1="120" x2="452" y2="120" stroke="#888" stroke-width="2.5" marker-end="url(#cf)"/>
+  <line x1="610" y1="120" x2="652" y2="120" stroke="#888" stroke-width="2.5" marker-end="url(#cf)"/>
+
+  <!-- wiggle trace -->
+  <text x="115" y="185" text-anchor="middle" font-size="12" fill="#9b59b6">nudge +0.001</text>
+  <text x="315" y="185" text-anchor="middle" font-size="12" fill="#9b59b6">wiggle becomes +0.004</text>
+  <text x="535" y="185" text-anchor="middle" font-size="12" fill="#9b59b6">wiggle becomes +0.020</text>
+
+  <rect x="150" y="220" width="460" height="55" rx="10" fill="#f6f8fa" stroke="#ddd"/>
+  <text x="380" y="243" text-anchor="middle" font-size="15" fill="#333" font-family="monospace">end-to-end sensitivity = 4 × 5 = 20</text>
+  <text x="380" y="264" text-anchor="middle" font-size="12" fill="#888">backprop (module 03) = this, walked backwards station by station through the network</text>
+</svg>

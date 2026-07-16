@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" font-family="sans-serif">
+  <rect width="720" height="400" fill="#ffffff"/>
+  <text x="360" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">Gradient descent: feel the slope, step downhill, repeat</text>
+
+  <!-- loss curve (a valley) -->
+  <path d="M 60 80 Q 180 340 340 330 Q 500 322 660 100" fill="none" stroke="#4A90D9" stroke-width="3"/>
+  <text x="75" y="65" font-size="13" fill="#4A90D9">loss (how wrong the model is)</text>
+  <line x1="60" y1="370" x2="690" y2="370" stroke="#bbb" stroke-width="1.5"/>
+  <text x="560" y="392" font-size="12" fill="#999">parameter value w</text>
+
+  <defs>
+    <marker id="arr2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#E8734A"/>
+    </marker>
+  </defs>
+
+  <!-- steps: big where steep, small where flat -->
+  <circle cx="120" cy="180" r="8" fill="#E8734A"/>
+  <text x="95" y="160" font-size="12" fill="#E8734A" font-weight="bold">start (random w)</text>
+  <line x1="132" y1="192" x2="185" y2="268" stroke="#E8734A" stroke-width="2.5" marker-end="url(#arr2)"/>
+  <circle cx="196" cy="281" r="7" fill="#E8734A"/>
+  <line x1="207" y1="292" x2="248" y2="316" stroke="#E8734A" stroke-width="2.5" marker-end="url(#arr2)"/>
+  <circle cx="258" cy="321" r="6" fill="#E8734A"/>
+  <line x1="268" y1="325" x2="298" y2="330" stroke="#E8734A" stroke-width="2.5" marker-end="url(#arr2)"/>
+  <circle cx="308" cy="331" r="5" fill="#E8734A"/>
+  <line x1="317" y1="331" x2="333" y2="331" stroke="#E8734A" stroke-width="2.5" marker-end="url(#arr2)"/>
+  <circle cx="345" cy="330" r="4" fill="#E8734A"/>
+  <text x="345" y="358" text-anchor="middle" font-size="12" fill="#55A868" font-weight="bold">minimum: slope ≈ 0, steps ≈ 0</text>
+
+  <text x="150" y="240" font-size="12" fill="#666">steep slope →</text>
+  <text x="150" y="255" font-size="12" fill="#666">big correction</text>
+  <text x="380" y="300" font-size="12" fill="#666">gentle slope → small correction</text>
+
+  <!-- update rule box -->
+  <rect x="440" y="150" width="230" height="66" rx="8" fill="#f6f8fa" stroke="#ddd"/>
+  <text x="555" y="178" text-anchor="middle" font-size="14" fill="#333" font-family="monospace">w -= lr * dL/dw</text>
+  <text x="555" y="200" text-anchor="middle" font-size="11" fill="#888">the one line that is all of deep learning</text>
+</svg>

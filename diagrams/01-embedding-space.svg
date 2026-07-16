@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" font-family="sans-serif">
+  <rect width="720" height="420" fill="#ffffff"/>
+  <text x="360" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">Meaning as geometry: similar words end up close together</text>
+
+  <!-- axes -->
+  <line x1="60" y1="370" x2="690" y2="370" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="60" y1="370" x2="60" y2="50" stroke="#bbb" stroke-width="1.5"/>
+  <text x="660" y="392" font-size="12" fill="#999">dimension 1 (of 768...)</text>
+  <text x="20" y="60" font-size="12" fill="#999" transform="rotate(-90 20 60)">dimension 2</text>
+
+  <!-- pets cluster -->
+  <ellipse cx="170" cy="130" rx="85" ry="60" fill="#4A90D9" opacity="0.12"/>
+  <circle cx="140" cy="115" r="5" fill="#4A90D9"/><text x="150" y="112" font-size="13" fill="#333">cat</text>
+  <circle cx="185" cy="140" r="5" fill="#4A90D9"/><text x="195" y="137" font-size="13" fill="#333">dog</text>
+  <circle cx="130" cy="160" r="5" fill="#4A90D9"/><text x="140" y="172" font-size="13" fill="#333">kitten</text>
+  <circle cx="205" cy="105" r="5" fill="#4A90D9"/><text x="215" y="102" font-size="13" fill="#333">puppy</text>
+  <text x="170" y="215" text-anchor="middle" font-size="12" fill="#4A90D9" font-weight="bold">pets</text>
+
+  <!-- food cluster -->
+  <ellipse cx="360" cy="300" rx="80" ry="52" fill="#55A868" opacity="0.12"/>
+  <circle cx="330" cy="285" r="5" fill="#55A868"/><text x="340" y="282" font-size="13" fill="#333">bread</text>
+  <circle cx="385" cy="310" r="5" fill="#55A868"/><text x="395" y="307" font-size="13" fill="#333">cheese</text>
+  <circle cx="340" cy="325" r="5" fill="#55A868"/><text x="350" y="337" font-size="13" fill="#333">rice</text>
+  <text x="360" y="245" text-anchor="middle" font-size="12" fill="#55A868" font-weight="bold">food</text>
+
+  <!-- vehicles cluster -->
+  <ellipse cx="600" cy="120" rx="75" ry="50" fill="#E8734A" opacity="0.12"/>
+  <circle cx="575" cy="105" r="5" fill="#E8734A"/><text x="585" y="102" font-size="13" fill="#333">truck</text>
+  <circle cx="620" cy="135" r="5" fill="#E8734A"/><text x="630" y="132" font-size="13" fill="#333">car</text>
+  <text x="600" y="190" text-anchor="middle" font-size="12" fill="#E8734A" font-weight="bold">vehicles</text>
+
+  <!-- analogy arrows: king->queen parallel to man->woman -->
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#9b59b6"/>
+    </marker>
+  </defs>
+  <circle cx="460" cy="200" r="5" fill="#9b59b6"/><text x="445" y="192" font-size="13" fill="#333">man</text>
+  <circle cx="540" cy="240" r="5" fill="#9b59b6"/><text x="548" y="244" font-size="13" fill="#333">woman</text>
+  <circle cx="470" cy="290" r="5" fill="#9b59b6"/><text x="450" y="283" font-size="13" fill="#333">king</text>
+  <circle cx="550" cy="330" r="5" fill="#9b59b6"/><text x="558" y="334" font-size="13" fill="#333">queen</text>
+  <line x1="463" y1="203" x2="533" y2="237" stroke="#9b59b6" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="473" y1="293" x2="543" y2="327" stroke="#9b59b6" stroke-width="2" marker-end="url(#arr)"/>
+  <text x="560" y="285" font-size="12" fill="#9b59b6">same direction:</text>
+  <text x="560" y="300" font-size="12" fill="#9b59b6">king − man + woman ≈ queen</text>
+
+  <!-- distance annotation -->
+  <line x1="215" y1="145" x2="565" y2="110" stroke="#ccc" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <text x="380" y="118" font-size="12" fill="#999">large distance = unrelated meaning</text>
+</svg>

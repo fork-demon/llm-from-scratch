@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" font-family="sans-serif">
+  <rect width="760" height="400" fill="#ffffff"/>
+  <text x="380" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#333">Backprop: forward pass builds the product, backward pass assigns the blame</text>
+
+  <defs>
+    <marker id="fwd" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#4A90D9"/>
+    </marker>
+    <marker id="bwd" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 z" fill="#E8734A"/>
+    </marker>
+  </defs>
+
+  <!-- forward line -->
+  <text x="55" y="120" font-size="13" fill="#4A90D9" font-weight="bold">FORWARD</text>
+  <rect x="40" y="140" width="80" height="52" rx="8" fill="#eef4fb" stroke="#4A90D9"/>
+  <text x="80" y="171" text-anchor="middle" font-size="13" fill="#333">input x</text>
+
+  <rect x="180" y="140" width="120" height="52" rx="8" fill="#eef4fb" stroke="#4A90D9"/>
+  <text x="240" y="162" text-anchor="middle" font-size="13" fill="#333">Layer 1</text>
+  <text x="240" y="180" text-anchor="middle" font-size="11" fill="#666" font-family="monospace">relu(x@W1+b1)</text>
+
+  <rect x="360" y="140" width="120" height="52" rx="8" fill="#eef4fb" stroke="#4A90D9"/>
+  <text x="420" y="162" text-anchor="middle" font-size="13" fill="#333">Layer 2</text>
+  <text x="420" y="180" text-anchor="middle" font-size="11" fill="#666" font-family="monospace">h@W2+b2</text>
+
+  <rect x="540" y="140" width="120" height="52" rx="8" fill="#fdf3ee" stroke="#E8734A"/>
+  <text x="600" y="162" text-anchor="middle" font-size="13" fill="#333">Loss</text>
+  <text x="600" y="180" text-anchor="middle" font-size="11" fill="#666">surprise = 2.31</text>
+
+  <line x1="120" y1="166" x2="172" y2="166" stroke="#4A90D9" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <line x1="300" y1="166" x2="352" y2="166" stroke="#4A90D9" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <line x1="480" y1="166" x2="532" y2="166" stroke="#4A90D9" stroke-width="2.5" marker-end="url(#fwd)"/>
+
+  <!-- backward line -->
+  <text x="55" y="265" font-size="13" fill="#E8734A" font-weight="bold">BACKWARD</text>
+  <line x1="540" y1="240" x2="488" y2="240" stroke="#E8734A" stroke-width="2.5" marker-end="url(#bwd)"/>
+  <line x1="360" y1="240" x2="308" y2="240" stroke="#E8734A" stroke-width="2.5" marker-end="url(#bwd)"/>
+  <line x1="180" y1="240" x2="128" y2="240" stroke="#E8734A" stroke-width="2.5" marker-end="url(#bwd)"/>
+
+  <rect x="360" y="214" width="120" height="52" rx="8" fill="#fdf3ee" stroke="#E8734A"/>
+  <text x="420" y="236" text-anchor="middle" font-size="12" fill="#333">Layer 2's blame</text>
+  <text x="420" y="254" text-anchor="middle" font-size="11" fill="#666" font-family="monospace">d = d @ W2.T</text>
+
+  <rect x="180" y="214" width="120" height="52" rx="8" fill="#fdf3ee" stroke="#E8734A"/>
+  <text x="240" y="236" text-anchor="middle" font-size="12" fill="#333">Layer 1's blame</text>
+  <text x="240" y="254" text-anchor="middle" font-size="11" fill="#666" font-family="monospace">d = d * (x&gt;0)</text>
+
+  <rect x="540" y="214" width="120" height="52" rx="8" fill="#fdf3ee" stroke="#E8734A"/>
+  <text x="600" y="236" text-anchor="middle" font-size="12" fill="#333">start: the miss</text>
+  <text x="600" y="254" text-anchor="middle" font-size="11" fill="#666" font-family="monospace">probs − one_hot</text>
+
+  <!-- gradients dropping to weights -->
+  <line x1="240" y1="266" x2="240" y2="310" stroke="#55A868" stroke-width="2" marker-end="url(#fwd)" stroke-dasharray="4,3"/>
+  <line x1="420" y1="266" x2="420" y2="310" stroke="#55A868" stroke-width="2" marker-end="url(#fwd)" stroke-dasharray="4,3"/>
+  <rect x="165" y="312" width="150" height="40" rx="8" fill="#eefaf1" stroke="#55A868"/>
+  <text x="240" y="337" text-anchor="middle" font-size="11" fill="#333" font-family="monospace">d_W1 = x.T @ d</text>
+  <rect x="345" y="312" width="150" height="40" rx="8" fill="#eefaf1" stroke="#55A868"/>
+  <text x="420" y="337" text-anchor="middle" font-size="11" fill="#333" font-family="monospace">d_W2 = h.T @ d</text>
+  <text x="600" y="337" font-size="12" fill="#55A868">→ then: W -= lr * d_W</text>
+
+  <text x="380" y="385" text-anchor="middle" font-size="12" fill="#888">Each station needs only LOCAL knowledge + the blame message handed back from downstream (chain rule: amplifications multiply)</text>
+</svg>
