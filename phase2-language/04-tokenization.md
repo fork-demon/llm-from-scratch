@@ -1,5 +1,18 @@
 # Module 04 — Tokenization: Turning Text Into Integers
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 2 weeks. Code: `bpe_tokenizer.py`.**
 
 ## The Problem
@@ -110,6 +123,9 @@ Here's what makes this module more than plumbing. The tokenizer is the *lens* th
 And one practical anchor: the **context window** everyone quotes ("128k context!") is measured in these tokens. For English, a rough rule: one token ≈ 0.75 words.
 
 From now on, when a model does something inexplicable involving spelling, counting characters, or digits — your first suspect is the tokenizer. That instinct alone is worth this module.
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 

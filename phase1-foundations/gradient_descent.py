@@ -3,6 +3,9 @@ Module 02 -- Gradient descent from absolute scratch.
 Three stages. Run the file; each stage prints its own story.
 
 Only dependency: numpy.
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import numpy as np
 

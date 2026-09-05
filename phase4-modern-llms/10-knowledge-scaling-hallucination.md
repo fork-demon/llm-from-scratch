@@ -1,5 +1,18 @@
 # Module 10 — What LLMs Know, Why Scaling Works, Why They Hallucinate
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 2 weeks. No code — this is the reading-and-thinking module, and every idea in it stands on something you've now personally built or measured. One honest warning up front: this module contains more open research questions than settled facts, and it will say so wherever that's true.**
 
 ## Where Is the Knowledge Actually Stored?
@@ -155,6 +168,9 @@ One acronym worth owning since it's everywhere: **LoRA**. Freeze all the origina
 **Mixture of Experts (MoE)** — the architecture trick behind Mixtral and (reportedly) GPT-4-class models, explained with what you have: replace each block's FFN with N parallel FFNs ("experts") plus a tiny learned **router** that sends each token to only its top 1–2 experts. Result: enormous *total* parameter count (lots of storage for facts — remember where facts live!), small *active* count per token (compute stays cheap). It's sharding, where the shard key is learned and the partition function is "whatever the router finds useful" — which, amusingly, rarely maps to human categories like "the math expert"; routers tend to specialize on token-level patterns instead. The costs are ones you'd predict: every expert must sit in GPU memory even though few activate, and keeping the router load-balanced is a genuine distributed-systems headache (there are auxiliary loss terms whose only job is stopping hot-spotting).
 
 Three more names, one line each, all now within reach: **RoPE** — encoding position by rotating the Q and K vectors instead of adding position embeddings; better behavior on long contexts. **GQA** — several query heads sharing one K/V head; shrinks module 09's cache formula, which you can now recompute yourself. **Quantization** — storing weights in 4–8 bits instead of 16; a big memory discount for a small quality tax, and the reason large models run on laptops.
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## Exercises (reading and writing, not code)
 

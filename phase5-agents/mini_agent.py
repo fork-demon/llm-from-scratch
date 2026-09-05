@@ -12,6 +12,9 @@ The whole architecture:
 
 Swapping the stand-in for a real LLM changes ~3 lines (see bottom).
 The loop, registry, parser and memory logic don't change. That's the lesson.
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import argparse
 import json

@@ -1,5 +1,18 @@
 # Module 05 — Embeddings: Training the Geometry Yourself
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 2 weeks. Code: `tiny_word2vec.py`.**
 
 ## The Promise Comes Due
@@ -126,6 +139,9 @@ Three connections that save you confusion later:
 **One vector per word has a flaw — find it.** What does your trained model give the word "bank"? One row. The same row for "river bank" and "bank account." A single point in space forced to average two unrelated meanings, landing awkwardly between them. Word2vec embeddings are frozen this way — *static*. Now here's the setup for the most important idea in this course: what if a word's vector could be *adjusted on the fly*, based on the sentence it's sitting in? "Bank" starts at its average point, then — noticing "river" nearby — slides toward the watery meaning. That adjustment mechanism exists. It's called **attention**, it's module 07, and when you get there you'll see it was invented to fix exactly the flaw you just found here.
 
 **"Embedding models" in RAG/vector-database marketing** (module 11) are this module's idea scaled up and trained to embed whole *sentences and documents* as single vectors instead of single words. When a vendor says "our embedding model," you now know the family tree.
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 

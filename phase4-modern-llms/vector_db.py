@@ -15,6 +15,9 @@ links to its near neighbors; search greedily walks the graph from a
 random entry point, dropping to denser layers as it closes in.
 Faster recall/speed trade than IVF at high recall, harder to build
 incrementally. Once you understand IVF, HNSW papers are readable.
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import time
 

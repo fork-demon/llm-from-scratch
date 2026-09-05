@@ -1,91 +1,137 @@
-# LLMs From First Principles — A Curriculum for Engineers
+# LLMs From First Principles — A Hands-On Curriculum for Engineers
 
-A learning path from "I understand gradient descent intuitively" to "I can read the GPT-2 paper and build a working miniature of it." Written for an experienced software engineer with practical (not theoretical) math.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/fork-demon/llm-from-scratch)
 
-## The Core Idea
+**Build a working miniature GPT from scratch — in clean, self-contained Python without framework magic.**
 
-Every module follows the same loop:
+You'll write a tokenizer, implement backward pass matrix calculus by hand, build multi-head attention with NumPy, train a toy transformer that generates text, and assemble a vector search + RAG pipeline.
 
-1. **Why does this exist?** — the problem that forced someone to invent it
-2. **Intuition first** — analogies and pictures before any notation
-3. **Math after intuition** — only what you need, explained in engineering terms
-4. **Full worked code** — small, annotated, runnable implementations you read, run, and modify
-5. **Modify-it exercises** — active learning without a blank page
+---
 
-The math never goes deeper than matrix multiplication and derivatives — things you already know. When a formula appears, it appears *after* you already know what it's supposed to do, so it reads like documentation rather than a puzzle.
+## ⚡ Quick Start
 
-## Pacing (3–5 hrs/week)
+```bash
+# 1. Clone repo
+git clone https://github.com/fork-demon/llm-from-scratch.git
+cd llm-from-scratch
 
-| Phase | Modules | Weeks | You will build |
-|-------|---------|-------|----------------|
-| 1. Foundations | 00–03 | 1–10 | The complete math toolkit, gradient descent, a full neural net + backprop in NumPy |
-| 2. Language | 04–06 | 11–17 | A BPE tokenizer, trained word embeddings, your first language model |
-| 3. Transformers | 07–09 | 18–28 | Self-attention in NumPy, a tiny GPT, sampling + KV cache |
-| 4. Modern LLMs | 10–12 | 29–36 | A vector database, semantic search, a RAG pipeline |
-| 5. Capstones (optional) | 13–14 | 37–40 | Fine-tune your GPT (LoRA, forgetting); build an agent from scratch (ReAct, tools, memory) |
+# 2. Install dependencies (NumPy, PyTorch, Matplotlib)
+make install
+# or: pip install -r requirements.txt
 
-Roughly 8–9 months at a sustainable pace. Each module says how long to spend on it. **Do not rush Phase 1** — backprop (module 03) is the single concept everything else stands on.
+# 3. Verify setup by running unit tests & gradient checks
+make test
 
-## Module Map
-
-```
-phase1-foundations/
-  00-math-primer.md                ALL the math the course needs (8 ideas),
-                                   worked by hand + math_primer.py verifying it
-  01-meaning-as-geometry.md        Why vectors? What embeddings really are
-  02-gradient-descent.md           + gradient_descent.py
-  03-neural-net-backprop.md        + mlp_numpy.py (the heart of the course)
-
-phase2-language/
-  04-tokenization.md               + bpe_tokenizer.py
-  05-embeddings.md                 + tiny_word2vec.py
-  06-first-language-model.md       + bigram_lm.py
-
-phase3-transformers/
-  07-attention.md                  + attention_numpy.py
-  08-tiny-gpt.md                   + tiny_gpt.py (PyTorch — you've earned it)
-  09-training-and-inference.md     sampling, temperature, KV cache + kv_cache_demo.py
-
-phase4-modern-llms/
-  10-knowledge-scaling-hallucination.md   weights vs. embeddings, fine-tuning, MoE
-  11-vector-search.md              + vector_db.py (semantic search engine)
-  12-rag.md                        + mini_rag.py
-  13-fine-tuning.md                + finetune_tiny_gpt.py (optional capstone:
-                                   SFT, LoRA, catastrophic forgetting — measured)
-
-phase5-agents/
-  14-agents.md                     + mini_agent.py (optional capstone: the ReAct
-                                   loop, tool calling, memory, prompt injection —
-                                   runs offline, 3-line swap to a real LLM)
-
-appendix-frontier-topics.md        Reasoning models, multimodality, distributed
-                                   training — one honest page each, read anytime
-                                   after module 10
-
-hints.md                           Graduated hints for every exercise —
-                                   read one level at a time when stuck
-debugging-guide.md                 Symptom → cause → fix table; keep open
-                                   whenever code is running
-
-diagrams/                          SVG diagrams embedded in the modules
-                                   (view the .md files in VS Code preview,
-                                   GitHub, or any markdown viewer to see them)
-resources.md                       Curated external videos/articles per module
+# 4. Run Phase 1 Foundation scripts
+make run-phase1
 ```
 
-## Rules of Engagement
+---
 
-- **Run every piece of code.** Reading code convinces you that you understand; running and breaking it proves whether you do.
-- **Do the modify-it exercises.** They are calibrated to take 30–60 min each and are where the real learning happens.
-- **NumPy until module 08.** You'll feel every matrix multiply. PyTorch enters only once you could, in principle, write what it automates.
-- **When stuck for more than 30 minutes**: broken code → `debugging-guide.md`; stuck exercise → `hints.md`, one hint level at a time. Then re-read the module's intuition section — confusion almost always means a *why* was skipped, not that you lack math.
+## 🗺️ Curriculum & Progress Tracker
 
-## Prerequisites
+Track your learning journey by checking off modules as you build and break the code:
 
-Python 3, NumPy (`pip install numpy`), and from module 08 onward PyTorch (`pip install torch`). Nothing else. All models train in minutes on a laptop CPU.
+### Phase 1: Foundations (The Mechanics of Learning)
+- [ ] **[00 — The Math You Actually Need](phase1-foundations/00-math-primer.md)** | Code: `math_primer.py`
+  - *Vectors, dot products as agreement meters, matrix shapes, nudges & chain rule.*
+- [ ] **[01 — Meaning as Geometry](phase1-foundations/01-meaning-as-geometry.md)**
+  - *Why IDs fail, high-dimensional spaces, words as coordinates.*
+- [ ] **[02 — Gradient Descent](phase1-foundations/02-gradient-descent.md)** | Code: `gradient_descent.py`
+  - *Loss landscapes, learning rate stability boundaries, watching a linear model fail.*
+- [ ] **[03 — Neural Networks & Backpropagation](phase1-foundations/03-neural-net-backprop.md)** | Code: `mlp_numpy.py`
+  - *The load-bearing module: non-linear hinges (ReLU), softmax + cross-entropy, exact backward pass in NumPy.*
 
-**Math prerequisites: none.** Module 00 rebuilds everything the course uses — even if school math is 20 years behind you. If you're already fluent in matrix multiplication and derivatives, skim module 00 in an evening and keep its notation table handy; otherwise give it its full two weeks. Whenever any later module's math feels slippery, the bug is almost always a module 00 concept that needs one more rep — go back, rerun `math_primer.py`, come forward again. That loop is normal and expected.
+### Phase 2: Language & Representations
+- [ ] **[04 — Tokenization](phase2-language/04-tokenization.md)** | Code: `bpe_tokenizer.py`
+  - *Byte-Pair Encoding (BPE) from scratch, merge tables, why chunking breaks letter counting.*
+- [ ] **[05 — Embeddings](phase2-language/05-embeddings.md)** | Code: `tiny_word2vec.py`
+  - *Skip-gram, moving vectors toward context neighbors, cosine similarity.*
+- [ ] **[06 — Your First Language Model](phase2-language/06-first-language-model.md)** | Code: `bigram_lm.py`
+  - *Autoregressive generation, bigram tables, n-gram state explosion wall.*
 
-## Where You'll Be at the End
+### Phase 3: Transformers (The Modern Engine)
+- [ ] **[07 — Self-Attention](phase3-transformers/07-attention.md)** | Code: `attention_numpy.py`
+  - *The soft key-value store: Queries, Keys, Values, causal masking, multi-head splits.*
+- [ ] **[08 — Building Tiny GPT](phase3-transformers/08-tiny-gpt.md)** | Code: `tiny_gpt.py`
+  - *Residual connections, LayerNorm, multi-head attention blocks, PyTorch transition.*
+- [ ] **[09 — Training & Inference](phase3-transformers/09-training-and-inference.md)** | Code: `kv_cache_demo.py`
+  - *Autoregressive sampling (temperature, top-k), KV-cache speedup.*
 
-You will have built, with your own hands: a tokenizer, an autodiff-free neural net trained by backprop you wrote yourself, word embeddings whose geometry you can inspect, a working GPT that generates text, and a RAG system. At that point papers like "Attention Is All You Need" read as design docs for systems you've already implemented.
+### Phase 4: Modern LLM Architecture & Systems
+- [ ] **[10 — Knowledge, Scaling & Hallucination](phase4-modern-llms/10-knowledge-scaling-hallucination.md)**
+  - *Where facts live (FFN weights vs embeddings), memorization vs generalization, superposition.*
+- [ ] **[11 — Vector Search](phase4-modern-llms/11-vector-search.md)** | Code: `vector_db.py`
+  - *Exact kNN vs Inverted File Index (IVF), clustering, semantic search.*
+- [ ] **[12 — RAG: Retrieval-Augmented Generation](phase4-modern-llms/12-rag.md)** | Code: `mini_rag.py`
+  - *Chunking, dense retrieval, prompt injection defense, grounding responses.*
+- [ ] **[13 — Fine-Tuning & Adaptation](phase4-modern-llms/13-fine-tuning.md)** | Code: `finetune_tiny_gpt.py`
+  - *Full SFT vs LoRA (low-rank adapters), catastrophic forgetting.*
+
+### Phase 5: Agents & Tool Calling (Capstone)
+- [ ] **[14 — Agents From First Principles](phase5-agents/14-agents.md)** | Code: `mini_agent.py`
+  - *The ReAct loop, tool registries, parsing completions, offline mock LLM engine.*
+
+---
+
+## 🛠️ Repository Architecture
+
+```mermaid
+flowchart TD
+    subgraph P1["Phase 1: Foundations"]
+        M0["00. Math Primer"] --> M1["01. Meaning as Geometry"]
+        M1 --> M2["02. Gradient Descent"]
+        M2 --> M3["03. Backprop & MLP (NumPy)"]
+    end
+
+    subgraph P2["Phase 2: Language"]
+        M3 --> M4["04. BPE Tokenizer"]
+        M4 --> M5["05. Word2Vec Embeddings"]
+        M5 --> M6["06. Bigram & N-gram LM"]
+    end
+
+    subgraph P3["Phase 3: Transformers"]
+        M6 --> M7["07. Attention Mechanism (NumPy)"]
+        M7 --> M8["08. Tiny GPT (PyTorch)"]
+        M8 --> M9["09. KV Cache & Sampling"]
+    end
+
+    subgraph P4["Phase 4: Systems & Modern LLMs"]
+        M9 --> M10["10. Scaling & Knowledge"]
+        M10 --> M11["11. Vector Search (IVF)"]
+        M11 --> M12["12. RAG Pipeline"]
+        M12 --> M13["13. LoRA & Fine-Tuning"]
+    end
+
+    subgraph P5["Phase 5: Agents"]
+        M13 --> M14["14. ReAct Loop & Tools"]
+    end
+
+    style M3 fill:#f9d5e5,stroke:#333,stroke-width:1px
+    style M7 fill:#eeee44,stroke:#333,stroke-width:1px
+    style M8 fill:#d5e8d4,stroke:#333,stroke-width:1px
+    style M14 fill:#dae8fc,stroke:#333,stroke-width:1px
+```
+
+---
+
+## 🎯 Ground Rules & Debugging Workflow
+
+1. **Run every line of code.** Reading code produces passive familiarity; running and modifying it tests whether your mental model matches reality.
+2. **NumPy until Module 08.** We use raw NumPy for matrix multiplications, activation gates, and backward gradient passes so you feel every dimension. We only switch to PyTorch once you could write what it automates.
+3. **The 30-Minute Debugging Rule:**
+   - Stuck on a bug? Check [`debugging-guide.md`](debugging-guide.md) — a symptom-to-fix lookup table.
+   - Stuck on an exercise? Consult [`hints.md`](hints.md) — graduated hints revealing clues one level at a time.
+   - Still confused? Re-read the module's mental model section; 95% of math confusion is an unstated engineering assumption.
+
+---
+
+## 📚 External Deep-Dives
+
+See [`resources.md`](resources.md) for selected companion lectures, interactive tools, and foundational research papers (e.g. Karpathy's *Zero to Hero*, 3Blue1Brown, and Vaswani et al.).
+
+## 📄 License
+This project is open-source under the [MIT License](LICENSE).

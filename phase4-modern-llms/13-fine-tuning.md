@@ -1,5 +1,18 @@
 # Module 13 — Fine-Tuning Your Own GPT (Optional Capstone)
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 2 weeks. Code: `finetune_tiny_gpt.py` (imports your module 08 model). This module closes the course's one theory-only gap: modules 09 and 10 *told* you about fine-tuning, catastrophic forgetting, and LoRA. Now you'll cause all three on your own machine.**
 
 ## What You're About to Do
@@ -23,6 +36,9 @@ Mechanically: for a weight matrix W (say 128×128 = 16,384 numbers), freeze it. 
 Why does a rank-4 correction suffice when the weight matrix is rank 128? The empirical finding that launched a thousand fine-tunes: *the change* needed to adapt a pretrained model is usually simple — low-rank — even though the model itself is not. You're not teaching it English from scratch; you're nudging a competent system's style. Small nudge, small matrix.
 
 The operational wins fall out immediately, and you'll verify each: tiny checkpoint files (kilobytes, not megabytes — you only save A and B), perfect base-model preservation (unplug the bypass, original restored), and swappable personalities (one LoRA per style, hot-swapped over a shared base — this is how one GPU serves a hundred fine-tuned "models").
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 

@@ -7,6 +7,9 @@ Three models of "predict the next character", in increasing power:
   C. Neural model with 3 characters of context -- beats A. More context wins.
 
 Plus: autoregressive generation (the ChatGPT loop) and perplexity.
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import numpy as np
 

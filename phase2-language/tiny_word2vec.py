@@ -8,6 +8,9 @@ sim(cat, computer) stays flat.
 
 All machinery is module 03's: lookup -> linear -> softmax -> cross-entropy,
 gradients by the same three rules.
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import numpy as np
 

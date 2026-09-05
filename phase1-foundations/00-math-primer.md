@@ -1,5 +1,18 @@
 # Module 00 — The Math You Actually Need (All of It)
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: 1–2 weeks. Code: `math_primer.py`. Read this first, run the code alongside it, and keep both open for the whole course.**
 
 Before we start, let me tell you something that should take a weight off your shoulders.
@@ -408,6 +421,9 @@ Papers compress the eight ideas into symbols. Here's the decoder ring. Keep it n
 | ⊙ | multiply slot-by-slot (no summing) | `a * b` |
 
 And the survival rule, worth repeating one last time: when a derivation loses you, stop trying to follow the algebra. Write the *shape* next to every symbol instead. `(batch, dim) @ (dim, vocab) → (batch, vocab)` tells you what's happening even when the Greek letters don't.
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 

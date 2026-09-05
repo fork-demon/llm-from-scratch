@@ -6,6 +6,9 @@ tokens into a new token. The learned artifact is the ordered merge list.
 
 Run this file to train a tokenizer on sample text and watch it
 rediscover English morphology from raw frequency counts.
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 from collections import Counter
 

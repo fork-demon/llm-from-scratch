@@ -1,5 +1,18 @@
 # Module 02 — Gradient Descent: The Only Learning Algorithm
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 2 weeks. Code: `gradient_descent.py`.**
 
 ## Where We Left Off
@@ -107,6 +120,9 @@ There's no formula for the right learning rate. Practitioners find it the way yo
 **"Can't you get stuck in a small dip that isn't the deepest valley?"** (A *local minimum*, in the jargon.) In the 2-D picture, yes, obviously. The surprising and fortunate truth: in billions of dimensions this matters far less than intuition suggests, because with that many directions available, there's almost always *some* direction that still leads downhill. Genuine dead-ends are rare in high dimensions. Don't lose sleep over it.
 
 **"Do you measure the slope on the entire dataset every step?"** You could, but it's wasteful — like taste-testing the whole pot to check if the soup needs salt. Instead you estimate the slope from a random spoonful: a **batch** of maybe 32 examples. The estimate is noisy, but you're taking thousands of steps, so the noise averages out — and it even helps, occasionally jostling you out of small dips. Gradient descent with random batches is called **stochastic gradient descent (SGD)**, which sounds impressive and means "downhill hiking with spot checks."
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 

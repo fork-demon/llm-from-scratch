@@ -1,5 +1,18 @@
 # Module 08 — Assembling the Tiny GPT
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 4 weeks. Code: `tiny_gpt.py` (PyTorch — and you've earned it). This is the summit. Everything before was the climb.**
 
 ## First, Let's Talk About PyTorch
@@ -123,6 +136,9 @@ step 3000:  KING RICHARD: What says the crown...     (structure, names, rhythm)
 Read those lines again. Nobody programmed "learn spelling first, then words, then dialogue structure." The stages *emerge*, in order, from one dumb objective — minimize surprise — applied relentlessly. This is the same phenomenon behind the headlines about big models "suddenly" developing abilities, observable on your laptop in twenty minutes of CPU time. Module 10 picks up this thread properly.
 
 Scale check, to calibrate where you stand: this model is ~0.8M parameters (4 layers, 4 heads, 128-dim vectors, 64-token context). GPT-2, the model that alarmed the world in 2019, was 1.5 *billion* — the same architecture you're looking at, with about five config numbers turned up ~2000×. The config block at the top of the file lists exactly which five.
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 

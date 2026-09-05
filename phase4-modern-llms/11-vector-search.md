@@ -1,5 +1,18 @@
 # Module 11 — Vector Databases & Semantic Search From Scratch
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 2 weeks. Code: `vector_db.py`. This is the comfort-zone module — a systems problem wearing ML clothes. Enjoy being the expert in the room again.**
 
 ## The Problem
@@ -101,6 +114,9 @@ The design has one knob, and understanding it means understanding every ANN benc
 ## The Rest of a Real Vector Database (all mapped to things you know)
 
 What separates your 150-liner from Pinecone? Packaging, mostly — the physics is identical. The remaining features, each mapped to familiar ground: **metadata filtering** (`WHERE topic='auth'` intersected with vector search — thornier than it sounds with an approximate index: filter first or search first? Real systems agonize); **upserts and index drift** (data changes, clusters go stale, k-means gets re-run periodically — it's compaction); **sharding** (the same partition logic, spread across machines); and **quantization** (store vectors as int8 instead of float32 — 4× memory saved, and the code demonstrates in ten lines that the top-10 results barely change; the same trick module 10 mentioned for model weights).
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 

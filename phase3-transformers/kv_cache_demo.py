@@ -6,6 +6,9 @@ Module 09 -- KV cache and sampling, from scratch in NumPy.
   3. generate_cached(): run only the new token; read old K/V from cache
   4. Proof of equivalence + timing table (watch the speedup grow with T)
   5. Sampling: temperature / top-k / top-p, visualized on a toy distribution
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import time
 

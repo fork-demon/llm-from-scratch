@@ -17,6 +17,9 @@ rules via loss.backward(). Nothing here is conceptually new:
   training loop      module 02
   generation loop    module 06
   residual + LN      new plumbing, explained in 08-tiny-gpt.md
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import argparse
 import math

@@ -10,6 +10,9 @@ Pipeline:
           -> answer FROM CONTEXT ONLY (extractive stand-in for an LLM)
 
 Swapping in a real LLM changes ~3 lines (see bottom of file).
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import sys
 

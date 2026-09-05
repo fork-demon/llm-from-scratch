@@ -14,6 +14,9 @@ Shapes convention used everywhere:
   x       : (T, D)
   Q, K, V : (T, D)
   scores  : (T, T)   <- cell (i, j) = how much token i cares about token j
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import numpy as np
 

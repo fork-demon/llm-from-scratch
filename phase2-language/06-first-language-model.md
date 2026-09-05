@@ -1,5 +1,18 @@
 # Module 06 — Your First Language Model
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 2 weeks. Code: `bigram_lm.py`.**
 
 ## The Definition, At Last
@@ -107,6 +120,9 @@ One practical detail you'll hit in the code: why *roll a die* instead of always 
 How good is a language model? Show it text it hasn't seen and measure its average surprise — module 03's cross-entropy, now used as the universal benchmark of the field.
 
 There's an equivalent form with a nicer feel: **perplexity**, which is just e raised to the cross-entropy. Its charm is the interpretation: *perplexity ≈ the number of options the model is effectively torn between at each step.* A model that's pure random guessing over 27 characters has perplexity 27 — torn between everything. Your bigram model scores around 6 — as if choosing between 6 plausible next characters. Big modern models on English text get into the low single digits per token. Entire careers, and billions of dollars of compute, are spent pushing that number down.
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 

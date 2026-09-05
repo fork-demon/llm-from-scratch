@@ -3,11 +3,33 @@ Module 03 -- A complete neural network + backpropagation in NumPy.
 
 What happens when you run this file:
   1. Generates a 3-class spiral dataset (impossible for linear models).
-  2. Trains a LINEAR classifier  -> watch it plateau (~45%).
-  3. Trains a 2-hidden-layer MLP -> watch it succeed (~99%).
+  2. Trains a LINEAR classifier  -> watch it plateau (~50-54%).
+  3. Trains a 2-hidden-layer MLP -> watch it succeed (~98-99%).
   4. Gradient-checks the backprop against numerical gradients.
+  5. (Optional) Plots decision boundaries if matplotlib is installed.
 
-Every gradient here is computed by the three rules from the module doc:
+Expected Output:
+  ============================================================
+  1) LINEAR model on the spiral (this should struggle)
+  ============================================================
+    final loss 0.7331, accuracy 0.540  <- the linear ceiling
+
+  ============================================================
+  2) MLP (2 -> 64 -> 64 -> 3) on the same data
+  ============================================================
+    step    0  loss 1.1000  acc 0.470
+    step  400  loss 0.0826  acc 0.970
+    step  800  loss 0.0399  acc 0.987
+    step 1200  loss 0.0321  acc 0.987
+    step 1600  loss 0.0285  acc 0.987
+    final accuracy 0.987  <- nonlinearity earns its keep
+
+  ============================================================
+  3) Gradient check (backprop vs numerical oracle)
+  ============================================================
+    worst diff ~1e-12 -> PASS
+
+Every gradient here is computed by the three rules:
   linear:   d_W = X.T @ d_out ;  d_X = d_out @ W.T ;  d_b = sum(d_out)
   relu:     d_x = d_out * (x > 0)
   softmax+cross-entropy at the logits:  d_logits = probs - one_hot
@@ -71,7 +93,7 @@ def train_linear(X, y, steps=300, lr=1.0):
         b -= lr * d_logits.sum(axis=0)
 
     acc = (softmax(X @ W + b).argmax(axis=1) == y).mean()
-    return loss, acc
+    return loss, acc, W, b
 
 
 # ----------------------------------------------------------------------
@@ -82,11 +104,14 @@ class MLP:
         # Small random init. Why not zeros? All-zero weights make every
         # neuron identical -> identical gradients -> they can never
         # differentiate ("symmetry breaking" needs randomness).
+        self.sizes = sizes
         self.W = [0.1 * rng.normal(size=(a, b)) for a, b in zip(sizes, sizes[1:])]
         self.b = [np.zeros(b) for b in sizes[1:]]
 
     # ---- forward: save intermediate values; backprop will need them ----
     def forward(self, X):
+        B, D = X.shape
+        assert D == self.sizes[0], f"Expected input dim {self.sizes[0]}, got {D}"
         self.cache = [X]                   # activations layer by layer
         h = X
         for i in range(len(self.W) - 1):
@@ -105,7 +130,7 @@ class MLP:
         d_b = [None] * len(self.b)
 
         probs = softmax(logits)
-        d = probs                                   # d = blame flowing backward
+        d = probs.copy()                            # d = blame flowing backward
         d[np.arange(n), y] -= 1                     # d_logits = probs - one_hot
         d /= n
 
@@ -137,6 +162,48 @@ def train_mlp(X, y, steps=2000, lr=0.5):
         if step % 400 == 0:
             print(f"  step {step:4d}  loss {loss:.4f}  acc {net.accuracy(X, y):.3f}")
     return net
+
+
+# ----------------------------------------------------------------------
+# Decision Boundary Visualizer (Terminal fallback + Matplotlib)
+# ----------------------------------------------------------------------
+def plot_boundaries(X, y, linear_predict_fn, mlp_predict_fn, save_path=None):
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("\n  [Notice] Install matplotlib (`pip install matplotlib`) to view visual boundary plots.")
+        return
+
+    plt.figure(figsize=(10, 4.5))
+    h = 0.02
+    x_min, x_max = X[:, 0].min() - 0.2, X[:, 0].max() + 0.2
+    y_min, y_max = X[:, 1].min() - 0.2, X[:, 1].max() + 0.2
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+    grid = np.c_[xx.ravel(), yy.ravel()]
+
+    # 1. Linear model
+    plt.subplot(1, 2, 1)
+    Z_lin = linear_predict_fn(grid).reshape(xx.shape)
+    plt.contourf(xx, yy, Z_lin, alpha=0.3, cmap=plt.cm.Spectral)
+    plt.scatter(X[:, 0], X[:, 1], c=y, s=15, cmap=plt.cm.Spectral, edgecolors="k", linewidth=0.5)
+    plt.title("Linear Model (Stuck at ~50%)")
+    plt.xlabel("x0")
+    plt.ylabel("x1")
+
+    # 2. MLP model
+    plt.subplot(1, 2, 2)
+    Z_mlp = mlp_predict_fn(grid).reshape(xx.shape)
+    plt.contourf(xx, yy, Z_mlp, alpha=0.3, cmap=plt.cm.Spectral)
+    plt.scatter(X[:, 0], X[:, 1], c=y, s=15, cmap=plt.cm.Spectral, edgecolors="k", linewidth=0.5)
+    plt.title("MLP Model (Hinges bend space ~98%)")
+    plt.xlabel("x0")
+
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=120)
+        print(f"  Decision boundary plot saved to: {save_path}")
+    else:
+        plt.show()
 
 
 # ----------------------------------------------------------------------
@@ -176,7 +243,7 @@ if __name__ == "__main__":
     print("=" * 60)
     print("1) LINEAR model on the spiral (this should struggle)")
     print("=" * 60)
-    loss, acc = train_linear(X, y)
+    loss, acc, W_lin, b_lin = train_linear(X, y)
     print(f"  final loss {loss:.4f}, accuracy {acc:.3f}  <- the linear ceiling\n")
 
     print("=" * 60)
@@ -189,3 +256,13 @@ if __name__ == "__main__":
     print("3) Gradient check (backprop vs numerical oracle)")
     print("=" * 60)
     gradient_check(net, X[:50], y[:50])
+
+    # Save visualization to diagrams folder
+    import os
+    diag_dir = os.path.join(os.path.dirname(__file__), "..", "diagrams")
+    if os.path.exists(diag_dir):
+        plot_path = os.path.join(diag_dir, "03-spiral-boundary.png")
+        plot_boundaries(X, y, 
+                        lambda g: (g @ W_lin + b_lin).argmax(axis=1),
+                        lambda g: net.forward(g).argmax(axis=1),
+                        save_path=plot_path)

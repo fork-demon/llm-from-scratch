@@ -1,5 +1,18 @@
 # Module 01 — Meaning as Geometry
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 1 week. No code yet — this module installs the one mental picture the entire course runs on. Take your time with it.**
 
 ## The Problem We Have to Solve First
@@ -147,6 +160,9 @@ Every scary-sounding thing coming later in the course is a small, understandable
 | Feed-forward layer (mod 03) | a learned function that moves each point somewhere more useful |
 | A stack of layers (mod 08) | points get moved again and again: from "this is the word cat" toward "the next word is probably..." |
 | Next-token prediction (mod 06) | compare the final point to every word's point; the nearest ones are the likeliest next words |
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## Exercises (thought experiments — the code starts next module)
 

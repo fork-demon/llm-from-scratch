@@ -4,6 +4,9 @@ Module 00 -- Verify every hand computation in the math primer.
 Run it: every section prints its checks and asserts they're right.
 Then BREAK it: change a number in a "by hand" value and watch the
 assertion catch you. Math you can unit-test is math you can trust.
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import numpy as np
 

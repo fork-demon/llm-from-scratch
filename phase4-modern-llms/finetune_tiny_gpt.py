@@ -14,6 +14,9 @@ Four acts:
   4. Side-by-side samples from base / full-FT / LoRA-FT
 
 Imports the GPT from module 08 -- same model, no changes needed.
+
+Expected Output:
+  (Run the script to see the numerical output and shape assertions pass)
 """
 import argparse
 import copy

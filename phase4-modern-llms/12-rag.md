@@ -1,5 +1,18 @@
 # Module 12 — RAG: Wiring It All Together
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 2 weeks. Code: `mini_rag.py`. The capstone — every module in the course shows up somewhere in this one pipeline.**
 
 ## The Problem (which you derived yourself in module 10)
@@ -111,6 +124,9 @@ This section is the practical payoff of the whole course. When your RAG system m
 **Contradictory sources.** The 2023 policy says X, the 2024 revision says Y, retrieval returned both. The model has no mechanism for adjudicating truth (module 10) — only plausibility — so you get X, Y, or a confident smoothie of both. The fix isn't a smarter model; it's boring data hygiene: version metadata and module 11's metadata filtering at query time.
 
 The meta-lesson, worth the price of the module: **when a RAG system is bad, it is almost always the retrieval, not the LLM.** The model is the flashy component, so it gets the blame and the tuning attention — but debug the boring data layer first. You now have a principled reason to, which is more than most teams debugging RAG can say.
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 

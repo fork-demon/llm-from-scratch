@@ -1,5 +1,18 @@
 # Module 14 — Agents From First Principles (Optional Capstone)
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 2 weeks. Code: `mini_agent.py`. Runs completely offline — and swaps to a real LLM in three lines.**
 
 ## The Demystification This Module Exists For
@@ -90,6 +103,9 @@ Every notorious agent failure mode is a course concept compounding through the l
 **Tool-result injection.** The model can't distinguish "instructions from the user" from "text that arrived in a tool result." If a searched document contains "ignore your instructions and...", that text sits in the same context as everything else. This is *prompt injection*, the security problem of the agent era — and your module 12 instinct (the model has no provenance mechanism) predicts it exactly.
 
 **The fixes are all systems engineering:** budgets, sandboxed tools, validation on tool arguments, human approval gates on irreversible actions, and observability on every step. Agents are 20% ML and 80% the discipline you already practice for a living.
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 

@@ -1,7 +1,33 @@
 # Module 07 — Self-Attention: The Idea Worth the Whole Course
 
-**Time: about 4 weeks. Code: `attention_numpy.py`. Go slowly and enjoy it — after this module, everything left in the course is assembly work.**
+> **⏱️ Time:** ~4 weeks. Code: [`attention_numpy.py`](attention_numpy.py).  
+> **What you'll build:** Single-head & Multi-head attention from scratch in NumPy with causal masking and gradient checks.  
+> **Interactive companion:** [Transformer Explainer (live in browser)](https://poloclub.github.io/transformer-explainer/)
 
+---
+
+## 🎯 TL;DR
+1. **The Core Bottleneck of RNNs:** Sequential dependencies prevent parallel training ($O(T)$ steps), and fixed-size hidden vectors form an informational bottleneck over long horizons.
+2. **The Transformer Shift:** Replace recurrence with pairwise routing. Every token attends directly to all preceding tokens via matrix multiplication:
+   $$\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{Q K^T}{\sqrt{d_k}}\right) V$$
+3. **Database Analogy:** Tokens broadcast **Queries** (what am I looking for?), match against **Keys** (what kind of info do I have?), and retrieve weighted sums of **Values** (payloads).
+
+```mermaid
+flowchart TD
+    X["Input Matrix X: [T, D]"] --> WQ["x @ W_q"] --> Q["Query Q: [T, D]"]
+    X --> WK["x @ W_k"] --> K["Key K: [T, D]"]
+    X --> WV["x @ W_v"] --> V["Value V: [T, D]"]
+    
+    Q & K --> MatMul["Scores = Q @ K.T / sqrt(D)"]
+    MatMul --> Mask["Causal Mask: Upper triangle -> -inf"]
+    Mask --> Softmax["Softmax(axis=-1) -> Weights (T, T)"]
+    Softmax & V --> Out["Out = Weights @ V: [T, D]"]
+    
+    style Softmax fill:#f9f,stroke:#333,stroke-width:1px
+    style Mask fill:#ff9,stroke:#333,stroke-width:1px
+```
+
+---
 ## Two Problems, Carried In From Earlier Modules
 
 You arrive at this module holding two loose ends, both earned honestly:

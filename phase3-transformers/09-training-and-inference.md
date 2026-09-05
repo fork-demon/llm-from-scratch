@@ -1,5 +1,18 @@
 # Module 09 — Training & Inference as Systems Problems
 
+> **⏱️ Time:** ~1-2 weeks.  
+> **What you'll build:** Core mechanics and conceptual understanding.
+
+---
+
+## 🎯 TL;DR
+1. **The Core Problem:** The challenge this module solves.
+2. **The Mechanism:** How we solve it using first principles.
+3. **The Payoff:** What you can do with this new capability.
+
+---
+
+
 **Time: about 2 weeks. Code: `kv_cache_demo.py`. This module speaks your native language — caching, latency, memory budgets — so expect it to feel like home turf.**
 
 ## Part 1 — What "Training an LLM" Actually Involves
@@ -96,6 +109,9 @@ Once you hold the cache in your head, a series of previously-opaque industry fac
 ### Context Windows, Honestly
 
 Worth saying plainly, because marketing blurs it: the context window is **not** a memory, a database, or something the model "keeps." It's the maximum T — position embeddings exist up to there, attention cost is O(T²) up to there. Between API calls, *nothing persists*. The "memory" of your chat is the application re-sending the whole conversation history each turn — and paying prefill on it each time. What feels like a model that remembers you is a stateless function being handed a longer and longer argument.
+
+
+> **🛑 CHECKPOINT:** Run the code and modify it before proceeding. Reading without running is an illusion of knowledge.
 
 ## The Code
 
