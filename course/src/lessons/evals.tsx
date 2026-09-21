@@ -145,7 +145,7 @@ export default function EvalsLesson() {
         <p>Now the real output of <code>python phase6-engineering/eval_harness.py</code> on our 24 items, which is also what the lab shows:</p>
         <div className="table-scroll">
           <table className="plain mono" style={{ fontSize: 14 }}>
-            <thead><tr><th>scorer</th><th>passed</th><th>accuracy</th><th>agrees with the human labels</th><th>Cohen’s kappa</th></tr></thead>
+            <thead><tr><th>scorer</th><th>passed</th><th>accuracy</th><th>agrees with the human labels</th><th>kappa</th></tr></thead>
             <tbody>
               <tr><td>exact</td><td>4/24</td><td>16.7%</td><td>11/24</td><td>0.15</td></tr>
               <tr><td>substring</td><td>12/24</td><td>50.0%</td><td>19/24</td><td>0.58</td></tr>
@@ -154,8 +154,10 @@ export default function EvalsLesson() {
             </tbody>
           </table>
         </div>
+        <p className="muted" style={{ fontSize: 14.5 }}>The last column is <b>Cohen’s kappa</b>: agreement with the human after subtracting the agreement two careless raters would reach by luck alone. 1 is perfect, 0 is coin-flipping. The deep dive below works it out.</p>
         <p><b>Same system, same answers, and the score runs from 17% to 67% depending on the scorer.</b> The rubric judge is closest to the human, and still disagrees on one item: asked “does the oncall rotation change every friday”, the system quotes “The oncall rotation changes every Monday at 10am”. A person accepts that. The reference says “no, every Monday”, the word “no” is missing, and the judge fails it. The system was right and the eval was wrong. Reading your failures will regularly end with fixing the eval.</p>
-        <p>The interval on the rubric score: 66.7%, 95% bootstrap interval <b>45.8% to 83.3%</b>. The regression check from the opening story: A 66.7%, B 58.3%, two items pass only under A and none only under B, exact sign test p = 0.50. <b>Verdict: cannot tell.</b> Two coin flips landing the same way happen half the time.</p>
+        <p>Now put an interval on the rubric score. The <b>bootstrap</b> is the lazy way to get one: draw 24 marks at random from your 24 marks, with repeats allowed, average them, and do that ten thousand times. The middle 95% of those averages is your interval. Here it runs from <b>45.8% to 83.3%</b> around a score of 66.7%.</p>
+        <p>And the regression check from the opening story. A scores 66.7%, B scores 58.3%. Two items pass only under A and none only under B. The <b>sign test</b> asks whether a two-to-nothing split is surprising for a fair coin, and the answer is no: p = 0.50. <b>Verdict: cannot tell.</b> Two coin flips landing the same way happen half the time.</p>
         <Callout kind="dev">This is the same discipline as latency work. You would not compare two builds on one request each, and you would not report a p99 from 20 samples. A pass rate is a statistic. Give it the treatment you give every other statistic on your dashboards.</Callout>
       </Numbers>
 
@@ -426,7 +428,7 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
           {
             q: 'A new model tops a public coding leaderboard. Why is that weak evidence that it will be best for your internal code-review bot?',
             options: [
-              'Leaderboards are compiled by vendors, and vendors always publish numbers that are simply invented for marketing',
+              'Leaderboards are compiled by vendors, and vendors always publish numbers that are invented for marketing',
               'The benchmark measures a different task on different data, its questions may have leaked into training data, and small gaps are often within noise',
               'Public benchmarks only test models in English, and code review is a task that does not involve any natural language',
               'A model that is good at writing code is, for architectural reasons, usually worse than average at reading code',

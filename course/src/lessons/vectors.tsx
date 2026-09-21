@@ -29,7 +29,7 @@ export default function VectorsLesson() {
       <Problem>
         <p>In <a href="#/lesson/prompt-to-answer">Part 0</a> you saw that an LLM is a function that turns numbers into numbers. So any “thinking” it does about similarity has to be arithmetic.</p>
         <WhyExists
-          problem="Given two lists of numbers, produce ONE number that says how much they agree."
+          problem="Given two lists of numbers, produce a single number that says how much they agree."
           naive={<>Compare them like a programmer would: <code>a == b</code>, or count how many slots are equal.</>}
           fails="Two learned lists are never exactly equal. We need a graded answer (a lot, a little, not at all, the opposite), and it has to be cheap enough to run millions of times per word."
           idea="Multiply the lists slot by slot and add everything up. Matching signs push the total up, clashing signs pull it down."

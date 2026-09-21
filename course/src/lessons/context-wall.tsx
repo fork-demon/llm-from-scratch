@@ -23,7 +23,7 @@ export default function ContextWallLesson() {
         <p>The count table worked. So give it more to look at: instead of one row per previous character, one row per previous <em>two</em> characters, or five, or twenty words. Longer context, better guesses. What could go wrong?</p>
         <WhyExists
           problem="One token of context produces text that is locally plausible and globally nonsense."
-          naive="Keep counting, but use the last n tokens as the row key: an n-gram table."
+          naive="Keep counting, but use the last n tokens as the row key instead of one. A table like that is called an n-gram table: n is how many tokens it looks back."
           fails="The number of possible rows is V to the power n. It outgrows any computer almost immediately, and nearly every row that does occur was seen only once."
           idea="Stop treating each context as an unrelated row. Turn the context tokens into embeddings and feed them to a neural network, so similar contexts share what they learn."
           tradeoff="The network has a fixed-size window with a separate set of weights for each position. It still cannot reach far back. That is the wall."
@@ -70,7 +70,7 @@ export default function ContextWallLesson() {
             </tbody>
           </table>
         </div>
-        <p>Read the last row again. A text of 493 characters contains at most 484 windows of length 10. However much text you collect, the number of windows grows <em>in step with</em> the text, while the number of possible contexts grows <em>exponentially</em> with n. Data can never catch up.</p>
+        <p>Read the last row again. A text of 493 characters contains at most 484 windows of length 10. Collect ten times more text and you get roughly ten times more windows: the count grows in step with the text. But the number of possible contexts grows <em>exponentially</em> with n. Doubling n squares it. Data can never catch up.</p>
         <p><b>Now the neural alternative.</b> The Python file’s Model C looks at 3 characters, but not with a table. It looks up an <a href="#/lesson/embeddings">embedding</a> for each of the 3 characters, glues the three vectors end to end, and feeds them to the small <a href="#/lesson/neurons">two-layer network</a> from Part 3.</p>
         <div className="table-scroll">
           <table className="plain mono">

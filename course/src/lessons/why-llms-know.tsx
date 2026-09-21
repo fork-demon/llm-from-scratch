@@ -279,7 +279,7 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
         <ClaimSorter
           id="why-llms-know-sort"
           claims={[
-            { text: 'After training, the only thing the model keeps is its parameters. The training documents are not inside it.', level: 'established', why: 'This is simply what a model file is. Anything it can recall has to be encoded in the weights.' },
+            { text: 'After training, the only thing the model keeps is its parameters. The training documents are not inside it.', level: 'established', why: 'This is what a model file is. Anything it can recall has to be encoded in the weights.' },
             { text: 'The MLP works like a key-value store: the first matrix matches patterns, the second writes the associated content.', level: 'model', why: 'A helpful reading backed by interpretability work, but a lens rather than the literal design: detectors respond to many things and much MLP behaviour is unexplained.' },
             { text: 'Softmax always produces a probability distribution that sums to 1, so some token is always produced.', level: 'established', why: 'It follows directly from the formula. You verified it in the lab.' },
             { text: 'Each fact is stored in a specific, locatable set of MLP weights that can be edited without side effects.', level: 'research', why: 'Editing experiments partly succeed, but localisation and editing results disagree, edits often fail to reach implications, and side effects occur. Debated.' },

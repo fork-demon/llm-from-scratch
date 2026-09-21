@@ -188,8 +188,8 @@ with torch.no_grad():   # do not record the forward pass: we will not call backw
         <ul>
           <li><b><code>model.eval()</code></b> switches dropout off. Forget it and you get different logits on every call. You will measure that below.</li>
           <li><b><code>torch.no_grad()</code></b> stops PyTorch keeping the recording it would need for <code>loss.backward()</code>. Same results, much less memory.</li>
-          <li><b><code>dtype=torch.bfloat16</code></b> loads the weights in bf16. The default depends on the library version: transformers 4.x loads in fp32 whatever the file contains, so an 8B model silently takes 32 GB, while version 5 loads in the format the checkpoint was saved in. Pass the dtype explicitly and you never have to remember which. (Before version 4.56 the argument was spelled <code>torch_dtype</code>, and many config files still use that key.)</li>
-          <li><b><code>device_map="auto"</code></b> places the layers for you: GPU first, then CPU memory if the GPU is full. It needs the <code>accelerate</code> package. For a model that fits, <code>model.to("cuda")</code> does the same job.</li>
+          <li><b><code>dtype=torch.bfloat16</code></b> loads the weights in bf16. The default depends on the library version. Transformers 4.x loads in fp32 whatever the file contains, so an 8B model silently takes 32 GB. Version 5 loads in the format the checkpoint was saved in. Pass the dtype explicitly and you never have to remember which one you are on. (Before version 4.56 the argument was spelled <code>torch_dtype</code>, and many config files still use that key.)</li>
+          <li><b><code>device_map="auto"</code></b> decides which piece of the model goes where: GPU first, then ordinary CPU memory once the GPU is full. It needs the <code>accelerate</code> package. For a model that fits on the card anyway, <code>model.to("cuda")</code> does the same job.</li>
         </ul>
         <h3>2. Walk the tensors</h3>
         <p>The script prints GPT-2’s config next to your <code>Config</code>, then every tensor with the lesson that built it. This is its real output for block 0:</p>

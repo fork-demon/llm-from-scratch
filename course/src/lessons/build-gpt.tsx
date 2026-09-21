@@ -29,8 +29,8 @@ export default function BuildGptLesson() {
           problem="The last block gives us a vector of D numbers per position. We need a score for every token in the vocabulary: which one comes next?"
           naive="Compare the output vector with every token’s embedding by hand and pick the closest one."
           fails="Close, but “pick the closest” throws away uncertainty and cannot be trained with cross-entropy. We need a score for every token, so that softmax can turn them into probabilities."
-          idea="One more matrix multiply, from D numbers to V numbers (V = vocabulary size). Row by row it IS “dot the output vector with every token’s vector”. This layer is called the head, and its outputs are the logits."
-          tradeoff="With a large vocabulary this matrix is big: 50,257 × 768 ≈ 38.6M numbers in GPT-2 small. A trick called weight tying lets it share storage with the embedding table."
+          idea="One more matrix multiply, from D numbers per token to one number per vocabulary word. Row by row, that multiply is “dot the output vector with every token’s vector”. This last layer is called the head, and the raw scores it produces are called the logits."
+          tradeoff="With a large vocabulary this matrix is big: 50,257 × 768 ≈ 38.6M numbers in GPT-2 small. A trick called weight tying lets it reuse the embedding table instead of storing a second one. We unpack it later in this lesson."
         />
         <p>The second gap is the loop around the model. A GPT predicts <em>one</em> token. To write a sentence, you sample a token, append it to the input, and run the whole model again. You built that loop in <a href="#/lesson/next-token">Predicting the next token</a>; here it gets a real model inside.</p>
         <p>And one practical question: this lesson’s code is in <b>PyTorch</b>, not NumPy. Is that a new thing to learn?</p>
@@ -205,7 +205,7 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
           <li><code>torch.cat</code>: append the new token, and go round again.</li>
         </ul>
         <h3>Why the crop?</h3>
-        <p><code>idx[:, -self.cfg.context_len:]</code> keeps only the last 64 tokens. It has to: <code>pos_emb</code> has exactly 64 rows, so slot 64 does not exist, and the causal mask was built for 64×64. Anything older than the <G t="context-window">context window</G> is simply gone. The model does not “forget” it gradually. It never sees it.</p>
+        <p><code>idx[:, -self.cfg.context_len:]</code> keeps only the last 64 tokens. It has to: <code>pos_emb</code> has exactly 64 rows, so slot 64 does not exist, and the causal mask was built for 64×64. Anything older than the <G t="context-window">context window</G> is gone. The model does not “forget” it gradually. It never sees it at all.</p>
         <Callout kind="dev">Notice the waste: to produce token 50, the loop re-runs the model on tokens 0…49, although their vectors cannot have changed (the causal mask guarantees it). Caching that work is the <G t="kv-cache">KV cache</G>, two lessons from now.</Callout>
       </CodeIt>
 

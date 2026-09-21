@@ -21,6 +21,7 @@ export default function BackpropLesson() {
           </div>
         </div>
         <p>The loss is measured at the very end of the network. The weights are spread through every layer. When the prediction is wrong, how does a weight in the first layer, several steps away from the output, find out its share of the blame?</p>
+        <p>This is the hardest idea in Part 3, and the one place where it pays to go slowly. Work the numbers by hand with us, and it turns into three small rules you can hold in your head.</p>
         <Callout kind="idea">
           The answer is <b>backpropagation</b>: run the chain rule backward through the network, once, and reuse intermediate results. It produces the gradient for every weight at about the cost of two extra forward passes. It is the reason training large networks is possible at all.
         </Callout>
@@ -31,7 +32,7 @@ export default function BackpropLesson() {
         <p>It works for any model. Count what it costs, though: one full forward pass <em>per parameter</em>, for every single training step.</p>
         <div className="table-scroll">
           <table className="plain">
-            <thead><tr><th>model</th><th>parameters</th><th>forward passes for ONE update, by nudging</th></tr></thead>
+            <thead><tr><th>model</th><th>parameters</th><th>forward passes for one update, by nudging</th></tr></thead>
             <tbody>
               <tr><td>our line</td><td className="mono">2</td><td className="mono">2 (plus one for the baseline)</td></tr>
               <tr><td>the spiral MLP</td><td className="mono">4,547</td><td className="mono">4,547</td></tr>
@@ -120,12 +121,13 @@ softmax+cross-entropy at the logits:  d_logits = probs - one_hot
             ['X', 'what the layer received in the forward pass (one row per example). It had to be remembered.'],
             [<>X<sup>T</sup> d<sub>out</sub></>, 'for each weight: (input that flowed through it) × (blame at the output it fed), summed over the examples in the batch'],
             [<>d<sub>out</sub> W<sup>T</sup></>, 'the message for the previous layer: each input collects blame from every output it fed, through the same weight it used going forward'],
-            [<>Σ d<sub>out</sub></>, 'a bias is added straight onto the output, so its sensitivity is 1: it simply collects the blame, summed over the batch'],
+            [<>Σ d<sub>out</sub></>, 'a bias is added straight onto the output, so its sensitivity is 1: it collects the blame unchanged, summed over the batch'],
           ]}
         >
           d<sub>W</sub> = X<sup>T</sup> d<sub>out</sub> &nbsp;&nbsp;&nbsp; d<sub>X</sub> = d<sub>out</sub> W<sup>T</sup> &nbsp;&nbsp;&nbsp; d<sub>b</sub> = Σ d<sub>out</sub>
         </Equation>
-        <p>The <a href="#/lesson/matrices">transpose</a> is not a trick. Going forward, W takes you from inputs to outputs. Going backward you travel the same wires in the opposite direction, from outputs to inputs, and flipping rows and columns is what “the same wires, reversed” looks like for a matrix. You did it entry by entry in step 3 above.</p>
+        <p>The <a href="#/lesson/matrices">transpose</a> is not a trick. Going forward, W carries you from inputs to outputs. Going backward, you travel the same wires in the opposite direction, from outputs back to inputs.</p>
+        <p>Flipping rows and columns is what “the same wires, reversed” looks like when the wires are written as a matrix. You already did it by hand, entry by entry, in step 3 of the table above.</p>
         <Equation
           label="Backward rule for ReLU"
           symbols={[
@@ -195,7 +197,7 @@ for step in range(steps):
     net.step(d_W, d_b, lr)                       # update: W -= lr * d_W
 `}</Code>
         <h3>Trust, but verify: the gradient check</h3>
-        <p>Hand-written backward code is easy to get subtly wrong, and a wrong gradient often still trains, just badly. So we test it against the slow, obviously correct method: nudging. This is the <b>gradient check</b> promised in <a href="#/lesson/derivatives">lesson 1.4</a>: the black-box nudge experiment used as a unit test for the white-box chain rule.</p>
+        <p>Hand-written backward code is easy to get subtly wrong, and a wrong gradient often still trains, only badly. So we test it against the slow method that is hard to get wrong: nudging. This is the <b>gradient check</b> promised in <a href="#/lesson/derivatives">lesson 1.4</a>, the black-box nudge experiment used as a unit test for the white-box chain rule.</p>
         <Code source="phase1-foundations/mlp_numpy.py" title="gradient_check (printing removed)">{`
 logits = net.forward(X)
 d_W, _ = net.backward(logits, y)
@@ -294,9 +296,9 @@ return d_W, d_b
           hints={[
             'Run python phase1-foundations/mlp_numpy.py and note the three sections of output: linear model, MLP, gradient check.',
             'Hidden size: in train_mlp(), change net = MLP() to net = MLP(sizes=(2, 4, 4, 3)), then (2, 8, 8, 3).',
-            'Removing ReLU means changing BOTH passes so they describe the same network: in forward, drop np.maximum(0, …); in backward, delete the “rule 2: ReLU gate” line.',
+            'Removing ReLU means changing both passes, so that they still describe the same network: in forward, drop np.maximum(0, …); in backward, delete the “rule 2: ReLU gate” line.',
           ]}
-          solution={<><p>With the file’s fixed seed: hidden size 4 reaches 72.0%, hidden size 8 reaches 99.0%, the original 64 reaches 98.7%. Eight hinges per layer are already enough for this spiral.</p><p>Without ReLU (both passes changed): <b>54.0%</b>, identical to the linear model, and the gradient check still passes. Your backward pass is correct; the <em>model</em> is simply a straight-line classifier again. If you remove the ReLU only in <code>forward</code>, the backward pass computes gradients for a different network than the one that ran: the loss explodes and accuracy falls to 33%. Forward and backward must always mirror each other.</p></>}
+          solution={<><p>With the file’s fixed seed: hidden size 4 reaches about 96%, hidden size 8 about 99%, and the original 64 about 99% as well. Eight hinges per layer are already enough for this spiral.</p><p>Without ReLU (both passes changed): <b>54.0%</b>, identical to the linear model, and the gradient check still passes. Your backward pass is correct; the <em>model</em> is a straight-line classifier again. If you remove the ReLU only in <code>forward</code>, the backward pass computes gradients for a different network than the one that ran: the loss explodes and accuracy falls to 33%. Forward and backward must always mirror each other.</p></>}
         >
           <p>Open <code>mlp_numpy.py</code>. (1) Run it unchanged and write down the linear and MLP accuracies. (2) Try hidden sizes 4 and 8. (3) Remove the ReLU and report the accuracy. Predict each result before you run it.</p>
         </Exercise>

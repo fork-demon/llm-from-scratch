@@ -70,9 +70,9 @@ export default function RagLesson() {
         <RagPlayground />
         <h3>At scale: do we have to compare with every vector?</h3>
         <p>With 19 chunks, search is 19 dot products. As you saw in <a href="#/lesson/matrices">Matrices</a>, comparing one question against N stored vectors is a single matrix multiply. That stays fast up to around a million vectors. It is worth knowing how far the boring solution goes.</p>
-        <p>At hundreds of millions of vectors, comparing against everything is too slow and too costly. The fix is the same one a database uses: an <b>index</b> that lets you skip most of the data. One simple kind is called IVF (“inverted file”): group the vectors into clusters once, then at query time search only the few clusters nearest the question.</p>
+        <p>At hundreds of millions of vectors, comparing against everything is too slow and too costly. The fix is the same one a database uses: an <b>index</b> that lets you skip most of the data. One simple kind is called IVF, for “inverted file”. Group the vectors into clusters once, then at query time search only the few clusters nearest the question. The number of clusters you search is called <b>nprobe</b>, and it is the one dial.</p>
         <IvfLab />
-        <p>The real benchmark in the repo does this with 20,000 vectors of 64 numbers in 32 clusters, and asks for the 10 nearest neighbours. “Recall” is the share of the true top 10 that the index found:</p>
+        <p>The real benchmark in the repo does this with 20,000 vectors of 64 numbers in 32 clusters, and asks for the 10 nearest neighbours. Exact search would find all 10. <b>Recall@10</b> is the share of those true 10 that the index actually found, so 0.51 means it missed about half of them:</p>
         <div className="table-scroll">
           <table className="plain mono" style={{ fontSize: 14 }}>
             <thead><tr><th>nprobe (clusters searched)</th><th>1</th><th>2</th><th>4</th><th>8</th><th>16</th><th>32 (all)</th></tr></thead>
@@ -131,7 +131,7 @@ export default function RagLesson() {
           answer = LLM( prompt( q, top<sub>k</sub> of the c<sub>i</sub> ranked by cos( embed(q), embed(c<sub>i</sub>) ) ) )
         </Equation>
         <DeepDive title="Why cosine and not plain distance?">
-          <p>A long chunk repeats words, so its raw vector is longer than a short chunk’s, without being more relevant. Dividing by the lengths removes that. In practice vectors are usually scaled to length 1 when they are stored. After that, cosine is just the dot product, and search is one matrix multiply. For length-1 vectors, ranking by straight-line distance gives the same order as ranking by cosine, so the choice stops mattering.</p>
+          <p>A long chunk repeats words, so its raw vector is longer than a short chunk’s, without being more relevant. Dividing by the lengths removes that. In practice vectors are usually scaled to length 1 when they are stored. After that, cosine is the dot product, and search is one matrix multiply. For length-1 vectors, ranking by straight-line distance gives the same order as ranking by cosine, so the choice stops mattering.</p>
         </DeepDive>
       </TheMath>
 
@@ -210,7 +210,7 @@ def search_ivf(self, qvec, k=5, nprobe=1):
         <ul>
           <li><b>Different words, same meaning.</b> The right chunk scrapes in at 0.33. Rephrase the question with words from the document (“are manual deploys forbidden”) and watch the top score jump to 0.57. Retrieval quality is capped by the embedder.</li>
           <li><b>The answer is not there</b>, then set sentences per chunk to 1. The refusal turns into a confident, cited, <em>wrong</em> answer about the onboarding buddy (similarity 0.38, just over the threshold). Nothing about the question changed. Only the chunking did. A citation proves where a sentence came from, not that it answers the question.</li>
-          <li><b>Chunking splits the answer.</b> Read the prompt in stage 5. The deadline is simply not in it. No model, however large, can answer from text it was not given.</li>
+          <li><b>Chunking splits the answer.</b> Read the prompt in stage 5. The deadline is not in it at all. No model, however large, can answer from text it was not given.</li>
           <li><b>k too small</b>, then push k to 6. Now the prompt is mostly irrelevant text. With a real model, more context is not free: it costs tokens, and relevant passages buried in the middle of a long context are used less reliably.</li>
           <li><b>Fix a gap without training.</b> In stage 1 press “Add a document” (it mentions the wifi password), then ask the wifi question again. You updated what the system knows in one second. No weight changed.</li>
         </ul>
@@ -288,7 +288,7 @@ def search_ivf(self, qvec, k=5, nprobe=1):
             q: 'Why must the question be embedded with the same embedding model as the chunks?',
             options: ['Otherwise the vectors have different lengths and the code crashes', 'Because similarity only means something between vectors from the same space; two models place the same text in unrelated positions', 'Because embedding models are licensed per corpus', 'It is only a performance optimisation'],
             answer: 1,
-            explain: 'It is like comparing hashes from two different hash functions. Often nothing crashes: you just get meaningless neighbours.',
+            explain: 'It is like comparing hashes from two different hash functions. Often nothing crashes: you get meaningless neighbours.',
           },
           {
             q: 'Top-k retrieval is asked a question that no document covers. What does it return?',

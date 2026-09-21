@@ -11,8 +11,8 @@ export default function PromptToAnswerLesson() {
         <p className="lede">You type this into a chat box and press Enter:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>What is a cat?</div>
         <p>A second later, words start to appear. “A cat is a small furry animal…” They arrive one piece at a time, like someone typing.</p>
-        <p>What happened in that second? Most developers use these systems every day and could not say. By the end of this course you will be able to draw every step, explain it, and point at the code that does it, because you will have written that code.</p>
-        <p>This first lesson has no maths and no code. It shows you the whole machine from the outside, once, so that every later lesson has a place to live.</p>
+        <p>What happened in that second? Most developers use these systems every day and could not say. By the end of this course you will be able to draw every step, explain it, and point at the code that does it. You will have written that code yourself.</p>
+        <p>This first lesson has no maths and no code. It shows you the whole machine from the outside, once, so that every later lesson has somewhere to sit.</p>
         <Callout kind="idea">
           An LLM answers by doing one small thing over and over: given all the text so far, work out <b>how likely each possible next piece of text is</b>, pick one, add it to the text, and go again.
         </Callout>
@@ -38,7 +38,8 @@ export default function PromptToAnswerLesson() {
       </Problem>
 
       <MentalModel title="A pipeline with a loop at the end">
-        <p>Here is the whole journey, drawn with the actual data at each stage. Do not worry about the unfamiliar words; each one has a plain-English line under it and gets a whole lesson later.</p>
+        <p>Here is the whole journey, drawn with the actual data at each stage.</p>
+        <p>Some of the words will be new. That is fine. Each one has a plain-English line under it here, and a whole lesson of its own later.</p>
         <LoopDiagram />
         <p>Follow the numbers 1 to 8, then the dashed arrow. The chosen token “A” is glued onto the text, and the whole trip runs again to choose the token after it. One trip per token, until the answer is finished.</p>
         <p>Two pieces of vocabulary are worth fixing now, because the whole course leans on them.</p>
@@ -129,7 +130,7 @@ export default function PromptToAnswerLesson() {
             'Look at the probabilities after “ A”. How big is the chance of “ dog”? What did the random number have to be?',
             'After “ dog” has been appended, look at what the model sees as its input. Does anything in the pipeline go back and check?',
           ]}
-          solution={<><p>After “ A”, the toy model gives “ cat” 92% and “ dog” 8%. With seed 24 the die lands in the 8%. From then on “ dog” is simply part of the text so far, and the model continues from it as fluently as from anything else: “A dog is a furry animal.”</p><p>Nothing in the pipeline looks back and asks “is this true?”. There is no stage for that. Each step only asks “what is likely to come next, given the text so far?”. Hold on to this: it is the seed of why real models sometimes state false things with total confidence. <a href="#/lesson/why-llms-know">Why LLMs know things</a> returns to it properly.</p></>}
+          solution={<><p>After “ A”, the toy model gives “ cat” 92% and “ dog” 8%. With seed 24 the die lands in the 8%. From then on “ dog” is part of the text so far like any other word, and the model continues from it as fluently as from anything else: “A dog is a furry animal.”</p><p>Nothing in the pipeline looks back and asks “is this true?”. There is no stage for that. Each step only asks “what is likely to come next, given the text so far?”. Hold on to this: it is the seed of why real models sometimes state false things with total confidence. <a href="#/lesson/why-llms-know">Why LLMs know things</a> returns to it properly.</p></>}
         >
           <p>Seed 24 produces “A dog is a furry animal.” as the answer to “What is a cat?”. Before investigating: how can a system produce a wrong answer in perfectly good English? Then find the exact step where it went wrong, and explain why nothing corrected it.</p>
         </Exercise>

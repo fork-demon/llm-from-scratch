@@ -121,7 +121,7 @@ export default function InferenceLesson() {
         <p>In the playground’s 11-token example the three junk tokens share 0.3% at T = 1 and 7.8% at T = 3. One roll in thirteen is garbage. Over a 100-token answer, that is about eight garbage tokens.</p>
 
         <h3>The cache by hand</h3>
-        <p>Take a 7-billion-parameter model of the classic shape: 32 layers, 32 attention heads, 128 numbers per head, each number stored in 2 bytes (16-bit). For <b>one token</b> the cache must hold a key and a value, per head, per layer:</p>
+        <p>Take a 7-billion-parameter model of the classic shape: 32 layers, 32 attention heads, 128 numbers per head, each number stored in 2 bytes. For <b>one token</b> the cache has to hold a key and a value. It needs that pair in every head, and in every layer. So the count is 2 vectors, times 32 layers, times 32 heads:</p>
         <p className="mono" style={{ fontSize: 14.5 }}>2 × 32 layers × 32 heads × 128 × 2 bytes = 524,288 bytes = <b>0.5 MB per token</b></p>
         <p>A 4,096-token conversation: 4,096 × 0.5 MB = <b>2 GB</b>. For one user. Ten users at once: 20 GB, more than the roughly 14 GB the model’s own weights take. This is the number that decides how long a context a provider can offer and how many conversations fit on one GPU.</p>
       </Numbers>

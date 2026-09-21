@@ -15,7 +15,7 @@ const PIPELINE: { label: string; you: string; scale: string }[] = [
   { label: 'Forward', you: 'model(x, y) gives logits.', scale: 'The same forward pass, usually in 16-bit numbers to save memory and time.' },
   { label: 'Loss', you: 'Cross-entropy on the next character.', scale: 'Identical: cross-entropy on the next token. Nothing about the objective gets cleverer in pretraining.' },
   { label: 'Backprop', you: 'loss.backward()', scale: 'Identical, spread across the GPUs.' },
-  { label: 'Optimizer', you: 'AdamW, lr = 3e-4, constant.', scale: 'AdamW is still the common choice, with a learning rate that warms up and then decays on a schedule. The run cannot simply be restarted if it diverges in week five, so stability tricks matter a great deal.' },
+  { label: 'Optimizer', you: 'AdamW, lr = 3e-4, constant.', scale: 'AdamW is still the common choice, with a learning rate that warms up and then decays on a schedule. The run cannot be restarted from scratch if it diverges in week five, so stability tricks matter a great deal.' },
   { label: 'Checkpoint', you: 'None: the run takes minutes.', scale: 'The weights and optimizer state are saved regularly. With thousands of GPUs running for weeks, hardware failures are routine, and training resumes from the last checkpoint. Checkpoints are also what later stages start from: the “base model” is a checkpoint.' },
   { label: 'Evaluation', you: 'Validation loss, and reading samples.', scale: 'Validation loss still, plus benchmarks: fixed sets of questions on maths, code, knowledge and more. One serious trap is contamination: if benchmark questions leaked into the training data, the score measures memory, not ability. It is the train/validation split problem again, at the scale of the internet.' },
 ]
@@ -68,8 +68,8 @@ export default function TrainingPipelineLesson() {
       <MentalModel>
         <p>Think of three different kinds of teaching signal, each one used when the previous one runs out.</p>
         <div className="grid-3">
-          <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>1 · Read everything</h4><p><G t="pretraining">Pretraining</G>. The right answer at every position is simply the next token of a real document. No humans needed to label anything, so you can use trillions of tokens.</p></div>
-          <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>2 · Watch demonstrations</h4><p><G t="sft">Supervised fine-tuning</G>. People write example conversations. The right answer is the next token of the demonstrated reply. Expensive per example, so there are far fewer.</p></div>
+          <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>1 · Read everything</h4><p><G t="pretraining">Pretraining</G>. The right answer at every position is the next token of a real document. No humans needed to label anything, so you can use trillions of tokens.</p></div>
+          <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>2 · Watch demonstrations</h4><p><G t="sft">Supervised fine-tuning</G>, usually shortened to SFT. People write example conversations. The right answer is the next token of the demonstrated reply. Expensive per example, so there are far fewer.</p></div>
           <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>3 · Get feedback on your own attempts</h4><p>Preference optimisation. For “write a haiku” there is no single right next token. But a person can look at two attempts and say which is better.</p></div>
         </div>
         <Callout kind="analogy">
@@ -87,7 +87,7 @@ export default function TrainingPipelineLesson() {
           example={<><code>&lt;|im_start|&gt;user⏎What is a cat?&lt;|im_end|&gt;⏎&lt;|im_start|&gt;assistant⏎</code> … and the model continues from there.</>}
           formal={<>A deterministic function from a list of (role, content) pairs to a token sequence. The markers are extra entries in the vocabulary whose embeddings are learned during fine-tuning. Each model family defines its own.</>}
         />
-        <Callout kind="dev">A chat API is a thin wrapper. Your JSON list of messages is serialised with the template into one string, the model continues that string, and the server stops when the model emits the end marker. The model has no separate “system prompt channel”: the system message is just earlier tokens in the same sequence. The model was trained to give those tokens special weight, which is a learned habit, not an enforced boundary. That is one reason prompt injection is possible, as you will see in <a href="#/lesson/agents">Agents</a>.</Callout>
+        <Callout kind="dev">A chat API is a thin wrapper. Your JSON list of messages is serialised with the template into one string, the model continues that string, and the server stops when the model emits the end marker. The model has no separate “system prompt channel”: the system message is only earlier tokens in the same sequence. The model was trained to give those tokens special weight, which is a learned habit, not an enforced boundary. That is one reason prompt injection is possible, as you will see in <a href="#/lesson/agents">Agents</a>.</Callout>
       </MentalModel>
 
       <TryIt title="Three stages, one template, and you as the rater">
@@ -102,7 +102,8 @@ export default function TrainingPipelineLesson() {
         <h3>3. When there is no right answer, only a better one</h3>
         <p>Now the third stage. Nobody can write “the correct haiku” into a loss function. But you can compare two answers. Here your comparisons train a small <b>reward model</b>: a function that gives any answer a score, fitted so that answers you preferred score higher.</p>
         <PreferenceLab />
-        <p>Step 3 of that lab is the whole idea of <b>RLHF</b> (reinforcement learning from human feedback, the classic form of preference optimisation) in one table: a model that scores answers, and a second model that is pushed towards high-scoring answers while being held close to where it started.</p>
+        <p>Step 3 of that lab is the whole idea of <b>RLHF</b> in one table: a model that scores answers, and a second model that is pushed towards high-scoring answers while being held close to where it started.</p>
+        <p>RLHF stands for reinforcement learning from human feedback, and it is the classic form of preference optimisation. “Reinforcement learning” is the part worth unpacking. Up to now, training meant showing the model the right next token. Here nobody knows the right answer. Instead the model produces something, a score comes back, and the weights move to make high-scoring output more likely. Learning from a mark, not from a worked example.</p>
       </TryIt>
 
       <Numbers>
@@ -120,7 +121,7 @@ export default function TrainingPipelineLesson() {
             </tbody>
           </table>
         </div>
-        <p>9 of 34 tokens are graded: 26%. The loss is the average <G t="cross-entropy">cross-entropy</G> over those 9 positions only. The other 25 tokens still flow through attention as context. They just produce no gradient of their own.</p>
+        <p>9 of 34 tokens are graded: 26%. The loss is the average <G t="cross-entropy">cross-entropy</G> over those 9 positions only. The other 25 tokens still flow through attention as context. They produce no gradient of their own.</p>
 
         <p><b>Second, one preference comparison.</b> Suppose the reward model currently scores answer A at 2.0 and answer B at 0.5. How confident is it that a person prefers A?</p>
         <div className="table-scroll">
@@ -152,13 +153,14 @@ export default function TrainingPipelineLesson() {
         >
           P(A ≻ B) = σ( r(A) − r(B) ) &nbsp;&nbsp;&nbsp; loss = −log σ( r(chosen) − r(rejected) )
         </Equation>
-        <p>Notice that only the <em>difference</em> of rewards matters. A reward of 7 means nothing alone. It only means “better than an answer that scores 5”. This model of pairwise choices is called the Bradley-Terry model, and it is decades older than LLMs (Bradley and Terry, 1952). It was designed for experiments where people compare items two at a time, and the same model is used to rank sports teams and chess players from match results.</p>
+        <p>Notice that only the <em>difference</em> of rewards matters. A reward of 7 means nothing on its own. It only means “better than an answer that scores 5”.</p>
+        <p>This way of turning pairwise choices into scores is called the <b>Bradley-Terry model</b>, and it is decades older than LLMs (Bradley and Terry, 1952). It was designed for experiments where people compare items two at a time. The same model ranks sports teams and chess players from match results.</p>
         <p>Then the policy (the language model) is tuned. The objective has two parts pulling in opposite directions:</p>
         <Equation
           label="Maximise expected reward minus beta times the KL divergence from the SFT model"
           symbols={[
             ['reward', 'the reward model’s score for an answer the model itself generated'],
-            ['KL', 'a measure of how different the tuned model’s token probabilities are from the SFT model’s: 0 when identical, growing as they diverge'],
+            ['KL', 'Kullback-Leibler divergence: one number saying how far apart two sets of probabilities are. 0 when the tuned model and the SFT model agree on every token, growing as they drift apart. Read it as “distance from where we started”.'],
             ['β', 'the strength of the leash. Large β: stay close to the SFT model. Small β: chase reward freely.'],
           ]}
         >
@@ -171,9 +173,9 @@ export default function TrainingPipelineLesson() {
           example={<>The <b>policy</b> is the language model. The <b>state</b> is the text so far. An <b>action</b> is choosing the next token. The <b>reward</b> is one number that arrives only after the whole answer is finished. (In practice the KL penalty below is often charged token by token along the way.)</>}
           formal={<>Adjust the policy’s parameters to increase the expected reward of sequences sampled from the policy itself. Because the reward arrives at the end, every token of a well-scored answer is made a little more likely, and every token of a badly scored one a little less.</>}
         />
-        <DeepDive title="DPO: the same data without a reward model or an RL loop">
-          <p>RLHF as described has many moving parts: a separate reward model, sampling from the policy during training, and an RL algorithm (PPO is the classic choice) that is sensitive to settings.</p>
-          <p>Direct Preference Optimization (Rafailov et al., 2023) starts from a mathematical observation. For the objective above, the best possible policy can be written in closed form: policy(y) ∝ SFT(y) × e<sup>r(y)/β</sup>. (That is precisely the formula the lab uses for its “tuned model” column.) Turn that around and the reward can be expressed through the policy: r(y) = β × log( policy(y) / SFT(y) ), plus a term that cancels when you subtract two rewards.</p>
+        <DeepDive title="DPO: the same data without a reward model or a reinforcement learning loop">
+          <p>RLHF as described has many moving parts: a separate reward model, sampling answers from the model during training, and a reinforcement learning algorithm to turn those scores into weight updates. The classic choice is PPO, proximal policy optimization, which is effective and fussy to tune.</p>
+          <p>DPO, direct preference optimization (Rafailov et al., 2023), starts from a mathematical observation. For the objective above, the best possible policy can be written in closed form: policy(y) ∝ SFT(y) × e<sup>r(y)/β</sup>. (That is precisely the formula the lab uses for its “tuned model” column.) Turn that around and the reward can be expressed through the policy: r(y) = β × log( policy(y) / SFT(y) ), plus a term that cancels when you subtract two rewards.</p>
           <p>Substitute that into the Bradley-Terry loss and the reward model disappears:</p>
           <p className="mono" style={{ fontSize: 14 }}>loss = −log σ( β × [ log(π(chosen)/π_ref(chosen)) − log(π(rejected)/π_ref(rejected)) ] )</p>
           <p>Here π is the model being tuned and π_ref is the frozen SFT model. In words: make the chosen answer more likely, relative to the reference, than the rejected answer. It is an ordinary supervised loss on fixed pairs: no sampling, no separate reward network.</p>
@@ -320,10 +322,10 @@ What is a cat?<|im_end|>
             q: 'Why is the SFT loss usually computed only on the assistant’s tokens?',
             options: ['Because the model cannot see the user’s tokens', 'Because we want gradient spent on learning to write good replies, not on learning to imitate users and system prompts', 'Because user tokens have no embeddings', 'Because it makes the forward pass faster'],
             answer: 1,
-            explain: 'The user’s tokens are still read as context through attention. They are simply not used as prediction targets. The forward pass costs the same.',
+            explain: 'The user’s tokens are still read as context through attention. They are not used as prediction targets. The forward pass costs the same.',
           },
           {
-            q: 'Why does preference optimisation use comparisons (“A is better than B”) and not just more demonstrations?',
+            q: 'Why does preference optimisation use comparisons (“A is better than B”) and not more demonstrations?',
             options: ['Comparisons need no human effort', 'For many prompts there is no single correct reply to demonstrate, but people can reliably judge which of two replies is better, including replies the model itself produced', 'Demonstrations cannot be tokenized', 'Comparisons let the model skip backpropagation'],
             answer: 1,
             explain: 'Judging is easier than writing, and feedback on the model’s own attempts targets the mistakes it actually makes.',

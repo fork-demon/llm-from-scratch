@@ -93,7 +93,7 @@ export default function EmbeddingsLesson() {
           </table>
         </div>
         <p>The embedding of token 2 is <span className="mono">E[2] = [0.8, 0.9, 0.2]</span>. An array index. That is all.</p>
-        <p>You will often read that this “is a matrix multiplication”. It is, in disguise. Write token 2 as a <b>one-hot</b> vector (all zeros, a single 1 at position 2) and multiply:</p>
+        <p>You will often read that this “is a matrix multiplication”. It is, in disguise. First write token 2 as a <b>one-hot</b> vector: a row of zeros with a single 1 in it, at position 2. (“One-hot” means one entry is switched on and all the rest are off.) Now multiply that row by E:</p>
         <p className="mono center">[0, 0, 1, 0] × E = 0·row0 + 0·row1 + 1·row2 + 0·row3 = [0.8, 0.9, 0.2]</p>
         <p>Same answer. The zeros wipe out every row except one. Real code uses the index, because multiplying 50,000 numbers by zero is a waste. The matrix view matters for one reason: it shows that the table is an ordinary layer of weights, so <a href="#/lesson/backprop">backpropagation</a> can train it like any other.</p>
         <p><b>Second, similarity.</b> With the toy coordinates from the explorer:</p>
@@ -233,7 +233,7 @@ analogy dog - cat + fish  ->  ['fish', 'beans', 'hungry', 'loudly']
           hints={['What two things make a dot product large? Think back to lesson 1.1.', 'A dot product grows with agreement in direction and with the lengths of the vectors. In a small model like this one, frequent words are updated most often and can end up with long vectors.']}
           solution={<><p>The raw dot product mixes up direction and length. A long vector gets a big dot product with almost anything. Divide by both lengths to get cosine similarity, as the repository’s <code>nearest()</code> does:</p><Code>{`
 sims = E @ q / (np.linalg.norm(E, axis=1) * np.linalg.norm(q) + 1e-9)
-`}</Code><p>The small <code>1e-9</code> avoids dividing by zero. Also note that the real function skips the first result, which is always the query word itself.</p></>}
+`}</Code><p>The small <code>1e-9</code> avoids dividing by zero. The real function also skips the first result, which is always the query word itself.</p></>}
         >
           <p>A colleague writes a nearest-neighbour search over trained embeddings. For almost every query, the top results are the same few very frequent words. What is wrong?</p>
           <Code>{`
@@ -265,7 +265,7 @@ def nearest(words, stoi, E, query, k=4):
       <CheckYourself
         questions={[
           {
-            q: 'Why can a model not simply use the token ID as its input number?',
+            q: 'Why can a model not use the token ID as its input number?',
             options: ['The network does arithmetic, so it would treat ID 464 as “more” than ID 12 and as similar to ID 465, although IDs are arbitrary labels', 'IDs are too large to fit in memory', 'IDs are reassigned every time the model runs, so the network could never learn what a given number stands for', 'Because IDs are integers and networks need fractions'],
             answer: 0,
             explain: 'An ID is a name, like a primary key. Arithmetic on names is meaningless.',
@@ -309,7 +309,7 @@ def nearest(words, stoi, E, query, k=4):
 
       <RealLLM>
         <Flow horizontal steps={[{ label: 'Tokenizer' }, { label: 'Embedding table', sub: 'this lesson: the first layer' }, { label: 'Transformer blocks' }, { label: 'Next-token probabilities' }, { label: 'Sampling' }]} active={1} />
-        <p>In a GPT the embedding table is simply the first layer of the network. In the repository’s <code>tiny_gpt.py</code> it is one line:</p>
+        <p>In a GPT the embedding table is the first layer of the network, nothing more. In the repository’s <code>tiny_gpt.py</code> it is one line:</p>
         <Code source="phase3-transformers/tiny_gpt.py" title="the first layer of a GPT">{`
 self.tok_emb = nn.Embedding(cfg.vocab_size, cfg.n_embd)   # one row per token
 ...
@@ -318,7 +318,7 @@ x = self.tok_emb(idx) + self.pos_emb(pos)                 # look up every token 
         <p>(<code>pos_emb</code> adds information about word order. That is a later lesson.)</p>
         <ToyVsReal
           toy={<ul><li>70 words, 32 numbers each</li><li>Trained separately, on a fake task (predict a neighbouring word)</li><li>28 sentences</li><li>The output matrix W is thrown away</li></ul>}
-          real={<ul><li>50,000 to 200,000 tokens, 768 to 16,384 numbers each</li><li>No separate step: the table is trained <em>jointly</em> with every other layer, on next-token prediction</li><li>Trillions of tokens of text</li><li>The table is often reused as the output layer (“weight tying”, as in tiny_gpt.py)</li></ul>}
+          real={<ul><li>50,000 to 200,000 tokens, 768 to 16,384 numbers each</li><li>No separate step: the table is trained <em>jointly</em> with every other layer, on next-token prediction</li><li>Trillions of tokens of text</li><li>The same table is often reused at the top of the model to score the next token. That trick is called weight tying, and you will build it in <a href="#/lesson/build-gpt">Build a GPT</a></li></ul>}
         />
         <Callout kind="established">The mechanism is the same: rows of a matrix, looked up by token ID, shaped by gradients from a prediction task. Modern LLMs do not run word2vec. They do not need to, because next-token prediction shapes the table in the same way.</Callout>
         <Callout kind="model" label="About the famous arithmetic">

@@ -44,12 +44,13 @@ def model(tokens_so_far: list[int]) -> list[float]:
         <p>Inside that function there is only arithmetic: multiply, add, repeat. The arithmetic uses a very long list of constants. Those constants are what the model <em>is</em>.</p>
         <Term
           name="Parameters (also called weights)"
-          plain={<>The adjustable numbers inside the model. Change them and the same input gives different probabilities. A model file is essentially just this list of numbers.</>}
+          plain={<>The adjustable numbers inside the model. Change them and the same input gives different probabilities. A model file is, near enough, this list of numbers and nothing else.</>}
           example={<><code>y = a·x + b</code> has two parameters, <code>a</code> and <code>b</code>. Set them to 2 and 1 and the function maps 3 → 7. A small GPT-2 has 124 million of them. Modern models have billions to trillions.</>}
           formal={<>The learned tensors of the network: embedding tables, attention and feed-forward matrices, normalisation gains. Fitted by <G t="gradient-descent">gradient descent</G> to minimise next-token prediction error on the training text.</>}
         />
         <p><b>Where do the numbers come from?</b> Nobody types them in. They start random. Then the model is shown a huge amount of text, one position at a time, and asked “what comes next?”.</p>
-        <p>Each time it is wrong, every number is nudged a tiny bit in the direction that would have made the right token more likely. (In practice the nudges for many positions are averaged and applied together.) Trillions of predictions later, the function is good at predicting text. That process is <G t="pretraining">training</G>, and Parts 2, 3 and 7 build it from scratch.</p>
+        <p>Each time it is wrong, every number is nudged a tiny bit in the direction that would have made the right token more likely. (In practice the nudges for many positions are averaged and applied together.)</p>
+        <p>Trillions of predictions later, the function is good at predicting text. That whole process is <G t="pretraining">training</G>, and Parts 2, 3 and 7 build it from scratch.</p>
         <p>After training, “Paris” is not stored. But the numbers have been shaped so that, when the input is “The capital of France is”, the arithmetic happens to produce a very high probability for “ Paris”.</p>
         <Callout kind="analogy">
           Think of a pianist who has practised a thousand pieces. There is no sheet music stored in their fingers. Practice adjusted millions of connections, and now the right movement <em>comes out</em> when the context calls for it. They can also improvise something new in the style of what they practised, and they can confidently play a wrong note.
@@ -62,7 +63,7 @@ def model(tokens_so_far: list[int]) -> list[float]:
       </MentalModel>
 
       <TryIt title="Put the same question to four systems">
-        <p>Three of these systems are small but real and run in your browser. Try all six questions, and predict before you look.</p>
+        <p>The database, the search engine and the program below are small but real, and they run in your browser. The LLM column is the one we are still building up to. There are six questions. Predict what each system will do before you look.</p>
         <FourSystems />
         <p>Look at <em>how</em> each one fails. The database returns nothing. The program throws an error. The search engine shows you weak results and lets you judge. The LLM is the only one that can fail <b>without any sign of failure</b>.</p>
       </TryIt>

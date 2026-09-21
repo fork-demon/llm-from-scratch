@@ -55,7 +55,7 @@ export default function MasksAndHeadsLesson() {
 
       <MentalModel>
         <h3>A. The mask</h3>
-        <p>Picture the T×T score table from the last lesson. Row = who is looking. Column = who is looked at. Every cell <em>to the right of the diagonal</em> is a token looking at something that comes after it.</p>
+        <p>Picture the score table from the last lesson: one row and one column for each of the T tokens in the sequence. The row is who is looking. The column is who is looked at. Every cell <em>to the right of the diagonal</em> is a token looking at something that comes after it.</p>
         <p>The mask crosses out that whole triangle. What remains is a staircase: the first token sees only itself, the second sees two tokens, and so on.</p>
         <Term
           name="Causal mask"
@@ -74,7 +74,7 @@ export default function MasksAndHeadsLesson() {
         <Term
           name="Multi-head attention"
           plain={<>Several small attention operations run in parallel on the same tokens. Each head has its own query, key and value projections, so each can look for something different. Their results are joined together at the end.</>}
-          example={<>With D = 8 numbers per token and 2 heads, each head works with 4 numbers per token and produces its own T×T table of weights.</>}
+          example={<>With D = 8 numbers per token and 2 heads, each head works with 4 numbers per token. Each head also builds its own table of weights, one row and one column per token.</>}
           formal={<>Split Q, K, V into h slices of width D/h, run attention on each slice, concatenate the h outputs back to width D, multiply by a learned matrix W<sub>O</sub>.</>}
         />
         <Callout kind="dev">
@@ -115,7 +115,7 @@ export default function MasksAndHeadsLesson() {
         </div>
         <p>Without the mask, “cat” spends 67% of its attention on the very word it is supposed to predict. With the mask, that weight is exactly 0, and the remaining two weights <b>still sum to 1</b>, because the softmax ran <em>after</em> the masking.</p>
         <p>Notice too that “the” and “cat” keep their proportions: 2.72 to 7.39 before, 0.27 to 0.73 after. The mask removes the future. It does not distort the past.</p>
-        <h3>Heads: just division</h3>
+        <h3>Heads: division and nothing else</h3>
         <p>Our tiny GPT has D = 128 numbers per token and 4 heads, so each head works with <span className="mono">128 / 4 = 32</span> numbers. Four heads of 32 hold exactly as many numbers as one head of 128.</p>
       </Numbers>
 
@@ -245,7 +245,7 @@ def multi_head_attention(x, Wq, Wk, Wv, Wo, n_heads, causal=True):
             'Tokens 2 and 3 get −∞, so weight exactly 0. Only the scores 2 and 1 take part in the softmax.',
             'weight on token 0 = e² / (e² + e¹) = 7.39 / (7.39 + 2.72).',
           ]}
-          solution={<><p>Masked scores: [2, 1, −∞, −∞]. Tokens 2 and 3 get weight <b>exactly 0</b>, however large their scores were. Token 0: 7.39 / 10.11 ≈ <b>0.73</b>, token 1: 0.27.</p><p>The scores 4 and 3 were the largest in the row, and they simply do not matter. That is the mask doing its job: the most tempting tokens are the forbidden ones.</p></>}
+          solution={<><p>Masked scores: [2, 1, −∞, −∞]. Tokens 2 and 3 get weight <b>exactly 0</b>, however large their scores were. Token 0: 7.39 / 10.11 ≈ <b>0.73</b>, token 1: 0.27.</p><p>The scores 4 and 3 were the largest in the row, and they count for nothing. That is the mask doing its job: the most tempting tokens are the forbidden ones.</p></>}
         >
           <p>A sequence has 4 tokens. The scores in row 1 (the second token) are <code>[2, 1, 4, 3]</code>. With the causal mask on: first, what weight does token 2 get? Then compute the weight on token 0. (Two decimals.)</p>
         </Exercise>
@@ -351,7 +351,7 @@ out = weights @ V
 
       <Remember
         items={[
-          <>We train by predicting token t+1 at <b>every</b> position. Without a mask, position t can simply look at token t+1 and copy it.</>,
+          <>We train by predicting token t+1 at <b>every</b> position. Without a mask, position t can look straight at token t+1 and copy it.</>,
           <>The <b>causal mask</b> sets every score for a later token to −∞ <em>before</em> softmax. Weight exactly 0, and the remaining weights still sum to 1.</>,
           <>The mask also matches generation, where the future does not exist, and it makes training efficient: <b>one pass over T tokens = T training examples</b>.</>,
           <>One softmax row is one blend. <b>Multi-head attention</b> runs h thinner attentions in parallel, each with its own Q/K/V slice and its own weight table, then concatenates and mixes with W<sub>O</sub>.</>,

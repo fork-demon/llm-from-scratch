@@ -16,7 +16,7 @@ export default function TokenizationLesson() {
         <p>Everything you have built so far eats numbers: <a href="#/lesson/vectors">dot products</a>, <a href="#/lesson/matrices">matrix multiplies</a>, <a href="#/lesson/neurons">neurons</a>. Text is not numbers. So before a language model can do anything at all, something has to turn your prompt into numbers.</p>
         <p>It happens in three small hops:</p>
         <TextToVector focus="token" id={4217} idNote="(number made up)" vector="[0.2, −1.3, …]" />
-        <p>This lesson is about the first two hops. They sound like plumbing. They are not: the way text is cut into pieces decides what the model can <em>see</em>, what your API bill is, and why a model that writes sonnets can miscount the letters in “strawberry”.</p>
+        <p>This lesson is about the first two hops. They sound like plumbing. They are not. The way text is cut into pieces decides what the model can <em>see</em>. It also decides what your API bill is, and why a model that writes sonnets can miscount the letters in “strawberry”.</p>
         <Callout kind="idea">
           A model never sees letters or words. It sees a list of integers. The component that produces those integers is the <b>tokenizer</b>, and it is built <em>before</em> the neural network is trained, by a surprisingly simple algorithm.
         </Callout>
@@ -39,7 +39,7 @@ export default function TokenizationLesson() {
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>One integer per character?</h4>
             <p>The list is tiny (about a hundred entries covers English) and nothing is ever unknown. But:</p>
             <ul>
-              <li>Sequences get very long: “the cat sat on the mat” is 6 words but 22 characters. Longer input means more computation and less text fits in the model’s limited input.</li>
+              <li>Sequences get very long: “the cat sat on the mat” is 6 words but 22 characters. Longer input means more computation. It also means less of your text fits in the <G t="context-window">context window</G>, the fixed amount the model can read at once.</li>
               <li>Each symbol carries almost no meaning. “t” tells you nothing. The model must spend effort re-learning, everywhere, that t-h-e belongs together.</li>
             </ul>
           </div>
@@ -72,7 +72,7 @@ export default function TokenizationLesson() {
           <li>Glue that pair into a new token. Add it to the vocabulary. <b>Write the rule down.</b></li>
           <li>Repeat until the vocabulary is as big as you want.</li>
         </ol>
-        <p>What is “learned” is just the ordered list of glue rules, the <b>merge list</b>. To tokenize new text, split it into characters and replay the rules in the same order. To turn IDs back into text, concatenate the strings they stand for.</p>
+        <p>What is “learned” is nothing more than the ordered list of glue rules, the <b>merge list</b>. To tokenize new text, split it into characters and replay the rules in the same order. To turn IDs back into text, concatenate the strings they stand for.</p>
         <Callout kind="analogy">
           BPE is <b>dictionary compression</b>, like the idea behind zip files: patterns that occur often get a short code, rare things are spelled out the long way.
           <br /><br />
@@ -89,7 +89,7 @@ export default function TokenizationLesson() {
           <li>The very first merge is <Tok> t</Tok>: a space followed by “t”. By merge 4 there is a token <Tok> the </Tok>. The algorithm knows nothing about English. It found “the” by counting.</li>
           <li>Run to the target and type <b>unbelievable</b>. It shatters into 12 single characters. Your tokenizer never saw anything like it. Rare strings cost many tokens.</li>
           <li>Try <b>foxes</b>: <Tok>fox</Tok><Tok>e</Tok><Tok>s</Tok>. An unseen word, built from a known piece.</li>
-          <li>Keep merging past merge 44 and a monster appears: <Tok>quick brown fox j</Tok>. With so little text, the algorithm starts memorising whole phrases. Untick “repeat” and training simply stops after 30 merges, because nothing occurs twice any more.</li>
+          <li>Keep merging past merge 44 and a monster appears: <Tok>quick brown fox j</Tok>. With so little text, the algorithm starts memorising whole phrases. Untick “repeat” and training stops after 30 merges, because nothing occurs twice any more.</li>
         </ul>
       </TryIt>
 
@@ -139,7 +139,7 @@ if count < 2:
         <Code title="Step 3: mint a new token and write the rule down">{`
 new_id = len(self.vocab)
 self.vocab[new_id] = self.vocab[a] + self.vocab[b]   # 'a' + 't' -> 'at'
-self.merges.append(((a, b), new_id))                 # the ORDERED merge list
+self.merges.append(((a, b), new_id))                 # the ordered merge list
 ids = self._apply_merge(ids, (a, b), new_id)         # rewrite the corpus
 `}</Code>
         <p><code>_apply_merge</code> is a single left-to-right pass that replaces the pair wherever it occurs:</p>
@@ -160,7 +160,7 @@ def _apply_merge(ids, pair, new_id):
 def encode(self, text):
     stoi = {s: i for i, s in self.vocab.items() if len(s) == 1}
     ids = [stoi[c] for c in text]        # KeyError on unseen char
-    for pair, new_id in self.merges:     # ORDER MATTERS
+    for pair, new_id in self.merges:     # the order matters
         ids = self._apply_merge(ids, pair, new_id)
     return ids
 
@@ -279,7 +279,7 @@ def encode(self, text):
       <CheckYourself
         questions={[
           {
-            q: 'Why do LLMs not simply use one token per word?',
+            q: 'Why do LLMs not use one token per word?',
             options: ['The list of words is unbounded, and any word not on the list (new words, typos, identifiers) would have no ID at all', 'Whole words are too long to store efficiently, so the vocabulary file would not fit in memory', 'Words cannot be converted to integers', 'Because characters carry more meaning than words'],
             answer: 0,
             explain: 'Subwords keep the vocabulary a fixed size while still being able to spell out anything from smaller pieces.',

@@ -133,7 +133,7 @@ def sample(n_tokens=200):
     out = model.generate(start, n_tokens)[0].tolist()
     return tok.decode(out)
 `}</Code>
-            <p>Nothing inside <code>GPT</code>, <code>Block</code> or <code>CausalSelfAttention</code> changes. The embedding table simply has about 400 rows instead of about 65, and so does the output layer. Add <code>import paths, pickle</code> at the top so the pickled tokenizer class can be found. Notice what you gained: if your tokenizer averages two characters per token, the same 64-token context window now covers twice as much text.</p>
+            <p>Nothing inside <code>GPT</code>, <code>Block</code> or <code>CausalSelfAttention</code> changes. The embedding table has about 400 rows instead of about 65, and so does the output layer. Add <code>import paths, pickle</code> at the top so the pickled tokenizer class can be found. Notice what you gained: if your tokenizer averages two characters per token, the same 64-token context window now covers twice as much text.</p>
           </>}
         >
           <p>Copy <code>tiny_gpt.py</code> to <code>capstone/my_gpt.py</code> and change it so that it trains on the ids from your milestone 1 tokenizer. Do not train yet. Just run a forward pass on one batch and print the shape of the logits.</p>

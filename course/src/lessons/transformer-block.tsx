@@ -143,7 +143,7 @@ export default function TransformerBlockLesson() {
         </Equation>
         <DeepDive title="Pre-norm or post-norm? The diagram in the 2017 paper looks different">
           <p>It is different. The original Transformer paper (2017) normalised <em>after</em> the addition: <span className="mono">x ← LN(x + Attn(x))</span>. That is called <b>post-norm</b>.</p>
-          <p>GPT-2, our <code>tiny_gpt.py</code> and practically all current LLMs normalise <em>before</em> each sub-layer and leave the residual stream itself untouched: <b>pre-norm</b>, as in the equations above. With post-norm the LayerNorm sits <em>on</em> the highway, so the gradient no longer has a clean “+1” path; deep post-norm models are harder to train and typically need a careful learning-rate warm-up. Pre-norm turned out to be more forgiving, and won.</p>
+          <p>GPT-2, our <code>tiny_gpt.py</code> and practically all current LLMs normalise <em>before</em> each sub-layer and leave the residual stream itself untouched: <b>pre-norm</b>, as in the equations above. With post-norm the LayerNorm sits <em>on</em> the highway, so the gradient no longer has a clean “+1” path; deep post-norm models are harder to train. They typically need a careful learning-rate warm-up, meaning you start the training steps very small and grow them over the first few thousand steps. You will meet warm-up again in <a href="#/lesson/training-gpt">Training GPT</a>. Pre-norm turned out to be more forgiving, and won.</p>
           <p>A side effect you saw in the depth lab: in pre-norm the residual stream is never normalised, so it grows slowly with depth. That is why there is one extra LayerNorm after the last block.</p>
         </DeepDive>
         <DeepDive title="Why add the position vector instead of appending it?">
@@ -179,7 +179,9 @@ class FeedForward(nn.Module):
     def forward(self, x):
         return self.net(x)
 `}</Code>
-        <p>Widen to 4×D, bend, narrow back to D. <G t="relu">GELU</G> is a ReLU with a rounded corner. <code>Dropout</code> randomly zeroes some numbers during training to discourage memorising; it is switched off when generating. “Applied to each token independently” falls out of the shapes: a <code>(T, D)</code> input times a <code>(D, 4D)</code> matrix processes every row on its own.</p>
+        <p>Read those four lines as three moves: widen each token’s vector to 4×D numbers, put a bend in it, then narrow it back to D. The bend is <G t="relu">GELU</G>, which is a ReLU with a rounded corner instead of a sharp one.</p>
+        <p><code>Dropout</code> randomly zeroes some numbers during training, to stop the model leaning too hard on any single one. It is switched off when generating.</p>
+        <p>And “applied to each token independently” is not a rule anyone enforced. It falls out of the shapes: one row per token going into a matrix multiply means every row is processed on its own, with no way to see the others.</p>
         <Code source="phase3-transformers/tiny_gpt.py" title="Piece 3: the block. Two lines of forward() define the architecture">{`
 class Block(nn.Module):
     """communicate (attention) then compute (FFN),
@@ -323,7 +325,7 @@ def forward(self, x):
             q: 'LayerNorm turns [100, 300, 500, 700] and [1, 3, 5, 7] into the same vector. What does that tell you about its job?',
             options: ['It removes the differences between tokens: after normalisation every token looks the same to the next sub-layer', 'It discards overall scale and offset, keeping the pattern, so that the next sub-layer always receives inputs of a familiar size', 'It sorts the numbers', 'It converts numbers into probabilities'],
             answer: 1,
-            explain: 'It is a volume control between stages. Note that it is not softmax: outputs can be negative and do not sum to 1.',
+            explain: 'It is a volume control between stages. It is not softmax: the outputs can be negative and they do not sum to 1.',
           },
           {
             q: 'Why can blocks be stacked N times with no glue code in between?',

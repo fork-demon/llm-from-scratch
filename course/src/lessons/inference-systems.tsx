@@ -31,7 +31,7 @@ export default function InferenceSystemsLesson() {
       </Why>
 
       <Problem>
-        <p>From <a href="#/lesson/inference">Inference</a> you know the two phases of one request. <b>Prefill</b> pushes the whole prompt through the model in one parallel pass and fills the KV cache. <b>Decode</b> then produces one token per pass. You also know the cache formula: <span className="mono">2 × layers × kv_heads × head_dim × tokens × bytes</span>, per conversation.</p>
+        <p>From <a href="#/lesson/inference">Inference</a> you know that one request runs in two phases. <b>Prefill</b> pushes the whole prompt through the model in one parallel pass and fills the KV cache. <b>Decode</b> then produces one token per pass, one after another. You also know the cache formula: <span className="mono">2 × layers × kv_heads × head_dim × tokens × bytes</span>, per conversation.</p>
         <p>That was one request. A server has many, arriving at random, with wildly different lengths.</p>
         <WhyExists
           problem="Many requests arrive at random times. Each wants a fast first token and a steady stream after it."
@@ -59,7 +59,9 @@ export default function InferenceSystemsLesson() {
         <p>It is an upper bound. It ignores the KV cache reads, kernel overheads and sampling, and it assumes the whole model sits on one GPU. Real single-stream numbers are lower. But it explains the order of magnitude, and it tells you what helps: more bandwidth or fewer bytes. A faster arithmetic unit does nothing.</p>
         <p><b>Prefill is the opposite.</b> A 1,000-token prompt goes through in one pass: the weights are still read once, but now there is 1,000 times more arithmetic per byte read. Prefill is limited by arithmetic. That is why the two phases get separate metrics.</p>
         <Callout kind="dev">
-          You have met this in a storage-bound service. When every request costs one disk seek and a microsecond of CPU, a faster CPU changes nothing, and the fix is to serve many requests per seek. Performance engineers call the ratio “arithmetic per byte moved” <b>arithmetic intensity</b>, and the picture of the two limits a <b>roofline</b>. Decode with a small batch sits far under the memory roof. Batching walks it toward the compute roof.
+          You have met this in a storage-bound service. When every request costs one disk seek and a microsecond of CPU, a faster CPU changes nothing. The fix is to serve many requests per seek.
+          <br /><br />
+          Performance engineers have two names for this picture. <b>Arithmetic intensity</b> is the ratio of work done to bytes moved: how much arithmetic you get per byte you had to fetch. A <b>roofline</b> is the chart of the two ceilings, one set by memory bandwidth and one by the arithmetic units, with your workload sitting under whichever is lower. Decode with a small batch sits far under the memory roof. Batching walks it toward the compute roof.
         </Callout>
         <Callout kind="established">
           The figures come from NVIDIA’s published specifications: an A100 80GB has 1,935 to 2,039 GB/s of memory bandwidth depending on the variant and a peak of 312 TFLOP/s in 16-bit, an H100 SXM 3.35 TB/s, an H200 4.8 TB/s. The arithmetic for one token is about 2 FLOPs per parameter (Kaplan et al., 2020, counting non-embedding parameters and ignoring the attention-over-context term). At a usable 150 TFLOP/s, 14 GFLOP takes 0.09 ms. The read takes 7 ms.
@@ -81,11 +83,12 @@ export default function InferenceSystemsLesson() {
               <tr><td><b>Time per output token (TPOT)</b>, also called inter-token latency</td><td>the gap between streamed tokens: one decode step, plus any stalls</td><td>the user: does the stream keep up with reading?</td></tr>
               <tr><td><b>End-to-end latency</b></td><td>TTFT + (output tokens − 1) × TPOT</td><td>programs that wait for the whole answer, such as agents</td></tr>
               <tr><td><b>Throughput</b></td><td>tokens per second across all users</td><td>whoever pays for the GPUs</td></tr>
-              <tr><td><b>Goodput</b></td><td>requests per second that met the latency objective</td><td>whoever answers for the SLO</td></tr>
+              <tr><td><b>Goodput</b></td><td>requests per second that met the latency objective</td><td>whoever answers for the service level objective</td></tr>
             </tbody>
           </table>
         </div>
-        <p>Report each latency as a distribution: <b>p50 and p99</b>, as for any service. Output lengths are heavily skewed, so averages hide the users who suffer. And a server can show excellent throughput while failing its users: throughput counts tokens, goodput counts requests that were served <em>well</em>.</p>
+        <p>Report each latency as a distribution, not as an average. <b>p50</b> is the median: half of your users were served faster than this. <b>p99</b> is the slow tail: only one request in a hundred was worse. Output lengths are heavily skewed, so an average hides the users who suffer.</p>
+        <p>The last row deserves its own sentence, because the two words look alike. <b>Throughput</b> counts tokens. <b>Goodput</b> counts only the requests that met your promise about how fast they would be served, an <b>SLO</b> or service level objective. A server can post an excellent throughput number while almost everyone waits too long.</p>
 
         <h3>3. Continuous batching: schedule every step, not every batch</h3>
         <Term
@@ -119,15 +122,24 @@ export default function InferenceSystemsLesson() {
           example={<>Eight weights with largest magnitude 0.035. Scale = 0.035 ÷ 7 = 0.005. The weight 0.021 is stored as round(0.021 ÷ 0.005) = 4 and read back as 4 × 0.005 = 0.020.</>}
           formal={<>Symmetric absmax quantization: scale = max|w| ÷ (2<sup>bits−1</sup> − 1), q = round(w ÷ scale), ŵ = q × scale. “Weight-only” means activations stay in 16-bit and weights are unpacked on the fly inside the matrix multiply.</>}
         />
-        <p>Because decode is limited by bytes moved, weight-only quantization is one of the few techniques that makes serving <b>smaller and faster at once</b>: 4 times fewer bytes is up to 4 times more tokens per second for one stream, and the freed memory holds more KV cache.</p>
-        <p>The danger is <b>outliers</b>. One scale must cover the largest value it serves. A single weight 25 times larger than the rest stretches the grid until ordinary weights all round to zero. The fix is more scales: one per row (per output channel), or one per group of 32 to 128 weights. Each scale costs 16 bits, so group-wise int4 really costs about 4.1 to 4.5 bits per weight.</p>
-        <p>Real methods improve on plain rounding. <b>LLM.int8()</b> (Dettmers et al., NeurIPS 2022) keeps the few outlier activation dimensions in 16-bit. <b>GPTQ</b> (Frantar et al., ICLR 2023) rounds the weights in order and adjusts the not-yet-rounded ones to compensate, guided by approximate second-order information. <b>AWQ</b> (Lin et al., MLSys 2024) rescales the roughly 1% of weight channels that meet large activations. <b>NF4</b> (QLoRA, Dettmers et al., NeurIPS 2023) spaces its 16 levels to suit bell-shaped weights. The <b>KV cache</b> can be quantized too (vLLM, for one, offers an FP8 cache, and research such as KIVI, ICML 2024, goes as low as 2 bits), which raises the number of sequences that fit.</p>
+        <p><b>int8</b> and <b>int4</b> mean 8-bit and 4-bit integers: 256 and 16 possible values per weight, where a 16-bit float has tens of thousands. <b>Weight-only</b> means only the stored weights shrink. Activations stay in 16-bit, and each weight is expanded back to a float inside the matrix multiply.</p>
+        <p>Because decode is limited by bytes moved, that is one of the few techniques that makes serving <b>smaller and faster at once</b>. Four times fewer bytes is up to four times more tokens per second for one stream, and the freed memory holds more KV cache.</p>
+        <p>The danger is <b>outliers</b>. One scale has to stretch far enough to reach the largest value in its group. A single weight 25 times larger than the rest stretches the grid until every ordinary weight rounds to zero.</p>
+        <p>The fix is more scales, so that each one covers fewer weights. This is called the <b>granularity</b> of the quantization: one scale per tensor is the coarsest, then one per row (per output channel), then one per group of 32 to 128 weights. Each scale costs 16 bits of its own, so group-wise int4 really costs about 4.1 to 4.5 bits per weight.</p>
+        <p>Real methods improve on plain rounding. You will meet these names on model cards, so here is one line each.</p>
+        <ul>
+          <li><b>LLM.int8()</b> (Dettmers et al., NeurIPS 2022) keeps the few outlier activation dimensions in 16-bit and quantizes the rest.</li>
+          <li><b>GPTQ</b> (Frantar et al., ICLR 2023) rounds the weights one at a time and nudges the not-yet-rounded ones to make up for each rounding error.</li>
+          <li><b>AWQ</b> (Lin et al., MLSys 2024) rescales the roughly 1% of weight channels that meet large activations, so they survive the grid.</li>
+          <li><b>NF4</b> (QLoRA, Dettmers et al., NeurIPS 2023) spaces its 16 levels closer together in the middle, where bell-shaped weights actually sit.</li>
+        </ul>
+        <p>The <b>KV cache</b> can be quantized too, which raises the number of sequences that fit. vLLM offers an 8-bit float cache, and research such as KIVI (ICML 2024) goes as low as 2 bits.</p>
         <Callout kind="model">
           A widely reported regularity, not a law: 8-bit weights are usually close to lossless, and 4-bit weights cost a small but measurable amount of quality that many applications accept. It varies with the model, its size, the method and above all the task: long reasoning chains and code tend to be more sensitive than short chat. Do not trust a leaderboard for this. Run your own <a href="#/lesson/evals">evals</a> on the quantized model before you ship it.
         </Callout>
 
         <h3>6. Speculative decoding: spend the idle arithmetic</h3>
-        <p>If the arithmetic units are idle during decode, give them something useful. The big model can score 5 positions in one pass in nearly the time it scores 1, exactly like a tiny prefill. It just needs to know which 5 tokens to score.</p>
+        <p>If the arithmetic units are idle during decode, give them something useful. The big model can score 5 positions in one pass in nearly the time it scores 1, exactly like a tiny prefill. It only needs to know which 5 tokens to score.</p>
         <Term
           name="Speculative decoding"
           plain={<>A small, fast draft model guesses the next few tokens. The big target model checks all the guesses in one pass. Guesses are kept or replaced by a rule that makes the final text distributed exactly as if the big model had written every token itself.</>}
@@ -141,10 +153,11 @@ export default function InferenceSystemsLesson() {
           name="Tensor parallelism"
           plain={<>Split every weight matrix across several GPUs. Each GPU holds a slice, computes its part of every layer, and the parts are combined.</>}
           example={<>A 70B model in 16-bit is 140 GB. Across 4 GPUs of 80 GB each, every GPU holds 35 GB of weights and a quarter of each KV cache.</>}
-          formal={<>In the Megatron-LM scheme (Shoeybi et al., 2019) the forward pass needs two all-reduce operations per Transformer layer. Each GPU reads only its slice, so the bandwidth-bound step gets faster too.</>}
+          formal={<>In the Megatron-LM scheme (Shoeybi et al., 2019) the forward pass needs two all-reduce operations per Transformer layer. An all-reduce is the step where every GPU sends its partial result to the others and all of them end up with the sum. Each GPU reads only its slice, so the bandwidth-bound step gets faster too.</>}
         />
-        <p><b>Tensor parallelism</b> cuts latency as well as memory, but every layer now waits for communication, twice. It needs the fast links inside one server and is rarely stretched across machines.</p>
-        <p><b>Pipeline parallelism</b> splits by layers instead: GPU 1 runs layers 1 to 20, GPU 2 runs 21 to 40, and so on. It only passes activations between neighbours, so slower links are fine. But one token still visits every stage in turn, so latency does not improve, and stages idle while waiting for work. Those gaps are called bubbles (GPipe, Huang et al., 2019), and they are filled by keeping several micro-batches in flight.</p>
+        <p><b>Tensor parallelism</b> cuts latency as well as memory. The price is that every layer now waits for the GPUs to talk to each other, twice. That needs the fast links inside one server, so it is rarely stretched across machines.</p>
+        <p><b>Pipeline parallelism</b> splits by layers instead. GPU 1 runs layers 1 to 20, GPU 2 runs 21 to 40, and so on. It only passes activations between neighbours, so slower links are fine.</p>
+        <p>But one token still visits every stage in turn, so latency does not improve, and a stage sits idle while it waits for the one before it. Those idle gaps are called bubbles (GPipe, Huang et al., 2019). You fill them by splitting the batch into smaller pieces and keeping several of them moving through the stages at once.</p>
         <p><b>Data parallelism</b> is the one you know: complete replicas behind a load balancer. It multiplies throughput and does nothing for one request’s latency. A large deployment typically combines them: tensor parallel inside a server so the model fits and responds quickly, then as many replicas as the traffic needs.</p>
       </MentalModel>
 
@@ -195,13 +208,20 @@ export default function InferenceSystemsLesson() {
             </tbody>
           </table>
         </div>
-        <p>Three things to notice. In step 6 the average sequence holds 1,150 tokens (the prompt plus half the answer), and at 328 sequences the KV reads are three times the weight read: at large batch, <em>the cache</em> is what crosses the memory link. The two limits nearly meet (32.7 against 35.0 ms): this batch sits at the corner of the roofline, where neither memory traffic nor arithmetic is idle. And in step 8, three quarters of the GPU time per request is <b>prefill</b>. One stream alone would get at most 2 TB/s ÷ 16 GB = 125 tokens per second, so batching bought about 17 times the throughput.</p>
+        <p>Three things are worth noticing.</p>
+        <ul>
+          <li><b>At a large batch, the cache is the traffic.</b> In step 6 the average sequence holds 1,150 tokens, the prompt plus half the answer. Across 328 sequences the KV reads are three times the weight read.</li>
+          <li><b>This batch sits right at the corner.</b> The two limits nearly meet, 32.7 ms against 35.0 ms. Neither the memory link nor the arithmetic units are idle, which is exactly where the roofline says you want to be.</li>
+          <li><b>Prefill is most of the bill.</b> In step 8, three quarters of the GPU time per request goes on reading the prompt. And one stream alone would get at most 2 TB/s ÷ 16 GB = 125 tokens per second, so batching bought about 17 times the throughput.</li>
+        </ul>
         <Callout kind="warn">
           This is a ceiling from a napkin. It ignores the latency objective, kernel efficiency at this batch shape and everything else a benchmark would reveal. Use it to see which resource binds and to sanity-check a vendor’s numbers, then measure your own workload before you order hardware.
         </Callout>
-        <DeepDive title="Now add the SLO: goodput with Little’s law">
+        <DeepDive title="Now add the latency objective: goodput with Little’s law">
           <p>At the ceiling, decode steps only get the GPU 24% of the time (34.7 of every 144.4 ms), because prefills keep interrupting. So each user sees a token every 38.0 ÷ 0.24 = <b>158 ms</b>, not every 38 ms. If your objective is 50 ms per token, the ceiling is useless.</p>
-          <p>Find the load that meets it. Let λ be requests per second. Prefill takes a fraction 0.1097 × λ of the GPU. Little’s law gives the number of sequences in decode: L = λ × time in decode = λ × 300 × 0.050 s = 15 λ. At that batch the step is memory-bound: 3 + 8.0 + 0.0754 × 15 λ ms. Setting step ÷ (1 − 0.1097 λ) = 50 ms and solving gives <b>λ = 5.9 requests per second with 88 sequences in flight</b>, a 17.7 ms step, 1,769 tokens per second and 0.31 dollars per million.</p>
+          <p>So find the load that does meet it. Let λ be requests per second. Prefill takes a fraction 0.1097 × λ of the GPU.</p>
+          <p>Little’s law says that the number of things in a system equals the arrival rate times how long each one stays. Here that gives the number of sequences in decode: L = λ × 300 × 0.050 s = 15 λ. At that batch the step is memory-bound, so it takes 3 + 8.0 + 0.0754 × 15 λ ms.</p>
+          <p>Set step ÷ (1 − 0.1097 λ) = 50 ms and solve. The answer is <b>λ = 5.9 requests per second with 88 sequences in flight</b>, a 17.7 ms step, 1,769 tokens per second and 0.31 dollars per million.</p>
           <p>So the SLO costs about 15% of the capacity here, and the memory could hold 328 sequences but the objective only lets you run 88. Chunked prefill, or separate GPU pools for prefill and decode, exist to win that gap back.</p>
         </DeepDive>
       </Numbers>

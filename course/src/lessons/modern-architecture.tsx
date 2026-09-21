@@ -36,6 +36,7 @@ export default function ModernArchitectureLesson() {
         <p className="lede">Open the published code of a 2020s open model such as Llama, Mistral or Qwen. What would you recognise?</p>
         <p>Almost everything. Token embeddings. A stack of blocks. Each block: attention, then an MLP, each wrapped in a normalisation and a <G t="residual">residual</G> “+”. A final projection to <G t="logits">logits</G>. It is the model you built in <a href="#/lesson/build-gpt">Build GPT</a>.</p>
         <p>But a handful of lines are different. There is no <code>pos_emb</code> table. <code>LayerNorm</code> is gone. The MLP has three matrices, not two. Attention has fewer key heads than query heads.</p>
+        <p>The names attached to those changes are the ones you meet on every model card: RMSNorm, RoPE, SwiGLU, GQA, FlashAttention, MoE. This lesson unpacks each of them.</p>
         <Callout kind="idea">
           None of these changes is a new architecture. Each one is a <b>repair</b>: a specific, nameable problem with the GPT-2 design, and a small fix. If you know the problem, the fix is easy to remember. This lesson goes through them one at a time, always in the same five rows: Problem, Idea, Why it helps, Trade-off, Where it appears.
         </Callout>
@@ -72,13 +73,13 @@ export default function ModernArchitectureLesson() {
           <table className="plain">
             <thead><tr><th>Part</th><th>Our tiny GPT (GPT-2 style)</th><th>Typical 2020s open model</th><th>Fixes</th></tr></thead>
             <tbody>
-              <tr><td>Normalisation</td><td>LayerNorm</td><td>RMSNorm</td><td>cost</td></tr>
-              <tr><td>Position</td><td>learned table, added to embeddings</td><td>RoPE: rotate <span className="q">q</span> and <span className="k">k</span></td><td>position</td></tr>
+              <tr><td>Normalisation</td><td>LayerNorm</td><td>RMSNorm (root mean square norm)</td><td>cost</td></tr>
+              <tr><td>Position</td><td>learned table, added to embeddings</td><td>RoPE (rotary position embedding): rotate <span className="q">q</span> and <span className="k">k</span></td><td>position</td></tr>
               <tr><td>MLP</td><td>2 matrices + GELU</td><td>3 matrices, gated (SwiGLU)</td><td>quality per parameter</td></tr>
-              <tr><td>Attention heads</td><td>one K/V head per query head</td><td>several query heads share a K/V head (GQA)</td><td>memory</td></tr>
+              <tr><td>Attention heads</td><td>one K/V head per query head</td><td>several query heads share a K/V head (GQA, grouped-query attention)</td><td>memory</td></tr>
               <tr><td>Attention execution</td><td>build the full T×T table</td><td>FlashAttention: same result, tiled</td><td>memory, speed</td></tr>
               <tr><td>Context window</td><td>64 (GPT-2: 1,024)</td><td>thousands to hundreds of thousands</td><td>usefulness</td></tr>
-              <tr><td>Size</td><td>0.8M parameters, all used</td><td>billions; sometimes mixture-of-experts</td><td>capability</td></tr>
+              <tr><td>Size</td><td>0.8M parameters, all used</td><td>billions; sometimes mixture-of-experts (MoE)</td><td>capability</td></tr>
             </tbody>
           </table>
         </div>
@@ -123,7 +124,8 @@ export default function ModernArchitectureLesson() {
 
         <h3>3. SwiGLU: a gated MLP</h3>
         <p>Our <G t="ffn">feed-forward layer</G> expands each token to 4× its width, applies GELU (a smooth ReLU), and projects back. Two matrices.</p>
-        <p>A gated MLP uses three. Two of them read the input in parallel. One result goes through a smooth switch (called Swish or SiLU) and is then multiplied, number by number, with the other. One path says <em>what</em> to write, the other says <em>how much of it to let through</em>.</p>
+        <p>A gated MLP uses three. Two of them read the input in parallel. One result goes through a smooth switch, then the two are multiplied together number by number. One path says <em>what</em> to write, the other says <em>how much of it to let through</em>. That is what “gated” means, and the G in SwiGLU.</p>
+        <p>The switch itself is <b>Swish</b>, also written SiLU: the function z × sigmoid(z), a smooth version of the ReLU hinge you met in <a href="#/lesson/neurons">Neurons and layers</a>. It gives the Swi in the name.</p>
         <TechCard
           name="SwiGLU"
           problem="Most of a Transformer’s parameters sit in the MLPs. Any MLP design that gives lower loss for the same parameter count is worth a lot at scale."
@@ -151,7 +153,7 @@ export default function ModernArchitectureLesson() {
         <p>So here is a cheap question: do we really need as many K/V heads as query heads?</p>
         <Term
           name="Grouped-query attention (GQA)"
-          plain={<>Query heads are split into groups. All query heads in a group read the <em>same</em> key head and value head. If there is only one group, so one K/V head for everybody, it is called multi-query attention (MQA).</>}
+          plain={<>Query heads are split into groups. All query heads in a group read the <em>same</em> key head and value head. The extreme version, one K/V head shared by every query head, has its own name: multi-query attention, or MQA. Plain attention with one K/V head each is multi-head attention, MHA.</>}
           example={<>64 query heads, 8 K/V heads: query heads 0 to 7 share K/V head 0, heads 8 to 15 share K/V head 1, and so on. The cache holds 8 heads per layer, not 64.</>}
           formal={<>With H query heads and G key/value heads (G divides H), query head h attends using K/V head ⌊h / (H/G)⌋. MHA is G = H, MQA is G = 1.</>}
         />
@@ -167,7 +169,7 @@ export default function ModernArchitectureLesson() {
 
         <h3>6. FlashAttention: same maths, less memory traffic</h3>
         <p>Look at <code>tiny_gpt.py</code>: <code>att = q @ k.transpose(-2, -1)</code> builds the full T×T table of scores, for every head. Then softmax reads it and writes another T×T table.</p>
-        <p>At T = 4,096 in 16-bit numbers, one table for one head is 4,096 × 4,096 × 2 bytes = 32 MiB. With 32 heads that is 1 GiB per layer, per sequence, written to GPU memory and read back, just to be thrown away.</p>
+        <p>At T = 4,096 in 16-bit numbers, one table for one head is 4,096 × 4,096 × 2 bytes = 32 MiB. With 32 heads that is 1 GiB per layer, per sequence, written to GPU memory and read back, only to be thrown away.</p>
         <p>A GPU has a small amount of very fast on-chip memory and a large amount of slower main memory. For attention, the arithmetic is quick. Moving those big tables between the two memories is what takes the time.</p>
         <TechCard
           name="FlashAttention"
@@ -237,7 +239,7 @@ export default function ModernArchitectureLesson() {
             </tbody>
           </table>
         </div>
-        <p>Both vectors have length 1, so the dot product is just cos(60°) = 0.5. The angle between them is (5 − 3) × 30° in both cases. One hundred positions later, the score is identical.</p>
+        <p>Both vectors have length 1, so the dot product is cos(60°) = 0.5. The angle between them is (5 − 3) × 30° in both cases. One hundred positions later, the score is identical.</p>
 
         <h3>RMSNorm by hand</h3>
         <p>For <span className="mono">x = [2, 4, 6, 8]</span>: the squares are 4, 16, 36, 64. Their mean is 30. √30 = 5.477. Divide: <span className="mono">[0.365, 0.730, 1.095, 1.461]</span>.</p>
@@ -438,7 +440,7 @@ y = F.scaled_dot_product_attention(q, k, v, is_causal=True)   # same y, no (T, T
           title="RoPE works in training, breaks with the KV cache"
           hints={[
             'During cached generation, how many tokens go through forward() at each step? So what is T?',
-            'With T = 1, torch.arange(T) is just [0]. Which position does the new token’s query get rotated by? Which positions were the cached keys rotated by?',
+            'With T = 1, torch.arange(T) is [0]. Which position does the new token’s query get rotated by? Which positions were the cached keys rotated by?',
             'The new token is really at position len(cache). The offset the model sees is wrong by exactly that amount.',
           ]}
           solution={<><p>With a KV cache only the newest token is processed, so <code>T = 1</code> and <code>pos = [0]</code>. The new query is rotated as if it were at position 0, while the cached keys were (correctly) rotated at positions 0, 1, 2, … So the model sees offsets as if the new token stood at the very start of the text, <em>before</em> everything it is reading.</p><p>Fix: pass the true position. <code>pos = torch.arange(past_len, past_len + T)</code>, where <code>past_len</code> is the number of tokens already in the cache.</p><p>Nothing crashes, all shapes are right, and training (which has no cache) is fine. It only shows up as worse text at inference. The test that catches it is the one from <code>kv_cache_demo.py</code>: cached and uncached generation must produce identical logits.</p></>}

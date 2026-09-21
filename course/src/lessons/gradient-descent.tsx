@@ -210,7 +210,8 @@ for step in range(30):
     w -= lr * grad
 `}</Code>
           <p>It ends at w = 2.9998: the same answer as the formula (each stage draws fresh random data, which explains the last digits).</p>
-          <p>The catch is cost: one extra loss evaluation <em>per parameter</em>, every step. Fine for 1 parameter, impossible for a billion. But it is a perfect <b>test oracle</b>: slow, obviously correct, and independent of your clever formula. In <a href="#/lesson/backprop">Backpropagation</a> we will compute gradients the fast way and check them against exactly this. You already do this as a developer: test the optimised implementation against a brute-force reference.</p>
+          <p>The catch is cost: one extra loss evaluation <em>per parameter</em>, every step. Fine for 1 parameter, impossible for a billion.</p>
+          <p>But it makes a perfect <b>test oracle</b>. It is slow, it is hard to get wrong, and it does not depend on your clever formula being right. In <a href="#/lesson/backprop">Backpropagation</a> we compute gradients the fast way and check them against exactly this. You already do this as a developer: test the optimised implementation against a brute-force reference.</p>
         </DeepDive>
       </CodeIt>
 
@@ -237,7 +238,7 @@ for step in range(30):
             '0.1 converges and 1 explodes, so the edge is in between. Halve the interval each time: try 0.5, then 0.75, and so on. A run is “stable” if the loss ends lower than it started.',
             'Around 0.7 the line flips from side to side but slowly calms down. Slightly above, the flips grow instead of shrinking.',
           ]}
-          solution={<><p>For these 40 points the edge is at about <b>0.72</b>. Below it, every overshoot is a little smaller than the previous one, so the bouncing dies out. Above it, every overshoot is a little bigger, so it grows without limit.</p><p>Note that the fastest learning rate is <em>not</em> the largest stable one: near the edge the model wastes its steps bouncing. Something like 0.3 gets to the bottom much sooner. There is no general formula for a good learning rate in a real network; practitioners try a few and watch the loss curve, exactly as you just did.</p></>}
+          solution={<><p>For these 40 points the edge is at about <b>0.72</b>. Below it, every overshoot is a little smaller than the previous one, so the bouncing dies out. Above it, every overshoot is a little bigger, so it grows without limit.</p><p>Watch out for one thing: the fastest learning rate is <em>not</em> the largest stable one. Near the edge the model wastes its steps bouncing. Something like 0.3 gets to the bottom much sooner. There is no general formula for a good learning rate in a real network; practitioners try a few and watch the loss curve, exactly as you just did.</p></>}
         >
           <p>In mode B, try three learning rates: 0.01, 0.1 and 1. Describe each loss curve in one word. Then search for the largest learning rate for which training still converges (use all 40 points, not mini-batches).</p>
         </Exercise>

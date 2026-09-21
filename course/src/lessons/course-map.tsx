@@ -58,7 +58,8 @@ export default function CourseMapLesson() {
       <Why title="Where is all of this going?">
         <p className="lede">You have seen the machine from the outside: a loop that picks one token at a time, around a function with billions of learned numbers.</p>
         <p>The rest of the course opens that machine, one part at a time, until nothing in it is a black box. Then it builds the things people put <em>around</em> the machine: retrieval, fine-tuning and agents.</p>
-        <p>That is {LESSONS.length} lessons in {PARTS.length} parts, roughly {totalHours} hours including a hands-on capstone. This lesson is the map. It takes a few minutes, and it will save you from the most common way people get lost in this subject.</p>
+        <p>That is {LESSONS.length} lessons in {PARTS.length} parts, roughly {totalHours} hours including a hands-on capstone.</p>
+        <p>This lesson is the map. It takes a few minutes, and it will save you from the most common way people get lost in this subject.</p>
         <Callout kind="idea">
           Every lesson answers one question that the previous lesson left open. If you always know <b>which question you are currently answering</b>, you cannot get lost.
         </Callout>
@@ -97,7 +98,7 @@ export default function CourseMapLesson() {
         <ul>
           <li><b>Hints.</b> Exercises never show the answer straight away. Try first. If you are stuck for more than a few minutes, take <em>one</em> hint and try again. The solution button appears after the last hint. A struggle followed by a hint teaches far more than reading the solution cold.</li>
           <li><b>“Where are we?”</b> The box at the top of each lesson shows the parts of an LLM as a tree, with the current one marked. Glance at it whenever a lesson feels detached from the goal.</li>
-          <li><b>Glossary.</b> Words with a dotted underline, such as <G t="logits">logits</G>, show a one-line reminder on hover and link to the <a href="#/glossary">glossary</a>. Every term is explained in plain words before it is used.</li>
+          <li><b>Glossary.</b> Words with a dotted underline, such as <G t="logits">logits</G> (a word you meet properly in <a href="#/lesson/softmax">Softmax</a>), show a one-line reminder on hover and link to the <a href="#/glossary">glossary</a>. Every term is explained in plain words before it is used.</li>
           <li><b>Concept map.</b> <a href="#/map">#/map</a> shows how the ideas depend on each other.</li>
           <li><b>Search.</b> The box at the top of the sidebar searches lessons and glossary terms.</li>
           <li><b>Progress.</b> Completed lessons, exercises and quiz scores are saved in your browser only (no account, no server). Mark a lesson complete only when you could explain its key ideas without looking. You can reset everything from the home page.</li>
@@ -135,7 +136,7 @@ pytest                            # run the repository's tests
 `}</Code>
         <p>Each lesson that has code lists its file under the title and links to it at the bottom, under “Read the real code”. Exercises of type <em>implement</em> and <em>modify</em> send you into these files. Do them. Reading code teaches you to recognise it; changing code teaches you to write it.</p>
         <Callout kind="dev">
-          Why NumPy first and PyTorch later? In NumPy you write the backward pass (the part that works out how to adjust each number) by hand, once, so that it is never magic again. PyTorch then automates exactly that step, and you will know what it is automating.
+          Why NumPy first and PyTorch later? PyTorch has one famous line, <code>loss.backward()</code>, that works out how to adjust every number in the model. In NumPy you write that part yourself, once, by hand. After that it is never magic: when you call <code>loss.backward()</code> later, you will know exactly what it is doing for you.
         </Callout>
       </CodeIt>
 

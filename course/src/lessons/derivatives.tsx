@@ -40,7 +40,9 @@ export default function DerivativesLesson() {
         <p>Picture a mixing desk with a billion knobs and a single meter that shows the <G t="loss">loss</G>: the “surprise” number from the <a href="#/lesson/softmax">last lesson</a>. Lower is better. You are allowed to turn knobs.</p>
         <p>For every knob you would want to know two things: <b>if I turn you up a hair, does the loss go up or down? And how strongly?</b></p>
         <Callout kind="idea">
-          That question has a name: the <b>derivative</b>. It is the only calculus an LLM needs, and you can measure it with three lines of code and no formulas. Training a model is: measure this for every knob, turn every knob a little in its helpful direction, repeat.
+          That question has a name: the <b>derivative</b>. It is the only calculus an LLM needs, and you can measure it with three lines of code and no formulas at all.
+          <br /><br />
+          Training a model is then three steps on repeat. Measure this for every knob. Turn every knob a little in its helpful direction. Go again.
         </Callout>
         <p className="muted">If school calculus left scars: we will not use limits, integrals or trigonometry. We will nudge things and watch what happens.</p>
       </Why>
@@ -172,7 +174,7 @@ ratio             0.006001 / 0.001 = 6.001
         </div>
         <DeepDive title="What about max(0, x)? It has a corner">
           <p>max(0, x) is called <G t="relu">ReLU</G>, and it is inside many neural networks (most LLMs use a smoothed relative of it). Left of 0 it is flat (amplification 0: nudges die). Right of 0 it is the identity (amplification 1: nudges pass through).</p>
-          <p>Exactly at 0 there is a corner, and the nudge experiment gives 1 to the right and 0 to the left, so strictly there is no derivative there. Libraries simply pick a value (PyTorch uses 0). Landing on exactly 0.0 is rare, and either choice works in practice.</p>
+          <p>Exactly at 0 there is a corner, and the nudge experiment gives 1 to the right and 0 to the left, so strictly there is no derivative there. Libraries pick one of the two values and move on (PyTorch uses 0). Landing on exactly 0.0 is rare, and either choice works in practice.</p>
         </DeepDive>
         <DeepDive title="Why not make h as small as possible?">
           <p>Floating-point numbers have about 16 significant digits. If h is so small that x + h rounds to x, or f(x + h) − f(x) loses all its digits, the ratio turns to noise. For x² at x = 3 in Python: h = 1e-6 gives 6.000001, h = 1e-12 gives 6.0005, h = 1e-15 gives roughly 5.33, and h = 1e-17 gives exactly 0.</p>

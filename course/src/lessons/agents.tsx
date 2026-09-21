@@ -115,7 +115,8 @@ SYSTEM_PROMPT = (
     + "\\n".join(f"- {n}: {t['desc']}" for n, t in TOOLS.items())
 )
 `}</Code>
-        <p>The <code>Thought:</code> line comes from a prompting pattern called ReAct (short for “reasoning and acting”, Yao et al., 2022): the model alternates written thoughts, actions and observed results. It works for a reason you know from <a href="#/lesson/reasoning-models">Reasoning models</a>: each token is conditioned on the ones before it, so a written thought steers the tool call that follows.</p>
+        <p>The <code>Thought:</code> line comes from a prompting pattern called <b>ReAct</b>, short for “reasoning and acting” (Yao et al., 2022). The model writes a thought, then an action, then reads the result, then thinks again.</p>
+        <p>It works for a reason you already know from <a href="#/lesson/reasoning-models">Reasoning models</a>. Every token is conditioned on the ones before it, so a thought written on the page steers the tool call that comes next.</p>
         <p>The other half of the convention is the parser. Two regular expressions:</p>
         <Code source="phase5-agents/mini_agent.py" title="3. parse the model's text">{`
 def parse_action(text: str):
@@ -159,7 +160,7 @@ if len(transcript) > context_budget and len(scratchpad) > 2:
         <p>When the transcript outgrows its budget, older steps are collapsed into one summary line and the last two are kept word for word. (Real systems ask the LLM to write that summary.) Whatever the summary leaves out is gone: the model will never see it again.</p>
 
         <h3>What the extensions add to the loop</h3>
-        <p>Every “advanced agent” feature is a small change to the loop you just read.</p>
+        <p>Every “advanced agent” feature is a small change to the loop you read above.</p>
         <div className="table-scroll">
           <table className="plain">
             <thead><tr><th>Feature</th><th>What is added to the loop</th></tr></thead>

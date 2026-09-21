@@ -115,8 +115,9 @@ export default function NextTokenLesson() {
             </tbody>
           </table>
         </div>
-        <p>Average that over all 1,478 predictions in the text and you get <b>1.7518</b>. Raise e to that number and you get the <b>perplexity</b>: e<sup>1.7518</sup> = <b>5.76</b>. Read it as: “on average the model is as unsure as if it were choosing among about 6 equally likely characters”. A model with no clue would be choosing among all 27: perplexity 27, cross-entropy ln 27 = 3.30.</p>
-        <p className="muted">Two conventions to know. The logarithm here is the natural one, so the loss is in “nats”. Some papers use log₂ and report bits, and then perplexity is 2<sup>loss</sup>: the perplexity comes out the same either way. And perplexity is always <em>per token</em>, so two models can only be compared on it if they cut the text into the same tokens.</p>
+        <p>Average that over all 1,478 predictions in the text and you get <b>1.7518</b>. Now raise e to that number: e<sup>1.7518</sup> = <b>5.76</b>. That second number has a name, the <b>perplexity</b>, and it is the friendlier one to read. It says: on average, the model is as unsure as someone choosing among about 6 equally likely characters.</p>
+        <p>What would a model with no clue score? It would be choosing among all 27 characters, so its perplexity is 27 and its cross-entropy is ln 27 = 3.30. Ours is at 6 choices instead of 27. It has learned something.</p>
+        <p className="muted">Two conventions to know. The logarithm here is the natural one (ln), and a loss measured that way is said to be in “nats”. That word is only a unit, like metres: it tells you which logarithm was used. Some papers use log₂ instead and report “bits”, and then perplexity is 2<sup>loss</sup>. The perplexity comes out the same either way. Second convention: perplexity is always counted <em>per token</em>. So two models can only be compared on it if they cut the text into the same tokens.</p>
       </Numbers>
 
       <TheMath>

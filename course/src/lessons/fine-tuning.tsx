@@ -133,7 +133,7 @@ export default function FineTuningLesson() {
             ['A', 'trainable, d_in × r. Starts as small random numbers (the LoRA paper uses a random Gaussian)'],
             ['B', 'trainable, r × d_out. Starts as all zeros, so A·B = 0 and the layer starts out exactly equal to the pretrained one'],
             ['r', 'the rank: the width of the thin path. Typical values are 4 to 64'],
-            ['α / r', 'a fixed scaling constant (in the repo: 8 / 4 = 2). The paper’s stated reason: it reduces the need to retune the learning rate and other settings when you change r'],
+            ['α / r', 'a fixed volume knob on the whole correction (in the repo: 8 / 4 = 2). Alpha is a number you choose, like r. Dividing by r is what makes the knob mean the same thing at different ranks, which is the paper’s stated reason: you do not have to retune the learning rate every time you change r'],
           ]}
         >
           h = x W + (x A) B · (α / r)
@@ -244,7 +244,7 @@ opt = torch.optim.AdamW(params, lr=lr)
           type="debug"
           title="The adapter that never learns"
           hints={['Training runs without errors, but the loss is identical at step 0 and step 5,000. What does that say about the gradients?', 'Write down what the gradient for A is multiplied by, and what the gradient for B is multiplied by.', 'Gradient for A contains Bᵀ. Gradient for B contains Aᵀ. What if both are zero?']}
-          solution={<><p>With A and B both zero, the gradient reaching A is (something) × Bᵀ = 0, and the gradient reaching B is Aᵀ × (something) = 0. Zero gradients mean zero updates, so both stay zero on the next step, and every step after it. The adapter is permanently dead and the loss never moves.</p><p>The fix is the repo’s initialisation: A small random, B zero. The product is still exactly zero at the start (training begins at the pretrained model), but B receives a non-zero gradient through A immediately, and A starts learning as soon as B has moved.</p><p>A second classic bug in the same code: forgetting <code>requires_grad = False</code> on the base layer. Nothing crashes. You are simply doing a full fine-tune with extra steps, and the “adapter file” you save no longer reproduces the model, because W changed too. The checksum in the script exists to catch exactly that.</p></>}
+          solution={<><p>With A and B both zero, the gradient reaching A is (something) × Bᵀ = 0, and the gradient reaching B is Aᵀ × (something) = 0. Zero gradients mean zero updates, so both stay zero on the next step, and every step after it. The adapter is permanently dead and the loss never moves.</p><p>The fix is the repo’s initialisation: A small random, B zero. The product is still exactly zero at the start (training begins at the pretrained model), but B receives a non-zero gradient through A immediately, and A starts learning as soon as B has moved.</p><p>A second classic bug in the same code: forgetting <code>requires_grad = False</code> on the base layer. Nothing crashes. You are doing a full fine-tune with extra steps, and the “adapter file” you save no longer reproduces the model, because W changed too. The checksum in the script exists to catch exactly that.</p></>}
         >
           <p>A colleague “made the initialisation cleaner”. Training runs, but the loss does not change at all. Why?</p>
           <Code>{`

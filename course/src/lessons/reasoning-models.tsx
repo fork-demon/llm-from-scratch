@@ -6,7 +6,7 @@ import { Exercise, ExplainBack, OrderExercise } from '../components/exercise'
 import { TestTimeCompute } from '../interactive/TestTimeCompute'
 import { DirectVsSteps } from '../interactive/DirectVsSteps'
 
-/** Every technique in Part 8 gets the same five rows, so none of them is just a name. */
+/** Every technique in Part 8 gets the same five rows, so none of them is only a name. */
 function Technique({ name, problem, idea, helps, tradeoff, where }: { name: string; problem: ReactNode; idea: ReactNode; helps: ReactNode; tradeoff: ReactNode; where: ReactNode }) {
   const rows: [string, ReactNode][] = [['Problem', problem], ['Idea', idea], ['Why it helps', helps], ['Trade-off', tradeoff], ['Where it appears', where]]
   return (
@@ -67,7 +67,7 @@ export default function ReasoningModelsLesson() {
           </div>
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>Working memory</h4>
-            <p>A partial result that has been written down does not have to be held inside the vectors. Later tokens simply attend to it.</p>
+            <p>A partial result that has been written down does not have to be held inside the vectors. Later tokens attend to it.</p>
           </div>
         </div>
         <Callout kind="analogy">
@@ -417,7 +417,9 @@ best = Counter(answers).most_common(1)[0][0]
           real={<ul><li>p differs for every question, and nobody tells you what it is</li><li>Errors are correlated: a model tends to repeat the same misconception, which is the “one popular wrong answer” case</li><li>Verifiers are tests, proof checkers, exact answers, or another model with its own blind spots</li><li>The model decides how long to think, often within an effort or budget setting chosen by the caller</li></ul>}
         />
         <Callout kind="established">
-          The public reference point is <b>DeepSeek-R1</b> (2025), whose paper and weights are open. Its core is reinforcement learning on problems with automatically checkable results (maths answers, code that must pass tests), with simple rule-based rewards for a correct final answer and for keeping the required output format, and no learned reward model for the reasoning tasks. The RL algorithm is GRPO, a policy-gradient method that samples a group of answers per problem and scores each one against the group’s average. For the variant trained by RL alone (R1-Zero), the authors report that responses grew longer and behaviours such as re-checking and trying a second approach became more frequent without being scripted. The released R1 model adds more stages: a small supervised “cold start” before the RL, then supervised fine-tuning on filtered samples of its own output, then a final RL round that also uses learned preference rewards for helpfulness and harmlessness.
+          The public reference point is <b>DeepSeek-R1</b> (2025), whose paper and weights are open. Its core is reinforcement learning on problems with automatically checkable results: maths answers, and code that must pass tests. The rewards are simple rules, one for a correct final answer and one for keeping the required output format. There is no learned reward model for the reasoning tasks at all.
+          <br /><br />
+          The algorithm is <b>GRPO</b>, group relative policy optimization. The idea in one line: for each problem, sample a group of answers, and judge each one against how the rest of the group did rather than against an absolute target. An answer better than its siblings gets pushed up, a worse one gets pushed down. For the variant trained by RL alone (R1-Zero), the authors report that responses grew longer and behaviours such as re-checking and trying a second approach became more frequent without being scripted. The released R1 model adds more stages: a small supervised “cold start” before the RL, then supervised fine-tuning on filtered samples of its own output, then a final RL round that also uses learned preference rewards for helpfulness and harmlessness.
         </Callout>
         <Callout kind="warn" label="What is not public">
           The internals and training recipes of proprietary reasoning models are <b>not published</b>. Statements of the form “model X runs a tree search inside” or “model X uses N hidden samples” are guesses unless the vendor has documented them. Several vendors also hide or summarise the raw trace. What you can observe from outside: a thinking phase that costs tokens and time, often with a setting that controls how much.

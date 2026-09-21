@@ -13,7 +13,11 @@ export default function SoftmaxLesson() {
         <p>You know from the <a href="#/lesson/matrices">last lesson</a> what its final step looks like: one big matrix multiply that produces <b>one score per word in the vocabulary</b>. Each score is a dot product, so it can be any number: 4.2, 0, −3.7.</p>
         <p>Raw scores are awkward. You cannot say “the model is 70% sure” from a 4.2. You cannot roll a die with a face of width −3.7. And during training you cannot measure <em>how wrong</em> the model was without knowing how much belief it put on the right answer.</p>
         <Callout kind="idea">
-          The model needs to turn a list of arbitrary scores into <b>probabilities</b>. The function that does it is called <b>softmax</b>. It runs at the very end of the model every time a token is generated, and inside every attention layer to decide how much each word listens to each other word. Softmax itself never picks anything: it only produces the probabilities. Picking is a separate step, which you will meet below as sampling.
+          The model needs to turn a list of arbitrary scores into <b>probabilities</b>. The function that does it is called <b>softmax</b>.
+          <br /><br />
+          It runs in two places. At the very end of the model, every time a token is generated. And inside every attention layer, to decide how much each word listens to each other word.
+          <br /><br />
+          Softmax itself never picks anything. It only produces the probabilities. Picking is a separate step, which you meet below as sampling.
         </Callout>
       </Why>
 
@@ -93,7 +97,7 @@ export default function SoftmaxLesson() {
           name="Cross-entropy loss"
           plain={<>The model’s surprise at the right answer. Low when it gave the right answer a high probability, huge when it was confidently wrong.</>}
           example={<>The correct next word got probability 0.5: loss = −ln(0.5) = 0.69. It got 0.01: loss = 4.6.</>}
-          formal={<>For one prediction, loss = −ln(p<sub>correct</sub>). Over a dataset, the average of that. This is the number that training pushes down. (The general definition compares two distributions, −Σ q<sub>i</sub> ln p<sub>i</sub>. When the truth q is “100% on the correct token”, only this one term survives. With ln the unit is called nats; with log₂ it would be bits.)</>}
+          formal={<>For one prediction, loss = −ln(p<sub>correct</sub>). Over a dataset, the average of that. This is the number that training pushes down. (The general definition compares two distributions, −Σ q<sub>i</sub> ln p<sub>i</sub>. When the truth q is “100% on the correct token”, only this one term survives. The loss also has a unit, which depends on the logarithm you use: with ln it is measured in <b>nats</b>, and with log₂ it would be in bits. You will see loss numbers quoted in nats throughout this course.)</>}
         />
       </TryIt>
 
@@ -110,7 +114,7 @@ export default function SoftmaxLesson() {
             </tbody>
           </table>
         </div>
-        <p>Check the gap rule: cat leads dog by 2.1 points, and 66.69 ÷ 8.17 ≈ 8.2 = e<sup>2.1</sup>. The ratio depends only on the gap.</p>
+        <p>Check the table from earlier, the one where each point of score multiplied the odds by about 2.7. Cat leads dog by 2.1 points, and 66.69 ÷ 8.17 ≈ 8.2, which is e<sup>2.1</sup>. The ratio depends only on the gap.</p>
 
         <h3>Temperature: divide the logits first</h3>
         <p>Dividing every logit by a number T before softmax shrinks or stretches the gaps:</p>
@@ -171,7 +175,7 @@ def softmax(logits):
         </DeepDive>
         <DeepDive title="Why e? Would 2 or 10 work?">
           <p>Any base above 1 gives a valid distribution with the same order. Using base 2 instead of e is exactly the same as using e with temperature T = 1 / ln 2 ≈ 1.44, so the base is not a separate choice from the temperature.</p>
-          <p>e is the convention because it makes the calculus of the <a href="#/lesson/derivatives">next lesson</a> come out clean: the slope of e<sup>x</sup> is e<sup>x</sup> itself. Combined with the −ln in the loss, the gradient with respect to the logits is simply “probabilities minus the correct answer”. You will see that in <a href="#/lesson/backprop">Backpropagation</a>.</p>
+          <p>e is the convention because it makes the calculus of the <a href="#/lesson/derivatives">next lesson</a> come out clean: the slope of e<sup>x</sup> is e<sup>x</sup> itself. Combined with the −ln in the loss, the gradient with respect to the logits comes out as “probabilities minus the correct answer”, and nothing more. You will see that in <a href="#/lesson/backprop">Backpropagation</a>.</p>
         </DeepDive>
       </TheMath>
 
@@ -264,7 +268,7 @@ softmax(np.array([1000.0, 999.0]))
           title="The loss of knowing nothing"
           answer={{ value: 6.91, tolerance: 0.02 }}
           answerLabel="loss"
-          hints={['If all 1,000 logits are equal, what probability does each word get?', 'Each gets 1/1000 = 0.001, including the correct one.', 'loss = −ln(0.001). Note that −ln(1/n) = ln(n).']}
+          hints={['If all 1,000 logits are equal, what probability does each word get?', 'Each gets 1/1000 = 0.001, including the correct one.', 'loss = −ln(0.001). A useful shortcut: −ln(1/n) = ln(n).']}
           solution={<><p>Every word gets 0.001, so loss = −ln(0.001) = ln(1000) = <b>6.91</b>.</p><p>This is a useful debugging fact: a freshly initialised model should start with a loss near ln(vocabulary size). For GPT-2’s 50,257 tokens that is about 10.8. If your first loss is far above that, something is broken. Everything training achieves is pushing the loss down from this “knows nothing” level.</p></>}
         >
           <p>A brand-new, untrained model has a vocabulary of 1,000 words and gives every word the same logit. Whatever the correct next word is, what is the cross-entropy loss? (Two decimals.)</p>

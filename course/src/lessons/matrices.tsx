@@ -108,7 +108,7 @@ X = [[1, 0],      W = [[2, 0, 1],      X @ W = [[2, 0, 1],    <- token 0
      [1, 1]]                                    [3, 3, 1]]    <- token 2
 `}</Code>
         <p>Check token 2: <span className="mono">[1, 1] · [2, 1] = 3</span>, <span className="mono">[1, 1] · [0, 3] = 3</span>, <span className="mono">[1, 1] · [1, 0] = 1</span>. Each row of the result depends only on the matching row of X. The tokens do not mix: the same transformation is applied to each of them, independently, in one go.</p>
-        <p className="muted">Written this way round, each <em>column</em> of W is one question and each row of X is one token being asked. Same dot products as before, just laid out sideways.</p>
+        <p className="muted">Written this way round, each <em>column</em> of W is one question and each row of X is one token being asked. The same dot products as before, laid out sideways.</p>
       </Numbers>
 
       <TheMath>
@@ -133,7 +133,8 @@ A = [[1, 2, 3],        A.T = [[1, 4],
                               [3, 6]]
 `}</Code>
         <p>Why would you want that? Take the three token vectors X from above and ask: <em>how similar is every token to every other token?</em> Similarity is a dot product, so we want all 9 pairs.</p>
-        <p><code>X @ X</code> is (3, 2) @ (3, 2). Inner numbers 2 and 3: impossible. But matrix multiply dots rows of the left with <b>columns</b> of the right, and our tokens are sitting in rows. Flip the right-hand copy:</p>
+        <p>Try the obvious thing first. <code>X @ X</code> is (3, 2) @ (3, 2), and the inner numbers are 2 and 3. They do not match, so it cannot run.</p>
+        <p>Here is why. A matrix multiply dots rows of the left with <b>columns</b> of the right, but our tokens are sitting in rows on both sides. So flip the right-hand copy and stand its tokens up as columns:</p>
         <Code lang="text" title="(3, 2) @ (2, 3) -> (3, 3): cell (i, j) is token i . token j">{`
 X @ X.T = [[1, 0, 1],
            [0, 1, 1],
@@ -160,7 +161,9 @@ for i in range(n):            # every row of A
 out = A @ B
 `}</Code>
         <Callout kind="dev">
-          A matrix multiply is a doubly nested loop of dot products (three loops, if you count the one hiding inside the dot product). <code>A @ B</code> is that loop, vectorised. The key property: no iteration reads anything another iteration wrote. Every cell can be computed independently, so they can all be computed <em>simultaneously</em>. That one fact is why GPUs, which are machines for doing thousands of identical multiply-adds at once, made deep learning practical.
+          A matrix multiply is a doubly nested loop of dot products (three loops, if you count the one hiding inside the dot product). <code>A @ B</code> is that loop, vectorised.
+          <br /><br />
+          Now look at the loop body. No iteration reads anything another iteration wrote. So every cell can be worked out on its own, and all of them can be worked out at the same time. A GPU is a machine for doing thousands of identical multiply-adds at once. That match is why deep learning became practical.
         </Callout>
         <p>From the repository, the hand calculation checked by an assert:</p>
         <Code source="phase1-foundations/math_primer.py" title="every row of A dotted with every column of B">{`

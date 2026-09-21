@@ -16,7 +16,7 @@ export default function NeuronsLesson() {
         <Diagnostic id="diag-neural-nets" part={DIAGNOSTICS["neural-nets"].part} questions={DIAGNOSTICS["neural-nets"].questions} />
         <p className="lede">Last lesson ended at a wall.</p>
         <p>Gradient descent found the best line through the data. But if the data follows a curve, the best line is still a bad answer. Training harder does not help: the model <em>cannot express</em> the shape.</p>
-        <p>Almost nothing interesting is a straight line. Whether an email is spam, which word comes next, which of three interleaved spiral arms a point lies on (the test data for this lesson): none of these is “output goes up steadily as input goes up”.</p>
+        <p>Almost nothing interesting is a straight line. Think about whether an email is spam, or which word comes next, or which of three interleaved spiral arms a point lies on (that last one is the test data for this lesson). None of them is “the output goes up steadily as the input goes up”.</p>
         <Callout kind="idea">
           We need a model that can bend, and whose bends can be <em>learned</em> by the same gradient descent loop. That is all a neural network is:
           <br /><br />
@@ -45,7 +45,7 @@ export default function NeuronsLesson() {
             </tbody>
           </table>
         </div>
-        <p>Same answer. And it will be the same for <em>every</em> x, because W2(W1 x) = (W2 W1) x is simply how matrix multiplication works. Two linear layers are one linear layer in disguise. So are a hundred.</p>
+        <p>Same answer. And it will be the same for <em>every</em> x, because W2(W1 x) = (W2 W1) x is how matrix multiplication works: you are allowed to regroup a chain of multiplies. So two linear layers are one linear layer in disguise. So are a hundred.</p>
         <WhyExists
           problem="A linear model can only draw straight lines (or flat planes). Real patterns bend."
           naive="Stack several linear layers to get a more powerful model."
@@ -76,7 +76,7 @@ export default function NeuronsLesson() {
         <p>The weight decides how steep the sloped side is and which way it faces. The bias slides the bend left or right. So a neuron is an <b>adjustable hinge</b>.</p>
 
         <h3>2. One layer: many neurons, one matrix multiply</h3>
-        <p>A layer is just several neurons looking at the same inputs, each with its own weights. Several dot products with the same vector: that is exactly a <a href="#/lesson/matrices">matrix multiply</a>. Put each neuron’s weights in one column of a matrix W, and the whole layer is:</p>
+        <p>A layer is several neurons looking at the same inputs, each with its own weights. That means several dot products with the same vector, which is exactly what a <a href="#/lesson/matrices">matrix multiply</a> is. Put each neuron’s weights in one column of a matrix W, and the whole layer is:</p>
         <div className="card center mono" style={{ fontSize: 16 }}>h = relu(x @ W + b)</div>
         <p>Multiply, shift, bend.</p>
 
@@ -138,7 +138,8 @@ export default function NeuronsLesson() {
         </Equation>
         <p>A network with two hidden layers is this, nested: scores = relu( relu( x W₁ + b₁ ) W₂ + b₂ ) W₃ + b₃. Remove the two relu’s and the three matrices collapse into one, as you saw above.</p>
         <p><b>What about sigmoid?</b> You will meet another activation in older material: the sigmoid, 1 / (1 + e<sup>−z</sup>). It squashes any number smoothly into the range 0 to 1, and early networks used it everywhere.</p>
-        <p>Its weakness: for large positive or negative inputs it is almost flat, so a nudge to the input barely moves the output. By the <a href="#/lesson/derivatives">chain rule</a>, a nudge that crosses many layers gets multiplied by that small slope (never more than 0.25) at each one. Deep sigmoid networks therefore learned very slowly.</p>
+        <p>Its weakness is what happens at the edges. For large positive or negative inputs the sigmoid is almost flat, so a nudge to the input barely moves the output.</p>
+        <p>Now remember the <a href="#/lesson/derivatives">chain rule</a>: a nudge crossing many layers gets multiplied by each layer’s slope in turn. The sigmoid’s slope is at most 0.25, even at its steepest point, and much less than that near the edges. Multiply a handful of those together and the nudge has nearly vanished by the time it reaches the early layers. Deep sigmoid networks therefore learned very slowly.</p>
         <p>ReLU’s slope is exactly 1 wherever the hinge is open, and it is cheaper to compute. Modern LLMs use smooth relatives of ReLU (GELU, or gated variants such as <G t="swiglu">SwiGLU</G>): the same hinge idea with a rounded corner.</p>
         <DeepDive title="“Any curve”? What is actually proven">
           <p>The universal approximation theorem says: a network with one hidden layer and enough units can approximate any continuous function on a bounded range as closely as you like. For ReLU units in one dimension you can see why in the playground: each hinge adds one corner to a piecewise-straight curve.</p>
@@ -160,7 +161,7 @@ for i in range(len(W) - 1):
     h = np.maximum(0, h @ W[i] + b[i])
 logits = h @ W[-1] + b[-1]
 `}</Code>
-        <p>That is the forward pass of the repository’s network. Here is the real class. The only additions are the random starting weights and a <code>cache</code> that remembers each layer’s output (the next lesson needs those):</p>
+        <p>That is the forward pass of the repository’s network. Here is the real class, called <code>MLP</code>. The name is short for <b>multi-layer perceptron</b>, which is the traditional name for exactly what you have just built: a few layers of weighted sums with a bend after each one. The only additions below are the random starting weights and a <code>cache</code> that remembers each layer’s output (the next lesson needs those):</p>
         <Code source="phase1-foundations/mlp_numpy.py" title="class MLP: setup and forward pass">{`
 class MLP:
     def __init__(self, sizes=(2, 64, 64, 3)):
@@ -275,7 +276,7 @@ logits = h
             'Run python phase1-foundations/mlp_numpy.py first and note the final accuracy.',
             'In train_mlp(), change net = MLP() to net = MLP(sizes=(2, 8, 8, 3)), then try (2, 2, 2, 3), (2, 4, 4, 3) and (2, 16, 16, 3).',
           ]}
-          solution={<><p>With the file’s fixed random seed: width 2 stays at 33% (no better than guessing), width 4 reaches 72%, and widths 8, 16 and 64 all reach about 99%.</p><p>Two hinges per layer cannot carve out three interleaved arms, and with so few units an unlucky start can leave every hinge shut for all inputs, so nothing can learn. Around 8 units per layer there is enough capacity, and more adds little. The lesson: capacity (how many hinges) sets a ceiling on what training can achieve, just as “a line” set a ceiling last lesson.</p></>}
+          solution={<><p>With the file’s fixed random seed: width 2 reaches about 63%, width 4 about 96%, and widths 8, 16 and 64 all reach about 99%.</p><p>Two hinges per layer cannot carve out three interleaved arms, so width 2 stays far behind. By 8 units per layer there is enough capacity, and adding more barely moves the number. The lesson: capacity, meaning how many hinges you have, sets a ceiling on what training can reach, in the same way that “a line” set a ceiling last lesson.</p></>}
         >
           <p>Open <code>mlp_numpy.py</code> and change the hidden layer sizes. Try widths 2, 4, 8 and 16. Before each run, predict whether it will beat the linear model’s 54%.</p>
         </Exercise>

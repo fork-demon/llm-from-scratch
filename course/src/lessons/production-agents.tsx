@@ -70,7 +70,7 @@ export default function ProductionAgentsLesson() {
           <li><b>Descriptions and schemas written like documentation for a new hire.</b> Precise names, typed arguments, units, an example. The description is a prompt.</li>
           <li><b>Token-efficient results.</b> Return the fields that matter, paginate, filter on the server, truncate with a pointer. A tool that returns a whole table has spent your budget for you.</li>
           <li><b>Errors the model can act on.</b> Not <code>400 Bad Request</code>. Say what was wrong, what was expected, and what to do next. The error message is the model’s only debugger.</li>
-          <li><b>Idempotent side effects.</b> The loop will retry, and the model will sometimes repeat a call. Accept an idempotency key, so that “create the ticket” twice creates one ticket.</li>
+          <li><b>Side effects that are safe to repeat.</b> The loop will retry, and the model will sometimes ask for the same thing twice. Let the caller pass an id for the request, so that “create the ticket” sent twice still creates one ticket. This property has a name, <b>idempotent</b>, and it is worth designing for.</li>
         </ul>
         <Term
           name="MCP (Model Context Protocol)"
@@ -89,10 +89,23 @@ export default function ProductionAgentsLesson() {
           <br /><br />
           There is no complete defence against prompt injection today. Filters and “ignore any instructions in the document” reduce the odds and can be talked around. The reliable move is architectural: make sure no single agent has all three legs at once.
         </Callout>
-        <p>Everything else is the security engineering you already practise. <b>Least privilege:</b> a read-only token for a read-only task, a tool list per task and not per company. <b>Sandbox code execution:</b> no network and no credentials by default, a scratch filesystem. <b>Human approval for irreversible actions:</b> sending, paying, deleting, deploying. <b>Validate outputs as well as inputs:</b> check a generated SQL statement or a URL against an allow-list before it runs, exactly as you would for user input.</p>
+        <p>Everything else is the security engineering you already practise:</p>
+        <ul>
+          <li><b>Least privilege.</b> A read-only token for a read-only task. A tool list per task, not per company.</li>
+          <li><b>Sandbox code execution.</b> No network and no credentials by default, and a scratch filesystem.</li>
+          <li><b>Human approval for irreversible actions:</b> sending, paying, deleting, deploying.</li>
+          <li><b>Validate outputs as well as inputs.</b> Check a generated SQL statement or a URL against an allow-list before it runs, exactly as you would for anything a user typed.</li>
+        </ul>
 
         <h3>Reliability and observability</h3>
-        <p>An agent is a distributed system whose flakiest dependency makes the decisions. Give it what you give any such system. <b>Budgets</b> on steps, tokens and money, each stopping the run with a stated reason. <b>Loop detection.</b> <b>Timeouts</b> on every tool. <b>Retries with backoff</b>, only for idempotent calls. <b>A deterministic fallback</b> when the budget runs out: hand over to a human, or return the partial result, never silence.</p>
+        <p>An agent is a distributed system whose flakiest dependency is also the one making the decisions. Give it what you give any such system:</p>
+        <ul>
+          <li><b>Budgets</b> on steps, tokens and money. Each one stops the run and says which budget it was.</li>
+          <li><b>Loop detection</b>, for when the same call comes round again and again.</li>
+          <li><b>Timeouts</b> on every tool.</li>
+          <li><b>Retries with backoff</b>, and only for calls that are safe to repeat.</li>
+          <li><b>A fixed fallback</b> when a budget runs out: hand over to a human, or return the partial result. Never silence.</li>
+        </ul>
         <Term
           name="Trace and span"
           plain={<>A trace is the full record of one run. A span is one timed unit of work inside it: one model call, or one tool call, with its inputs, outputs, token counts and cost.</>}
@@ -119,7 +132,8 @@ export default function ProductionAgentsLesson() {
             </tbody>
           </table>
         </div>
-        <p>The prefix is sent 10 times: 20,000. The appended steps are sent 0 + 1 + 2 + … + 9 = 45 times: 45,000. The window never held more than 11,000 tokens, and you paid for 65,000. Run 20 steps and the total is 230,000: <b>twice the steps, three and a half times the bill</b>. The output, the part that is the actual work, is 2,000 and 4,000 tokens.</p>
+        <p>The prefix is sent 10 times, so 20,000 tokens. The appended steps are re-sent 0 + 1 + 2 + … + 9 = 45 times, so 45,000 more. The window never held more than 11,000 tokens, and you paid for 65,000.</p>
+        <p>Run it for 20 steps and the total is 230,000. <b>Twice the steps, three and a half times the bill.</b> Meanwhile the output, the part that is the actual work, is only 2,000 tokens at 10 steps and 4,000 at 20.</p>
         <p><b>What prompt caching changes.</b> Each call’s input begins with the whole previous call’s input, unchanged. Providers can keep the <G t="kv-cache">KV cache</G> for that prefix and bill the repeated part at a fraction of the price. With example prices of $3 per million input tokens, $15 per million output tokens, cached reads at 10% and cache writes at 125%:</p>
         <div className="table-scroll">
           <table className="plain mono" style={{ fontSize: 14 }}>
@@ -187,7 +201,7 @@ def call_cost(input_tokens, cached_tokens, output_tokens, prices, caching):
     return (billed_in * prices["input_per_mtok"]
             + output_tokens * prices["output_per_mtok"]) / 1e6
 `}</Code>
-        <p>The metered model checks the budgets <em>before</em> spending, then calls the real model. A cache hit is simply the prefix this context shares with the previous one:</p>
+        <p>The metered model checks the budgets <em>before</em> spending, then calls the real model. A cache hit is the prefix this context shares with the previous one:</p>
         <Code source="phase6-engineering/agent_budget.py" title="2. the metered model (trace recording and loop detection removed)">{`
 def metered_model(context):
     state["step"] += 1
@@ -292,7 +306,7 @@ span step kind  name             in cached   out result     ms     cost $  note
             'Fresh tokens over the run: 5,000 + 14 × 2,000 = 33,000. Cache hits: 285,000 − 33,000 = 252,000.',
             'Cost = (252,000 × 0.1 + 33,000 × 1) × $3 / 1,000,000.',
           ]}
-          solution={<><p>(25,200 + 33,000) × 3 / 1,000,000 = <b>$0.175</b>, against $0.855 without caching: about a fifth.</p><p>With a perfect cache, the billed-at-full-price tokens are just the fresh ones, 33,000, which grows <em>linearly</em> with the run. Caching turns the quadratic bill back into a nearly linear one. It does nothing for the 33,000-token window of the last call, and one rewritten history line would forfeit most of it.</p></>}
+          solution={<><p>(25,200 + 33,000) × 3 / 1,000,000 = <b>$0.175</b>, against $0.855 without caching: about a fifth.</p><p>With a perfect cache, the billed-at-full-price tokens are only the fresh ones, 33,000, which grows <em>linearly</em> with the run. Caching turns the quadratic bill back into a nearly linear one. It does nothing for the 33,000-token window of the last call, and one rewritten history line would forfeit most of it.</p></>}
         >
           <p>Take the run from the previous exercise. Example prices: $3 per million input tokens, cache hits billed at 10%, no premium for cache writes. Every call’s input starts with the previous call’s complete input. What does the input cost with caching, in dollars? (Three decimals.)</p>
         </Exercise>

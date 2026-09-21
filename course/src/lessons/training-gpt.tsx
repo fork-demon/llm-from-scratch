@@ -31,7 +31,7 @@ export default function TrainingGptLesson() {
           problem="A GPT has around a million numbers (a real one: billions). They start random. We need good values for all of them."
           naive="Pay people to write (question, correct answer) pairs, as in classic supervised learning."
           fails="Far too slow and expensive. A language model needs billions of examples."
-          idea="Let the text label itself. At every position, the correct answer is simply the character that comes next. Any text file is a huge pile of free examples."
+          idea="Let the text label itself. At every position, the correct answer is the character that comes next. Any text file is a huge pile of free examples."
           tradeoff="The model learns whatever is in the text, good or bad. And with a small file it can memorise instead of learning patterns, so we must hold some text back to check."
         />
       </Problem>
@@ -78,7 +78,7 @@ export default function TrainingGptLesson() {
         <Callout kind="analogy">
           A student with last year’s exam can learn the subject, or can memorise the answer key. Both score 100% on last year’s exam. Only a <em>new</em> exam tells them apart. The validation split is the new exam.
           <br /><br />
-          Where the analogy stops: the model has no intention to cheat. Memorising is simply the easiest way downhill when there is little data and a lot of capacity. Gradient descent takes whatever reduces the training loss.
+          Where the analogy stops: the model has no intention to cheat. Memorising is the easiest way downhill when there is little data and a lot of capacity. Gradient descent takes whatever reduces the training loss.
         </Callout>
         <p>Because a run can go bad (or the power can go out), long runs save the weights to disk every so often. That saved file is a <b>checkpoint</b>. You keep the one with the best validation loss, not necessarily the last one.</p>
       </MentalModel>
@@ -136,7 +136,7 @@ export default function TrainingGptLesson() {
         >
           w ← w − lr · ∂L/∂w
         </Equation>
-        <p>The second formula is plain gradient descent, which is what the playground above uses. The real code uses a refinement called <b>AdamW</b>. The intuition:</p>
+        <p>The second formula is plain gradient descent, which is what the playground above uses. The real code uses a refined version of it called <b>AdamW</b>. It is the same idea, step downhill, with three improvements to how big each step is:</p>
         <ul>
           <li><b>Momentum.</b> Do not trust one noisy batch. Keep a running average of recent gradients and step along that. Like a heavy ball that keeps rolling through small bumps.</li>
           <li><b>A step size per parameter.</b> Some weights get huge gradients, others tiny ones. AdamW divides each weight’s step by the typical size of its recent gradients, so every weight moves at a sensible pace.</li>
@@ -223,7 +223,7 @@ for step in range(steps + 1):
           <li><b>Learning rate 30.</b> What will the curve do? (It never gets going: the first updates overshoot so far that the numbers overflow into NaN within a few steps.) Now try <b>3</b>: it learns for a while, then blows up. Divergence can arrive late.</li>
           <li><b>Learning rate 0.001.</b> Nothing is wrong, but after 2,000 steps the loss has barely left the guessing line. Too small a step is a bug you pay for in time.</li>
           <li><b>Batch size 4, then 128.</b> Compare how jagged the curve is. Small batches give noisy directions. Large ones are steadier but each step costs more.</li>
-          <li><b>Context length 1, then 8.</b> With one character of context the loss gets stuck near 1.75, and no amount of training helps: the information is simply not in the input. This is <a href="#/lesson/context-wall">the context wall</a> again.</li>
+          <li><b>Context length 1, then 8.</b> With one character of context the loss gets stuck near 1.75, and no amount of training helps: the information is not in the input. This is <a href="#/lesson/context-wall">the context wall</a> again.</li>
           <li><b>Tiny dataset + 256 hidden units.</b> Train loss heads for 0.1. Validation loss bottoms out early and climbs above 2. Read the samples: the model recites its 300 characters.</li>
         </ul>
       </BreakIt>
@@ -253,7 +253,7 @@ for step in range(steps + 1):
             'Reset between runs so each one starts from the same random weights. Defaults for everything else. Use Pause at step 1,000.',
             'Record three things for each run: did it diverge, the validation loss at step 1,000, and what the sample looks like.',
           ]}
-          solution={<><p>With the default settings you should see roughly: <b>0.01</b> → validation loss about 2.8 (still mostly gibberish, it is simply slow). <b>0.3</b> → about 0.4 (real words and sentences). <b>3</b> → the loss falls fast, then explodes to NaN a little after step 200.</p><p>The lesson: the learning rate is the most sensitive knob in training. Too low wastes compute, too high destroys the run, and the best value sits surprisingly close to the edge of disaster. This is why real training runs use a schedule: a short warm-up from zero, then a slow decay.</p></>}
+          solution={<><p>With the default settings you should see roughly: <b>0.01</b> → validation loss about 2.8 (still mostly gibberish, it is only slow). <b>0.3</b> → about 0.4 (real words and sentences). <b>3</b> → the loss falls fast, then explodes to NaN a little after step 200.</p><p>The lesson: the learning rate is the most sensitive knob in training. Too low wastes compute, too high destroys the run, and the best value sits surprisingly close to the edge of disaster. This is why real training runs change the learning rate as they go, on a fixed plan called a schedule. The usual shape: a short <b>warm-up</b>, where the rate climbs from near zero over the first few thousand steps, then a long slow decay back down.</p></>}
         >
           <p>In the playground, train for 1,000 steps at learning rates <b>0.01</b>, <b>0.3</b> and <b>3</b> (everything else default). Write down the final validation loss of each. Which is best, and what goes wrong with the other two?</p>
         </Exercise>
