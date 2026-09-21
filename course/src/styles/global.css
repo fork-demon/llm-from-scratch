@@ -136,10 +136,19 @@ button:disabled { cursor: not-allowed; }
 .side-search { margin: 0 14px 10px; }
 .input { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--rule-strong); background: var(--paper); font-size: 14.5px; }
 .input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-.side-tools { display: flex; gap: 14px; align-items: center; padding: 0 18px 10px; font-size: 13.5px; }
+.side-tools { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 0 16px 12px; font-size: 13px; }
 .side-tools a { color: var(--ink-2); text-decoration: none; white-space: nowrap; }
 .side-tools a:hover, .side-tools a[aria-current='page'] { color: var(--accent-ink); text-decoration: underline; }
-.side-tools .btn { margin-left: auto; padding: 3px 8px; font-size: 13px; border: 0; color: var(--ink-2); }
+/* The theme toggle is a real control, not a floating glyph: it keeps its border,
+   sits inside the sidebar padding, and meets the 32px touch target. */
+.side-tools .btn {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 9px; min-height: 28px; font-size: 12.5px; font-weight: 500;
+  border: 1px solid var(--rule-strong); border-radius: 99px;
+  background: var(--paper-2); color: var(--ink-2);
+}
+.side-tools .btn:hover { border-color: var(--ink-3); color: var(--ink); background: var(--paper-2); }
+.side-tools .btn svg { flex: none; }
 .nav { flex: 1; padding: 2px 8px 16px; }
 .nav-part { margin-top: 14px; }
 .nav-part-title { font-size: 12.5px; font-weight: 650; color: var(--ink-3); padding: 4px 10px; }
@@ -484,15 +493,53 @@ table.plain td { border-bottom: 1px solid var(--rule); padding: 8px 10px 8px 0; 
 .crash p { margin: 0; }
 
 /* lesson outline and resume */
-.outline { display: flex; flex-wrap: wrap; gap: 2px 14px; padding: 10px 0; margin-bottom: 4px; border-bottom: 1px solid var(--rule); font-size: 13px; }
+/* Sticks to the top while you read, so you can jump between sections without
+   scrolling back. Single row that scrolls sideways, so it never eats the page. */
+.outline {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain;
+  gap: 18px; padding: 11px 0; margin-bottom: 4px; font-size: 13px;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--rule);
+  scrollbar-width: none;
+}
+.outline::-webkit-scrollbar { display: none; }
+.outline a { white-space: nowrap; flex: none; }
 .outline a { color: var(--ink-3); text-decoration: none; padding: 2px 0; border-bottom: 2px solid transparent; }
 .outline a:hover { color: var(--ink); }
 .outline a.here { color: var(--accent-ink); border-bottom-color: var(--accent); font-weight: 600; }
 .resume { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; margin-top: 12px; border-radius: 8px; background: var(--accent-soft); font-size: 14.5px; }
-@media (max-width: 720px) { .outline { display: none; } }
+@media (max-width: 960px) { .outline { top: 57px; } } /* sit below the sticky top bar */
 kbd { font-family: var(--mono); font-size: 0.85em; border: 1px solid var(--rule-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--paper-2); }
 
 /* part diagnostic */
 .diagnostic { border: 1px dashed var(--rule-strong); border-radius: 10px; padding: 14px 18px; margin: 20px 0; }
 .diag-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; font-size: 15px; }
 .diag-result ul { margin: 8px 0 12px; }
+
+/* ---------- collapsible sidebar (desktop) ---------- */
+/* The brand row holds the collapse control, so it needs to be a row. */
+.sidebar > .brand { flex: 1; }
+.brand-row { display: flex; align-items: flex-start; }
+.side-collapse {
+  display: grid; place-items: center; width: 28px; height: 28px; margin: 18px 12px 0 0;
+  border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--ink-3);
+}
+.side-collapse:hover { border-color: var(--rule-strong); color: var(--ink); background: var(--paper-2); }
+@media (max-width: 960px) { .side-collapse { display: none; } }
+
+/* Collapsed: the sidebar is removed from the grid entirely, so content gets the room. */
+.shell.collapsed { grid-template-columns: minmax(0, 1fr); }
+.shell.collapsed > .sidebar { display: none; }
+
+.sidebar-reopen {
+  position: fixed; top: 14px; left: 14px; z-index: 35;
+  display: grid; place-items: center; width: 38px; height: 38px;
+  border: 1px solid var(--rule-strong); border-radius: 9px;
+  background: var(--paper-2); color: var(--ink-2);
+}
+.sidebar-reopen:hover { border-color: var(--ink-3); color: var(--ink); }
+@media (max-width: 960px) { .sidebar-reopen { display: none; } }
+/* Keep the reading column clear of the floating button. */
+.shell.collapsed .page { padding-top: 60px; }

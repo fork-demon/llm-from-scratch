@@ -4,8 +4,6 @@ import { Code } from '../components/Code'
 import { Exercise, ExplainBack } from '../components/exercise'
 import { BatchingSimLab } from '../interactive/BatchingSimLab'
 import { PagedKvLab } from '../interactive/PagedKvLab'
-import { QuantizeLab } from '../interactive/QuantizeLab'
-import { SpeculativeLab } from '../interactive/SpeculativeLab'
 import { DecodeIsMemoryBound } from '../illustrations/DecodeIsMemoryBound'
 import { RequestTimeline } from '../illustrations/RequestTimeline'
 
@@ -28,6 +26,7 @@ export default function InferenceSystemsLesson() {
         <Callout kind="idea">
           LLM serving has one central trade-off: <b>throughput against latency</b>. Bigger batches make every token cheaper and every user slower. What limits the batch is not slots, it is the memory the <G t="kv-cache">KV caches</G> need. Almost every serving technique either packs the batch better or shrinks the bytes.
         </Callout>
+        <p>This lesson is about packing the batch better. <a href="#/lesson/making-models-cheaper">The next one</a> is about shrinking the bytes.</p>
       </Why>
 
       <Problem>
@@ -49,7 +48,7 @@ export default function InferenceSystemsLesson() {
         />
       </Problem>
 
-      <MentalModel title="One bottleneck, seven consequences">
+      <MentalModel title="One bottleneck, four consequences">
         <h3>1. Two numbers: bandwidth for decode, arithmetic for prefill</h3>
         <p>A GPU has a large memory that holds the weights, and arithmetic units that do the matrix multiplies. Between them is a link with a fixed speed: the <b>memory bandwidth</b>. On current data-centre GPUs it is on the order of 2 to 5 TB per second.</p>
         <p>In a decode step, every weight is needed once, so all of them cross that link. For one sequence the arithmetic is tiny: one token’s vector times each matrix. The step takes as long as moving the bytes.</p>
@@ -114,66 +113,18 @@ export default function InferenceSystemsLesson() {
         </Callout>
         <p>That sharing, kept across requests, is <b>prefix caching</b> (vLLM calls it automatic prefix caching, SGLang’s version is RadixAttention). A long system prompt or a shared document is prefilled once, and later requests skip straight to their own suffix. It is what “prompt caching” on an API price list means. It cuts TTFT and prefill cost. It does nothing for decode.</p>
         <p>When blocks run out mid-generation, the scheduler <b>preempts</b> a sequence: it frees its blocks and later recomputes them by prefilling again (vLLM can also swap them to CPU memory). Users see a pause, not an error.</p>
-
-        <h3>5. Quantization: fewer bytes per weight</h3>
-        <Term
-          name="Quantization"
-          plain={<>Store each weight as a small integer plus a shared scale, instead of a 16-bit float. int8 halves the bytes, int4 quarters them.</>}
-          example={<>Eight weights with largest magnitude 0.035. Scale = 0.035 ÷ 7 = 0.005. The weight 0.021 is stored as round(0.021 ÷ 0.005) = 4 and read back as 4 × 0.005 = 0.020.</>}
-          formal={<>Symmetric absmax quantization: scale = max|w| ÷ (2<sup>bits−1</sup> − 1), q = round(w ÷ scale), ŵ = q × scale. “Weight-only” means activations stay in 16-bit and weights are unpacked on the fly inside the matrix multiply.</>}
-        />
-        <p><b>int8</b> and <b>int4</b> mean 8-bit and 4-bit integers: 256 and 16 possible values per weight, where a 16-bit float has tens of thousands. <b>Weight-only</b> means only the stored weights shrink. Activations stay in 16-bit, and each weight is expanded back to a float inside the matrix multiply.</p>
-        <p>Because decode is limited by bytes moved, that is one of the few techniques that makes serving <b>smaller and faster at once</b>. Four times fewer bytes is up to four times more tokens per second for one stream, and the freed memory holds more KV cache.</p>
-        <p>The danger is <b>outliers</b>. One scale has to stretch far enough to reach the largest value in its group. A single weight 25 times larger than the rest stretches the grid until every ordinary weight rounds to zero.</p>
-        <p>The fix is more scales, so that each one covers fewer weights. This is called the <b>granularity</b> of the quantization: one scale per tensor is the coarsest, then one per row (per output channel), then one per group of 32 to 128 weights. Each scale costs 16 bits of its own, so group-wise int4 really costs about 4.1 to 4.5 bits per weight.</p>
-        <p>Real methods improve on plain rounding. You will meet these names on model cards, so here is one line each.</p>
-        <ul>
-          <li><b>LLM.int8()</b> (Dettmers et al., NeurIPS 2022) keeps the few outlier activation dimensions in 16-bit and quantizes the rest.</li>
-          <li><b>GPTQ</b> (Frantar et al., ICLR 2023) rounds the weights one at a time and nudges the not-yet-rounded ones to make up for each rounding error.</li>
-          <li><b>AWQ</b> (Lin et al., MLSys 2024) rescales the roughly 1% of weight channels that meet large activations, so they survive the grid.</li>
-          <li><b>NF4</b> (QLoRA, Dettmers et al., NeurIPS 2023) spaces its 16 levels closer together in the middle, where bell-shaped weights actually sit.</li>
-        </ul>
-        <p>The <b>KV cache</b> can be quantized too, which raises the number of sequences that fit. vLLM offers an 8-bit float cache, and research such as KIVI (ICML 2024) goes as low as 2 bits.</p>
-        <Callout kind="model">
-          A widely reported regularity, not a law: 8-bit weights are usually close to lossless, and 4-bit weights cost a small but measurable amount of quality that many applications accept. It varies with the model, its size, the method and above all the task: long reasoning chains and code tend to be more sensitive than short chat. Do not trust a leaderboard for this. Run your own <a href="#/lesson/evals">evals</a> on the quantized model before you ship it.
+        <Callout kind="idea">
+          Those four points are one idea seen from four sides. A decode step is dominated by one read of the weights, that read is shared, so the batch is what you are selling, and the batch is limited by KV memory. Everything above either fills the batch (continuous batching) or fits more sequences into the same memory (paging).
         </Callout>
-
-        <h3>6. Speculative decoding: spend the idle arithmetic</h3>
-        <p>If the arithmetic units are idle during decode, give them something useful. The big model can score 5 positions in one pass in nearly the time it scores 1, exactly like a tiny prefill. It only needs to know which 5 tokens to score.</p>
-        <Term
-          name="Speculative decoding"
-          plain={<>A small, fast draft model guesses the next few tokens. The big target model checks all the guesses in one pass. Guesses are kept or replaced by a rule that makes the final text distributed exactly as if the big model had written every token itself.</>}
-          example={<>The draft proposes “sat on the mat”. The target accepts “sat”, “on”, “the”, rejects “mat” and replaces it with “sofa”. Four tokens for one pass of the big model.</>}
-          formal={<>Accept a proposed token x with probability min(1, p(x) ÷ q(x)), where p is the target’s probability and q the draft’s. On the first rejection, draw a replacement from max(0, p − q) rescaled to sum to 1, and discard the later guesses. Leviathan et al. (ICML 2023) and Chen et al. (2023) both prove the output distribution equals the target’s.</>}
-        />
-        <p>It is a latency technique that only works <em>because</em> decode is memory-bound. When it does not help: if the draft is often wrong (little is accepted, and the draft’s own time is wasted), or if the server is already running large batches (the arithmetic is no longer idle, so verifying extra positions is no longer free).</p>
-
-        <h3>7. When the model does not fit on one GPU</h3>
-        <Term
-          name="Tensor parallelism"
-          plain={<>Split every weight matrix across several GPUs. Each GPU holds a slice, computes its part of every layer, and the parts are combined.</>}
-          example={<>A 70B model in 16-bit is 140 GB. Across 4 GPUs of 80 GB each, every GPU holds 35 GB of weights and a quarter of each KV cache.</>}
-          formal={<>In the Megatron-LM scheme (Shoeybi et al., 2019) the forward pass needs two all-reduce operations per Transformer layer. An all-reduce is the step where every GPU sends its partial result to the others and all of them end up with the sum. Each GPU reads only its slice, so the bandwidth-bound step gets faster too.</>}
-        />
-        <p><b>Tensor parallelism</b> cuts latency as well as memory. The price is that every layer now waits for the GPUs to talk to each other, twice. That needs the fast links inside one server, so it is rarely stretched across machines.</p>
-        <p><b>Pipeline parallelism</b> splits by layers instead. GPU 1 runs layers 1 to 20, GPU 2 runs 21 to 40, and so on. It only passes activations between neighbours, so slower links are fine.</p>
-        <p>But one token still visits every stage in turn, so latency does not improve, and a stage sits idle while it waits for the one before it. Those idle gaps are called bubbles (GPipe, Huang et al., 2019). You fill them by splitting the batch into smaller pieces and keeping several of them moving through the stages at once.</p>
-        <p><b>Data parallelism</b> is the one you know: complete replicas behind a load balancer. It multiplies throughput and does nothing for one request’s latency. A large deployment typically combines them: tensor parallel inside a server so the model fits and responds quickly, then as many replicas as the traffic needs.</p>
       </MentalModel>
 
-      <TryIt title="Four experiments">
+      <TryIt title="Two experiments">
         <h3>A. Three schedulers, one stream of requests</h3>
         <p>The simulator serves the same 200 requests with no batching, static batching and continuous batching. Look at the timeline first, then the numbers. Then raise “slots” and watch the curve at the bottom: throughput climbs while every user’s tokens slow down.</p>
         <BatchingSimLab />
         <h3>B. Where the KV memory goes</h3>
         <p>Same queue, same memory, two allocators. Step to around 20 and compare how many sequences each one fits.</p>
         <PagedKvLab />
-        <h3>C. Quantize a layer</h3>
-        <p>Start with int4 and one scale for the tensor. Then plant the outlier.</p>
-        <QuantizeLab />
-        <h3>D. Draft and verify</h3>
-        <p>Step through a few rounds. Then drag the draft quality and watch the accepted tokens per pass.</p>
-        <SpeculativeLab />
       </TryIt>
 
       <Numbers title="Capacity planning, by hand">
@@ -227,7 +178,7 @@ export default function InferenceSystemsLesson() {
       </Numbers>
 
       <TheMath>
-        <p>Four small formulas carry the lesson. The first is the single-stream bound:</p>
+        <p>Two small formulas carry the lesson. The first is the single-stream bound:</p>
         <Equation
           label="Tokens per second for one stream is at most memory bandwidth divided by the bytes of weights"
           symbols={[
@@ -238,6 +189,7 @@ export default function InferenceSystemsLesson() {
         >
           tokens/s (one stream) ≤ bandwidth ÷ weight bytes
         </Equation>
+        <p>That “about 0.52 for int4” is the subject of <a href="#/lesson/making-models-cheaper">the next lesson</a>: storing each weight in fewer bytes raises this ceiling directly.</p>
         <p>The second is the step time for a batch of B sequences. It is the roofline idea: a step lasts as long as the slower of moving bytes and doing arithmetic.</p>
         <Equation
           label="Step time equals overhead plus the maximum of bytes moved over bandwidth and FLOPs needed over FLOPs per second"
@@ -252,29 +204,7 @@ export default function InferenceSystemsLesson() {
           t<sub>step</sub> ≈ overhead + max( (W + Σ<sub>i</sub> KV<sub>i</sub>) ÷ bandwidth , B × 2N ÷ F )
         </Equation>
         <p>With B small the left term wins and hardly depends on B: batching is nearly free. As B grows, either ΣKV or B × 2N catches up with W, and from there each extra sequence costs real time. Throughput is B ÷ t<sub>step</sub>, so it rises steeply and then flattens. Per-user latency is t<sub>step</sub>, so it only ever gets worse.</p>
-        <p>The third is the speculative acceptance rule, with p the target’s probability for the proposed token and q the draft’s:</p>
-        <Equation
-          label="Accept with probability minimum of 1 and p over q; on rejection resample from the positive part of p minus q, normalised"
-          symbols={[
-            ['p(x), q(x)', 'probability of token x under the target and under the draft, in the same context'],
-            ['min(1, p/q)', 'tokens the draft over-proposes (q > p) are thinned out; the rest are always kept'],
-            ['max(0, p − q)', 'where the target wanted more mass than the draft offered: the replacement is drawn from here'],
-          ]}
-        >
-          accept x with probability min(1, p(x) ÷ q(x)); else draw from max(0, p − q) ÷ Σ max(0, p − q)
-        </Equation>
-        <p>Why it is exact: x comes out by acceptance with probability q(x) × min(1, p(x)/q(x)) = min(p(x), q(x)). The rejected mass is 1 − Σ min(p, q) = Σ max(0, p − q), and the replacement step hands exactly max(0, p(x) − q(x)) back to x. The two parts add up to p(x). Be careful when reading the papers: Chen et al. use the letters the other way round (q for the target).</p>
-        <Equation
-          label="Expected tokens per target pass equals one minus alpha to the gamma plus one, over one minus alpha"
-          symbols={[
-            ['α', 'acceptance rate: the chance one proposal survives, Σ min(p, q), assumed the same at every position'],
-            ['γ', 'tokens proposed per round'],
-            ['γ + 1', 'the most one pass can yield: all proposals plus one bonus token from the target’s own scores'],
-          ]}
-        >
-          E[tokens per target pass] = (1 − α<sup>γ+1</sup>) ÷ (1 − α)
-        </Equation>
-        <p>With α = 0.8 and γ = 4 that is 3.36 tokens per pass. It is a geometric series capped at γ + 1 (Leviathan et al., equation 1). The speed-up is smaller than this number, because the draft’s γ steps also take time.</p>
+        <p>Those two lines are the whole economics of serving. Everything a serving engine does is an attempt to raise B without raising t<sub>step</sub>, or to shrink W.</p>
         <DeepDive title="The critical batch size, in one line">
           <p>Ignore KV reads for a moment. The two terms are equal when B × 2N ÷ F = (bytes per parameter × N) ÷ bandwidth, so B* = (F ÷ bandwidth) × (bytes per parameter ÷ 2). The model size cancels. With 150 TFLOP/s and 2 TB/s in 16-bit, B* = 75: below about 75 sequences the GPU is waiting for bytes, above it for arithmetic. The simulator’s constants give 7 ÷ 0.09 = 78. KV reads move that point further out, and with long contexts the cache reads dominate before arithmetic ever does.</p>
         </DeepDive>
@@ -335,60 +265,6 @@ while waiting and len(running) + len(admitted) < max_batch:
   paged         64          38.0    59    1512      3356         2%            0
 `}</Code>
         <p>Same memory, twice the sequences in flight. The vLLM paper measured even more waste than our 57% in the systems of its day: 62% to 80% of KV memory held no token state.</p>
-
-        <h3>Quantization</h3>
-        <p>The whole algorithm is three lines. Everything else in <code>quantize_demo.py</code> is about how many scales to use and measuring the error:</p>
-        <Code source="phase6-engineering/quantize_demo.py" title="symmetric absmax quantization">{`
-def qmax(bits):
-    return 2 ** (bits - 1) - 1          # int8 -> 127, int4 -> 7
-
-def quantize_block(w, bits):
-    scale = np.abs(w).max() / qmax(bits)
-    q = np.clip(np.round(w / scale), -qmax(bits), qmax(bits)).astype(np.int8)
-    return q, scale                     # restore with q * scale
-`}</Code>
-        <Code source="phase6-engineering/quantize_demo.py" title="group-wise: one scale per `group` consecutive weights in a row">{`
-G = W.reshape(rows, cols // group, group)
-scale = np.abs(G).max(axis=2, keepdims=True) / qmax(bits)
-q = np.clip(np.round(G / scale), -qmax(bits), qmax(bits))
-W_hat = (q * scale).reshape(rows, cols)
-`}</Code>
-        <p>The file measures the error in the weights and, more usefully, in the layer’s output <code>y = x @ W.T</code>. Then it plants 8 outliers among 262,144 weights:</p>
-        <div className="table-scroll">
-          <table className="plain mono" style={{ fontSize: 13.5 }}>
-            <thead><tr><th>bits</th><th>scales</th><th>output error, clean matrix</th><th>output error, 8 outlier weights</th></tr></thead>
-            <tbody>
-              <tr><td>8</td><td>tensor</td><td>1.02%</td><td>11.02%</td></tr>
-              <tr><td>8</td><td>row</td><td>0.78%</td><td>2.09%</td></tr>
-              <tr><td>4</td><td>tensor</td><td>18.49%</td><td><b>96.91%</b></td></tr>
-              <tr><td>4</td><td>row</td><td>14.15%</td><td>22.72%</td></tr>
-              <tr><td>4</td><td>group of 128</td><td>11.60%</td><td>12.79%</td></tr>
-              <tr><td>4</td><td>group of 32</td><td>9.63%</td><td>9.90%</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p className="muted" style={{ fontSize: 14 }}>From sections 2 and 3 of <code>python phase6-engineering/quantize_demo.py</code>: W is 256 × 1024 with entries of typical size 0.02, outliers are ±1.0.</p>
-        <p>Per-tensor int4 with outliers loses 97% of the signal: the step between levels becomes 0.14 while ordinary weights are about 0.02, so they all round to zero. Group-wise scales barely notice. These percentages are for plain rounding of one random layer. They are not what a real model loses: GPTQ and AWQ exist to do much better than this at the same 4 bits.</p>
-
-        <h3>Speculative decoding</h3>
-        <Code source="phase6-engineering/speculative_demo.py" title="one round: verify the draft’s proposals (simplified)">{`
-for x in proposals:                          # the target scored all of them in ONE pass
-    p, q = P[ctx], Q[ctx]
-    if rng.random() < min(1.0, p[x] / q[x]):
-        out.append(x)                        # accept
-        ctx = x
-    else:
-        out.append(draw(residual(p, q), rng))   # replace from max(0, p - q), then stop
-        return out
-out.append(draw(P[ctx], rng))                # all accepted: one bonus token
-`}</Code>
-        <p>The file then tests the claim that matters, against the exact distribution over all three-token sequences:</p>
-        <Code lang="output" title="python phase6-engineering/speculative_demo.py (section 3)">{`
-  sampler                          total variation distance from the target
-  target, one token at a time      0.0082   <- pure sampling noise at this N
-  speculative (draft + verify)     0.0074   <- no larger than the noise: no bias
-  draft alone                      0.5768   <- a different distribution
-`}</Code>
       </CodeIt>
 
       <BreakIt>
@@ -399,9 +275,7 @@ out.append(draw(P[ctx], rng))                # all accepted: one bonus token
           <li><b>Lab A: 64 slots, KV budget 16,384, then switch to “reserve up front”.</b> The curve at the bottom flattens early: more slots stop helping because memory, not slots, limits the batch.</li>
           <li><b>Lab A: KV budget 2,048 with paged blocks and 40 arrivals per second.</b> Preemptions appear. Tokens are never lost, but work is redone.</li>
           <li><b>Lab B: raise the max_tokens cap to 256.</b> Contiguous reservation gets worse although no request changed. Paged allocation does not move at all.</li>
-          <li><b>Lab C: int8, one scale for the tensor, plant the outlier.</b> Still usable. Now int4. Count the weights that rounded to zero.</li>
-          <li><b>Lab D: make the draft completely wrong.</b> Tokens per pass approach 1 but never go below it, and the text is still the target’s. What did you lose? (The time spent running the draft.)</li>
-          <li><b>In <code>speculative_demo.py</code></b>, make the rejection branch draw from <code>p</code> instead of <code>residual(p, q)</code> and run <code>pytest tests/test_engineering_serving.py</code>. Which test catches it?</li>
+          <li><b>In <code>batching_sim.py</code></b>, set <code>COST["weight_read_ms"]</code> to 0.7, a tenth of its value, as if the weights were ten times smaller. Which of the three policies gains most, and does the gap between reserved and paged KV change at all?</li>
         </ul>
       </BreakIt>
 
@@ -455,43 +329,19 @@ out.append(draw(P[ctx], rng))                # all accepted: one bonus token
         </Exercise>
 
         <Exercise
-          id="inference-systems-outlier"
-          type="predict"
-          title="One outlier, one scale"
-          answer={{ value: 0, tolerance: 0 }}
-          answerLabel="ordinary weights that survive as non-zero"
+          id="inference-systems-paged-blocks"
+          type="calculate"
+          title="How much does the last block waste?"
+          answer={{ value: 4, tolerance: 0 }}
+          answerLabel="blocks allocated"
           hints={[
-            'The scale must reach the largest magnitude in the group: scale = max|w| ÷ 7.',
-            'scale = 1.4 ÷ 7 = 0.2. Each weight is stored as round(w ÷ 0.2).',
-            '0.06 ÷ 0.2 = 0.3, −0.02 ÷ 0.2 = −0.1, 0.012 ÷ 0.2 = 0.06. What does each round to?',
+            'A sequence is given a new block only when the previous one is full. Block size is 16 tokens.',
+            '50 tokens fill three blocks (48 tokens) with 2 tokens left over.',
+            'The leftover tokens still need a block of their own.',
           ]}
-          solution={<><p>The scale becomes 0.2, and 0.3, −0.1 and 0.06 all round to 0. <b>None</b> of the ordinary weights survives. The group is stored as [0, 0, 0, 7].</p><p>Without the outlier the scale would be 0.06 ÷ 7 = 0.0086 and the three weights would be stored as 7, −2 and 1. This is why int4 needs small groups: a group of 32 contains the damage to 31 neighbours, a per-tensor scale spreads it over millions.</p></>}
+          solution={<><p>ceil(50 ÷ 16) = <b>4</b> blocks, that is 64 token slots for 50 tokens. 14 slots are unused, and that is the entire waste: 21% here, and less as the sequence grows.</p><p>Compare the contiguous allocator. If the request could generate up to 512 tokens, it would reserve ceil(562 ÷ 16) = 36 blocks up front, and if the answer really stops at 50 tokens, 32 of those blocks never hold anything. That is the difference lab B shows: the paged waste is bounded by one block per sequence, the reserved waste is bounded by <code>max_tokens</code>.</p></>}
         >
-          <p>A group of four weights is quantized to int4 (levels −7 to 7) with one absmax scale: <code>[0.06, −0.02, 0.012, 1.4]</code>. How many of the three ordinary weights are stored as something other than 0?</p>
-        </Exercise>
-
-        <Exercise
-          id="inference-systems-spec-debug"
-          type="debug"
-          title="A speculative decoder that is quietly wrong"
-          hints={[
-            'It runs, it is fast, and every emitted token has non-zero probability under the target. Check the probabilities, not the tokens.',
-            'A token x is emitted either by acceptance, with probability min(p(x), q(x)), or by the rejection branch. What does the rejection branch add here?',
-            'Total: min(p, q) + (1 − Σ min(p, q)) × p(x). Compare that with p(x) for a token where q(x) > p(x).',
-          ]}
-          solution={<><p>On rejection it draws from <code>p</code> instead of from the residual <code>max(0, p − q)</code>, rescaled. The output distribution becomes min(p, q) + (1 − Σ min) × p, which is not p.</p><p>Take p = [0.5, 0.5] and q = [0.9, 0.1]. Acceptance contributes [0.5, 0.1], and the rejected mass is 0.4. The bug adds 0.4 × [0.5, 0.5], giving [0.7, 0.3]. The correct residual is [0, 1], giving [0.5, 0.5]. The bug over-produces whatever the draft likes. Nothing crashes and the text looks fine, so only a statistical test finds it. That is why <code>speculative_demo.py</code> checks the one-step identity to machine precision and the three-token joint distribution empirically.</p></>}
-        >
-          <p>A colleague’s implementation is fast and the outputs look sensible, but an eval shows the quality is slightly below the target model’s. What is wrong?</p>
-          <Code>{`
-for x in proposals:
-    p, q = P[ctx], Q[ctx]
-    if rng.random() < min(1.0, p[x] / q[x]):
-        out.append(x)
-        ctx = x
-    else:
-        out.append(draw(p, rng))     # rejected: sample from the target instead
-        return out
-`}</Code>
+          <p>PagedAttention with a block size of 16 tokens. A sequence currently holds a 40-token prompt and has generated 10 tokens. How many blocks does it own?</p>
         </Exercise>
 
         <Exercise
@@ -511,7 +361,7 @@ for x in proposals:
         <ExplainBack
           id="inference-systems-explain"
           prompt="A product manager asks: “If the GPU can do 32 users for almost the price of one, why not run 1,000 users per GPU and cut our bill by 30?” Explain what stops you, using the two limits and the metrics from this lesson."
-          modelAnswer={<p>Batching is nearly free only while the step is dominated by reading the weights, which every sequence shares. Two things end that. First, memory: every sequence needs its own KV cache, and once the caches fill the GPU no more sequences fit, however many slots we configure. Paged allocation, GQA and quantization push that limit out, they do not remove it. Second, time: each sequence adds its own cache reads and arithmetic to every step, so past some batch size the step gets slower in proportion, throughput flattens, and every user’s time per token keeps rising. Prefills for new arrivals also interrupt everyone’s stream. So throughput is bought with latency, and what we actually sell is goodput: requests that meet the TTFT and per-token objectives at p99. The right batch size is the largest one that still meets them, and we find it by measuring our own traffic.</p>}
+          modelAnswer={<p>Batching is nearly free only while the step is dominated by reading the weights, which every sequence shares. Two things end that. First, memory: every sequence needs its own KV cache, and once the caches fill the GPU no more sequences fit, however many slots we configure. Paged allocation and GQA push that limit out, they do not remove it. Second, time: each sequence adds its own cache reads and arithmetic to every step, so past some batch size the step gets slower in proportion, throughput flattens, and every user’s time per token keeps rising. Prefills for new arrivals also interrupt everyone’s stream. So throughput is bought with latency, and what we actually sell is goodput: requests that meet the TTFT and per-token objectives at p99. The right batch size is the largest one that still meets them, and we find it by measuring our own traffic.</p>}
         />
       </Exercises>
 
@@ -562,15 +412,15 @@ for x in proposals:
             explain: 'It is memory management: fixed-size blocks, a block table per sequence, blocks allocated on demand and shareable. The attention computed over those blocks is the ordinary one. The gain is more sequences per GPU.',
           },
           {
-            q: 'Speculative decoding with a poor draft model produces text that is…',
+            q: 'A server reports 2,000 tokens per second of throughput, and the team is pleased. What would make that number misleading?',
             options: [
-              'lower in quality, because rejected draft tokens leave traces in the final output',
-              'distributed exactly as the target model’s own samples, only produced with less speed-up',
-              'identical to greedy decoding from the target, because rejection removes the randomness',
-              'a blend of the two models, weighted by how often the draft’s proposals were accepted',
+              'Throughput counts every token, including those of requests that missed the latency objective; goodput is the number to check',
+              'Throughput is measured in tokens rather than characters, so it depends on the tokenizer',
+              'Throughput is measured after prefill, so it always looks higher than the true rate',
+              'Throughput is an average, and averages are never reported at p50 or p99',
             ],
-            answer: 1,
-            explain: 'The accept-or-replace rule makes the output distribution equal to the target’s for any draft. A bad draft only lowers the accepted tokens per pass, and can make the whole thing slower than plain decoding once the draft’s own cost is counted.',
+            answer: 0,
+            explain: 'A big batch raises throughput and raises everyone’s time per token. If most requests now miss their TTFT or TPOT objective, the tokens were produced but the service failed. Goodput counts only the requests that met the objective.',
           },
         ]}
       />
@@ -581,14 +431,14 @@ for x in proposals:
           <><b>Batching is nearly free</b> because the weight read is shared, until KV reads or arithmetic catch up, or KV memory runs out. Bigger batch: cheaper tokens, slower users. That is the trade-off.</>,
           <>Keep the metrics apart: <b>TTFT</b> (queue + prefill), <b>TPOT</b> (decode step + stalls), end-to-end, throughput, and <b>goodput</b> under an SLO, at p50 and p99.</>,
           <><b>Continuous batching</b> reschedules at every step, so nobody pads and nobody waits for a whole batch. <b>PagedAttention</b> allocates the KV cache in blocks on demand, like virtual memory, so twice as many sequences fit and prefixes can be shared.</>,
-          <><b>Fewer bytes, or more tokens per pass.</b> Weight-only int8 and int4 shrink memory and speed up decode, with group-wise scales to survive outliers: measure the quality with your evals. Speculative decoding spends the idle arithmetic and keeps the target’s distribution exactly.</>,
+          <>The batch is what you sell, and <b>KV memory is what limits it</b>. Capacity planning is one subtraction (memory minus weights) and one division (what is left, by the cache per sequence).</>,
         ]}
       />
 
       <RealLLM>
         <ToyVsReal
-          toy={<ul><li>A scheduler simulator with a four-constant cost model: no GPU, no model</li><li>Prefill stalls every running sequence; no chunking</li><li>Block allocator with counts and a 64-block picture</li><li>Round-to-nearest quantization of one random matrix</li><li>Speculative decoding between two 6-token Markov chains</li></ul>}
-          real={<ul><li>Engines measured on real traffic, with fused kernels for ragged batches and paged caches</li><li>Chunked prefill, prefix caches, priorities, sometimes separate prefill and decode pools</li><li>Tens of thousands of blocks, copy-on-write sharing, swapping to CPU memory</li><li>GPTQ, AWQ, FP8 and similar, with kernels that compute directly on packed weights</li><li>Draft models, extra prediction heads or n-gram lookups as the proposer, verified in batches</li></ul>}
+          toy={<ul><li>A scheduler simulator with a four-constant cost model: no GPU, no model</li><li>Prefill stalls every running sequence; no chunking</li><li>Block allocator with counts and a 64-block picture</li><li>One fixed model size and one fixed GPU</li></ul>}
+          real={<ul><li>Engines measured on real traffic, with fused kernels for ragged batches and paged caches</li><li>Chunked prefill, prefix caches, priorities, sometimes separate prefill and decode pools</li><li>Tens of thousands of blocks, copy-on-write sharing, swapping to CPU memory</li><li>Quantized weights and caches, and models spread over several GPUs</li></ul>}
         />
         <p>The engines you will meet, one line each:</p>
         <div className="table-scroll">
@@ -602,14 +452,15 @@ for x in proposals:
           </table>
         </div>
         <Callout kind="established">
-          The mechanisms in this lesson are published and open: iteration-level scheduling (Orca, OSDI 2022), PagedAttention (vLLM, SOSP 2023), chunked prefill (Sarathi-Serve, OSDI 2024), speculative decoding with its exactness proof (Leviathan et al., ICML 2023; Chen et al., 2023), and the quantization methods named above. That decode is limited by memory bandwidth and prefill by arithmetic follows from counting bytes and FLOPs, and you can verify it on any GPU by watching tokens per second as you change batch size.
+          The mechanisms in this lesson are published and open: iteration-level scheduling (Orca, OSDI 2022), PagedAttention (vLLM, SOSP 2023) and chunked prefill (Sarathi-Serve, OSDI 2024). That decode is limited by memory bandwidth and prefill by arithmetic follows from counting bytes and FLOPs, and you can verify it on any GPU by watching tokens per second as you change batch size.
         </Callout>
         <Callout kind="model">
           Our cost model is a roofline with four constants. Real step times also depend on kernel efficiency at each batch shape, attention cost growing with context, interconnect in multi-GPU setups, and scheduler overhead. Use the model to reason about <em>which</em> resource binds. Use a benchmark of your own traffic for the actual numbers.
         </Callout>
         <Callout kind="research">
-          How to split prefill and decode across machines, how to schedule for goodput rather than throughput, how far KV caches can be compressed or evicted without hurting long-context quality, and how much quality 4-bit and lower precision really costs on hard tasks are all active areas. How closed providers serve their models is not published: treat any specific claim about it as a guess.
+          How to split prefill and decode across machines, how to schedule for goodput rather than throughput, and how far KV caches can be compressed or evicted without hurting long-context quality are all active areas. How closed providers serve their models is not published: treat any specific claim about it as a guess.
         </Callout>
+        <p>Every technique here filled the batch. The other half of serving is making each sequence cost fewer bytes, which is <a href="#/lesson/making-models-cheaper">the next lesson</a>: quantization, speculative decoding, and what to do when the model does not fit on one GPU at all.</p>
       </RealLLM>
     </Lesson>
   )

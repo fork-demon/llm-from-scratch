@@ -47,7 +47,7 @@ const initialTheme = (): Theme => {
   return 'dark' // dark is the default; the toggle switches to light
 }
 
-function Sidebar({ open, current, onNavigate, theme, toggleTheme }: { open: boolean; current: string; onNavigate: () => void; theme: Theme; toggleTheme: () => void }) {
+function Sidebar({ open, current, onNavigate, theme, toggleTheme, onCollapse }: { open: boolean; current: string; onNavigate: () => void; theme: Theme; toggleTheme: () => void; onCollapse: () => void }) {
   const progress = useProgress()
   const review = useReview()
   const dueCount = dueItems(review).length
@@ -58,6 +58,7 @@ function Sidebar({ open, current, onNavigate, theme, toggleTheme }: { open: bool
 
   return (
     <aside className={`sidebar${open ? ' open' : ''}`} aria-label="Course navigation">
+      <div className="brand-row">
       <a className="brand" href="#/" onClick={onNavigate}>
         <svg width="30" height="30" viewBox="0 0 40 40" aria-hidden>
           <path d="M20 9V4" stroke="var(--il-ink)" strokeWidth="2.5" strokeLinecap="round" /><circle cx="20" cy="4" r="3" fill="var(--il-d)" stroke="var(--il-ink)" strokeWidth="2" />
@@ -67,6 +68,10 @@ function Sidebar({ open, current, onNavigate, theme, toggleTheme }: { open: bool
         </svg>
         <div className="brand-name">LLM From<br />First Principles</div>
       </a>
+      <button className="side-collapse" onClick={onCollapse} aria-label="Hide the lesson list" title="Hide the lesson list (press \\)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M15 6l-6 6 6 6" /></svg>
+      </button>
+      </div>
       <div className="side-search">
         <label className="sr-only" htmlFor="search">Search lessons and glossary</label>
         <input id="search" className="input" type="search" placeholder="Search lessons and terms…" value={query} onChange={(e) => setQuery(e.target.value)} />
@@ -125,10 +130,19 @@ function Sidebar({ open, current, onNavigate, theme, toggleTheme }: { open: bool
   )
 }
 
+const initialCollapsed = (): boolean => {
+  try { return localStorage.getItem('llm-fp-sidebar') === 'collapsed' } catch { return false }
+}
+
 export function App() {
   const route = useRoute()
   const [open, setOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(initialCollapsed)
   const [theme, setTheme] = useState<Theme>(initialTheme)
+
+  useEffect(() => {
+    try { localStorage.setItem('llm-fp-sidebar', collapsed ? 'collapsed' : 'open') } catch { /* ignore */ }
+  }, [collapsed])
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -147,6 +161,7 @@ export function App() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false)
       const typing = /input|textarea|select/i.test((e.target as HTMLElement).tagName)
+      if (e.key === '\\' && !typing) { e.preventDefault(); setCollapsed((c) => !c) }
       if (e.key === '/' && !typing) {
         e.preventDefault()
         setOpen(true)
@@ -183,10 +198,15 @@ export function App() {
   else body = <Home />
 
   return (
-    <div className="shell">
+    <div className={`shell${collapsed ? ' collapsed' : ''}`}>
       <a className="skip-link" href="#content">Skip to content</a>
       {open && <button className="scrim" aria-label="Close navigation" onClick={() => setOpen(false)} />}
-      <Sidebar open={open} current={current} onNavigate={() => setOpen(false)} theme={theme} toggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} />
+      <Sidebar open={open} current={current} onNavigate={() => setOpen(false)} theme={theme} toggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')} onCollapse={() => setCollapsed(true)} />
+      {collapsed && (
+        <button className="sidebar-reopen" onClick={() => setCollapsed(false)} aria-label="Show the lesson list" title="Show the lesson list (press \\)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        </button>
+      )}
       <div className="main">
         <div className="topbar">
           <button className="btn small" onClick={() => setOpen(true)} aria-label="Open navigation" aria-expanded={open} style={{ minWidth: 40, minHeight: 40, justifyContent: 'center' }}>

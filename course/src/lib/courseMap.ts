@@ -21,7 +21,7 @@ export const COURSE_MAP: MapNode[] = [
   { id: 'rag', label: 'RAG', question: 'What if the information is not inside the model?', build: 'A vector database and a full retrieve-then-answer pipeline (vector_db.py, mini_rag.py).', lessons: ['rag'] },
   { id: 'finetune', label: 'Fine-tuning', question: 'What does changing the weights achieve that a better prompt cannot?', build: 'Full fine-tuning versus LoRA on your own GPT, with forgetting measured (finetune_tiny_gpt.py).', lessons: ['fine-tuning'] },
   { id: 'agents', label: 'Agents', question: 'How can a text generator use a tool?', build: 'A tool-calling agent loop with memory, and a prompt-injection demo (mini_agent.py).', lessons: ['agents'] },
-  { id: 'engineering', label: 'Engineering', question: 'What does it take to run all of this for real users, and to keep up with the research?', build: 'An eval harness, a batching simulator, weight quantization, a real LoRA fine-tune with Hugging Face, and a budgeted agent (phase6-engineering/).', lessons: ['evals', 'inference-systems', 'pytorch-bridge', 'reading-papers', 'production-agents'] },
+  { id: 'engineering', label: 'Engineering', question: 'What does it take to run all of this for real users, and to keep up with the research?', build: 'An eval harness, a batching simulator, weight quantization, a real LoRA fine-tune with Hugging Face, and a budgeted agent (phase6-engineering/).', lessons: ['evals', 'inference-systems', 'making-models-cheaper', 'pytorch-bridge', 'reading-papers', 'production-agents'] },
 ]
 
 /** The lessons that are about the course itself or pull everything together; they sit outside the map. */
