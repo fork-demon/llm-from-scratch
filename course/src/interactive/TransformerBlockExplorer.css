@@ -1,0 +1,20 @@
+.TransformerBlockExplorer-layout { display: grid; grid-template-columns: minmax(250px, 320px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 760px) { .TransformerBlockExplorer-layout { grid-template-columns: minmax(0, 1fr); } }
+.TransformerBlockExplorer-panel { min-width: 0; }
+.TransformerBlockExplorer-diagram { width: 100%; max-width: 340px; display: block; margin: 0 auto; }
+.TransformerBlockExplorer-node { cursor: pointer; outline: none; }
+.TransformerBlockExplorer-node rect, .TransformerBlockExplorer-node circle { fill: var(--card); stroke: var(--rule-strong); stroke-width: 1.2; }
+.TransformerBlockExplorer-node:hover rect, .TransformerBlockExplorer-node:hover circle { stroke: var(--accent); }
+.TransformerBlockExplorer-node:focus-visible rect, .TransformerBlockExplorer-node:focus-visible circle { stroke: var(--accent); stroke-width: 3; }
+.TransformerBlockExplorer-node.active rect, .TransformerBlockExplorer-node.active circle { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.2; }
+.TransformerBlockExplorer-node.removed { opacity: 0.4; }
+.TransformerBlockExplorer-node.removed rect, .TransformerBlockExplorer-node.removed circle { stroke-dasharray: 4 3; }
+.TransformerBlockExplorer-node text { font-size: 13.5px; pointer-events: none; }
+.TransformerBlockExplorer-node text.sub { font-size: 10.5px; fill: var(--ink-3); font-family: var(--mono); }
+.TransformerBlockExplorer-wire { stroke: var(--ink-3); stroke-width: 1.6; fill: none; }
+.TransformerBlockExplorer-rail { stroke: var(--accent); stroke-width: 2; fill: none; }
+.TransformerBlockExplorer-rail.removed { opacity: 0.25; stroke-dasharray: 4 4; }
+.TransformerBlockExplorer-panel h4 { font-size: 18px; margin: 0 0 6px; }
+.TransformerBlockExplorer-panel dl { margin: 0 0 10px; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 10px; font-size: 14.5px; }
+.TransformerBlockExplorer-panel dt { color: var(--ink-3); font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.04em; padding-top: 2px; }
+.TransformerBlockExplorer-panel dd { margin: 0; }

@@ -1,0 +1,8 @@
+numpy
+pytest
+# from lesson 7.1 (Build GPT) onward:
+torch
+# only for Part 10, lesson "The PyTorch and Hugging Face bridge"
+# (phase6-engineering/inspect_hf_model.py and lora_finetune_hf.py); every other file runs without them:
+transformers
+peft

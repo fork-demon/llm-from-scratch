@@ -10,7 +10,9 @@ Four acts:
         -> watch new-style loss fall AND Shakespeare loss rise
            (catastrophic forgetting, live)
   3. LoRA fine-tune (base frozen, tiny A/B correction matrices train)
-        -> new style learned, Shakespeare preserved, <2% params trained
+        -> new style learned with <2% of params trained; the BASE WEIGHTS are
+           untouched, so removing the adapter restores the original model exactly
+           (with the adapter attached, behaviour on Shakespeare still shifts)
   4. Side-by-side samples from base / full-FT / LoRA-FT
 
 Imports the GPT from module 08 -- same model, no changes needed.
@@ -226,4 +228,4 @@ if __name__ == "__main__":
     print(f"  {'model':<10} {'shakespeare':>12} {'modern':>9}")
     print(f"  {'base':<10} {base_shk:>12.3f} {base_mod:>9.3f}")
     print(f"  {'full-FT':<10} {full_shk:>12.3f} {full_mod:>9.3f}   <- forgot the old")
-    print(f"  {'LoRA-FT':<10} {lora_shk:>12.3f} {lora_mod:>9.3f}   <- kept both")
+    print(f"  {'LoRA-FT':<10} {lora_shk:>12.3f} {lora_mod:>9.3f}   <- base weights intact: detach adapter = original")

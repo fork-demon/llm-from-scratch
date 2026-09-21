@@ -1,91 +1,117 @@
-# LLMs From First Principles — A Curriculum for Engineers
+# LLM From First Principles
 
-A learning path from "I understand gradient descent intuitively" to "I can read the GPT-2 paper and build a working miniature of it." Written for an experienced software engineer with practical (not theoretical) math.
+> Understand how LLMs work by building one yourself.
 
-## The Core Idea
+An interactive, browser-based course for software developers. It takes you from a single dot product to
+attention, a working GPT, RAG, fine-tuning and agents. Every idea is something you can see, change and break,
+and every toy is connected to runnable Python code in this repository.
 
-Every module follows the same loop:
+**[Start learning →](https://fork-demon.github.io/llm-from-scratch/)** &nbsp;·&nbsp; or run it locally: `cd course && npm install && npm run dev`
 
-1. **Why does this exist?** — the problem that forced someone to invent it
-2. **Intuition first** — analogies and pictures before any notation
-3. **Math after intuition** — only what you need, explained in engineering terms
-4. **Full worked code** — small, annotated, runnable implementations you read, run, and modify
-5. **Modify-it exercises** — active learning without a blank page
+## Who is this for?
 
-The math never goes deeper than matrix multiplication and derivatives — things you already know. When a formula appears, it appears *after* you already know what it's supposed to do, so it reads like documentation rather than a puzzle.
+A developer who knows Python or Java, has seen APIs and data structures, and wants to *really* understand LLMs.
+You do not need machine-learning experience, calculus, linear algebra or PyTorch. The little maths an LLM needs
+is introduced only at the moment it becomes necessary, as a picture first and a formula second.
 
-## Pacing (3–5 hrs/week)
+## What will I learn?
 
-| Phase | Modules | Weeks | You will build |
-|-------|---------|-------|----------------|
-| 1. Foundations | 00–03 | 1–10 | The complete math toolkit, gradient descent, a full neural net + backprop in NumPy |
-| 2. Language | 04–06 | 11–17 | A BPE tokenizer, trained word embeddings, your first language model |
-| 3. Transformers | 07–09 | 18–28 | Self-attention in NumPy, a tiny GPT, sampling + KV cache |
-| 4. Modern LLMs | 10–12 | 29–36 | A vector database, semantic search, a RAG pipeline |
-| 5. Capstones (optional) | 13–14 | 37–40 | Fine-tune your GPT (LoRA, forgetting); build an agent from scratch (ReAct, tools, memory) |
+By the end you can, from memory:
 
-Roughly 8–9 months at a sustainable pace. Each module says how long to spend on it. **Do not rush Phase 1** — backprop (module 03) is the single concept everything else stands on.
+- trace a token from raw text through tokenization, embeddings, Transformer blocks, logits and sampling
+- explain why attention exists, what Query / Key / Value are, why the scores are scaled, why softmax, why the causal mask
+- explain what training actually changes, and what temperature, top-p and the KV cache actually do
+- say precisely what changes when you add **RAG** (the prompt), **fine-tuning** (the weights) or **tools** (a loop of your code)
 
-## Module Map
+The goal is one sentence: *"I don't use LLMs as magic anymore. I understand what is happening underneath."*
 
-```
-phase1-foundations/
-  00-math-primer.md                ALL the math the course needs (8 ideas),
-                                   worked by hand + math_primer.py verifying it
-  01-meaning-as-geometry.md        Why vectors? What embeddings really are
-  02-gradient-descent.md           + gradient_descent.py
-  03-neural-net-backprop.md        + mlp_numpy.py (the heart of the course)
+## How it teaches
 
-phase2-language/
-  04-tokenization.md               + bpe_tokenizer.py
-  05-embeddings.md                 + tiny_word2vec.py
-  06-first-language-model.md       + bigram_lm.py
+Every lesson runs the same loop, in the same order:
 
-phase3-transformers/
-  07-attention.md                  + attention_numpy.py
-  08-tiny-gpt.md                   + tiny_gpt.py (PyTorch — you've earned it)
-  09-training-and-inference.md     sampling, temperature, KV cache + kv_cache_demo.py
-
-phase4-modern-llms/
-  10-knowledge-scaling-hallucination.md   weights vs. embeddings, fine-tuning, MoE
-  11-vector-search.md              + vector_db.py (semantic search engine)
-  12-rag.md                        + mini_rag.py
-  13-fine-tuning.md                + finetune_tiny_gpt.py (optional capstone:
-                                   SFT, LoRA, catastrophic forgetting — measured)
-
-phase5-agents/
-  14-agents.md                     + mini_agent.py (optional capstone: the ReAct
-                                   loop, tool calling, memory, prompt injection —
-                                   runs offline, 3-line swap to a real LLM)
-
-appendix-frontier-topics.md        Reasoning models, multimodality, distributed
-                                   training — one honest page each, read anytime
-                                   after module 10
-
-hints.md                           Graduated hints for every exercise —
-                                   read one level at a time when stuck
-debugging-guide.md                 Symptom → cause → fix table; keep open
-                                   whenever code is running
-
-diagrams/                          SVG diagrams embedded in the modules
-                                   (view the .md files in VS Code preview,
-                                   GitHub, or any markdown viewer to see them)
-resources.md                       Curated external videos/articles per module
+```text
+QUESTION → WHY → INTUITION → VISUAL → EXPERIMENT → NUMBERS → MATH → CODE → EXERCISE → RECALL → REAL LLM
 ```
 
-## Rules of Engagement
+You never meet an equation before you know what problem it solves. Exercises give graduated hints before any
+solution. Each lesson ends with recall questions, each part ends with a mixed "Before moving on…" quiz that
+reaches back to earlier parts, and the course ends with an explain-it-from-memory challenge.
+Claims are labelled **Established**, **Simplified mental model** or **Active research**.
 
-- **Run every piece of code.** Reading code convinces you that you understand; running and breaking it proves whether you do.
-- **Do the modify-it exercises.** They are calibrated to take 30–60 min each and are where the real learning happens.
-- **NumPy until module 08.** You'll feel every matrix multiply. PyTorch enters only once you could, in principle, write what it automates.
-- **When stuck for more than 30 minutes**: broken code → `debugging-guide.md`; stuck exercise → `hints.md`, one hint level at a time. Then re-read the module's intuition section — confusion almost always means a *why* was skipped, not that you lack math.
+## How long does it take?
 
-## Prerequisites
+About 14 hours of lessons, plus a capstone project that takes as long as you want to give it.
+Progress, quiz scores and completed exercises are stored in your browser. There is no sign-up and no backend.
 
-Python 3, NumPy (`pip install numpy`), and from module 08 onward PyTorch (`pip install torch`). Nothing else. All models train in minutes on a laptop CPU.
+## Curriculum map
 
-**Math prerequisites: none.** Module 00 rebuilds everything the course uses — even if school math is 20 years behind you. If you're already fluent in matrix multiplication and derivatives, skim module 00 in an evening and keep its notation table handy; otherwise give it its full two weeks. Whenever any later module's math feels slippery, the bug is almost always a module 00 concept that needs one more rep — go back, rerun `math_primer.py`, come forward again. That loop is normal and expected.
+```text
+Text → Tokenization → Embeddings → Neural network → Attention → Transformer
+     → Training → Inference → LLM → RAG → Fine-tuning → Agents
+```
 
-## Where You'll Be at the End
+| Part | Lessons | Interactive experiments | Repository code |
+|------|---------|-------------------------|-----------------|
+| 0. What is an LLM? | What happens when I type a prompt · The surprising idea · Your map | clickable prompt-to-answer pipeline, four systems compared | |
+| 1. The tiny bit of math an LLM needs | Vectors and the dot product · Matrices · Softmax · Derivatives and the chain rule | vector, matrix, softmax and nudge playgrounds | `phase1-foundations/math_primer.py` |
+| 2. How machines learn | Gradient descent | fit a line by hand, then watch the machine do it | `phase1-foundations/gradient_descent.py` |
+| 3. Neural networks | Neurons and layers · Backpropagation | build a curve from ReLU hinges, watch gradients flow backward | `phase1-foundations/mlp_numpy.py` |
+| 4. How text becomes numbers | Tokenization · Embeddings | train a BPE tokenizer, explore an embedding space | `phase2-language/bpe_tokenizer.py`, `tiny_word2vec.py` |
+| 5. Your first language model | Predicting the next token · Why simple models break | bigram generator, context explosion | `phase2-language/bigram_lm.py` |
+| 6. Attention and the Transformer | Attention · Causal masks and multiple heads · The Transformer block | step-by-step Q/K/V playground, mask lab, clickable block | `phase3-transformers/attention_numpy.py` |
+| 7. Build, train and run a GPT | Build GPT · Training GPT · Inference: sampling and the KV cache | token tracer, parameter counter, live training, sampling and KV-cache labs | `phase3-transformers/tiny_gpt.py`, `kv_cache_demo.py` |
+| 8. From GPT to modern LLMs | Why LLMs know things · Modern architecture · From raw text to assistant · Reasoning models | knowledge-in-weights lab, RoPE, GQA calculator, test-time compute simulator | |
+| 9. Building with LLMs | RAG · Fine-tuning · Agents | mini-RAG system, LoRA and forgetting labs, tool-calling agent stepper | `phase4-modern-llms/*.py`, `phase5-agents/mini_agent.py` |
+| 10. From understanding to engineering | Evals · Inference systems · The PyTorch and Hugging Face bridge · How to read an LLM paper · Context engineering and production agents | eval lab with confidence intervals and A/B tests, batching and paged-KV simulators, quantization lab, config reader, guided reading of “Attention Is All You Need”, context-budget lab and trace viewer | `phase6-engineering/*.py` |
+| 11. Capstone | Build your own mini LLM system · Explain it from memory | milestone tracker, timed memory challenge | everything above |
 
-You will have built, with your own hands: a tokenizer, an autodiff-free neural net trained by backprop you wrote yourself, word embeddings whose geometry you can inspect, a working GPT that generates text, and a RAG system. At that point papers like "Attention Is All You Need" read as design docs for systems you've already implemented.
+Also in the app: **coding exercises that run in your browser** (write `softmax`, `attention` or a BPE merge
+yourself and have hidden tests check it, powered by Pyodide, no install), a spaced **review queue** for questions
+you got wrong, **skip-ahead diagnostics** at the start of a part, progress **export and import**, a searchable **glossary** (definition, intuition, example, where it is taught), a clickable
+**concept map**, lesson search (press `/`), dark and light themes, keyboard navigation and a mobile layout.
+
+## Repository layout
+
+```text
+course/                  the interactive course (React + TypeScript + Vite, static site)
+  src/lessons/           one file per lesson, all following the same 12-section format
+  src/interactive/       the playgrounds (one concept each)
+  src/lib/               pure, unit-tested logic behind every interactive (softmax, attention, BPE, RAG, ...)
+  src/components/        lesson layout, exercise system (hints → solution), quizzes, UI kit
+  src/data/              curriculum map, glossary
+  AUTHORING.md           how lessons are written (read this before contributing)
+phase1-foundations/ … phase6-engineering/
+                         the runnable Python implementations every lesson links to,
+                         plus the original long-form written notes (*.md) as companion reading
+tests/                   pytest tests for the Python implementations
+hints.md, debugging-guide.md, resources.md, appendix-frontier-topics.md
+                         companion material for the Python exercises
+```
+
+The course and the code stay connected: each lesson goes concept → interactive demo → exercise → the actual
+file in this repository, and the TypeScript behind the demos is tested against the behaviour of the Python.
+
+## Running the Python code
+
+```bash
+pip install -r requirements.txt        # numpy (+ torch from "Build GPT" onward; transformers and peft only for Part 10)
+python phase3-transformers/attention_numpy.py
+python phase3-transformers/tiny_gpt.py --quick
+pytest tests
+```
+
+All models train in minutes on a laptop CPU. No API keys are needed anywhere.
+
+## Developing the course
+
+```bash
+cd course
+npm install
+npm run dev          # local dev server
+npm test             # unit tests: maths, tokenizer, attention, exercises, progress, every lesson renders
+npm run build        # type-check + static build into course/dist
+```
+
+The site is fully static (hash routing, relative asset paths), so `course/dist` can be hosted anywhere.
+`.github/workflows/course.yml` runs all tests and deploys to GitHub Pages on every push to `main`
+(enable Pages with "GitHub Actions" as the source in the repository settings).

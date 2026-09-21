@@ -1,0 +1,3 @@
+/* Shown only when the network diagram is wider than the screen and scrolls sideways. */
+.BackpropFlow-scrollhint { display: none; font-size: 13.5px; color: var(--ink-3); margin: 0 0 4px; }
+@media (max-width: 640px) { .BackpropFlow-scrollhint { display: block; } }
