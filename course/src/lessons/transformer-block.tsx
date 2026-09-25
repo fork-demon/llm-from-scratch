@@ -375,6 +375,7 @@ def forward(self, x):
         <Callout kind="established">The structure you explored, pre-norm residual blocks alternating attention and an MLP, is shared by GPT-2, GPT-3, Llama, Mistral and, as far as is publicly documented, the other major LLM families. The differences are in the details of each box, covered in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>.</Callout>
         <Callout kind="established">About two thirds of a block’s parameters are in the MLP (8D² against 4D² for attention). You will count them yourself in the next lesson.</Callout>
         <Callout kind="research">What do the MLPs <em>do</em> with all those parameters? Interpretability studies suggest that MLP layers play a major role in recalling factual associations, and some describe them as key-value memories. This is evidence from specific experiments, not a complete account: knowledge in a trained model appears to be spread over many layers and both kinds of sub-layer. Treat “facts live in the MLP” as a useful hypothesis, not as settled.</Callout>
+        <p>See it in real GPT-2: in the <a href="#/gpt2">GPT-2 Explainer</a>, open any of its 12 blocks to watch LayerNorm, the two residual adds and the 768 → 3,072 → 768 MLP work on your own prompt.</p>
         <p>At 7 p.m. the office floor is empty. Riya draws one block on the whiteboard, meeting then desk, and writes “× N” next to it. Tomorrow she stacks them into a GPT of her own.</p>
       </RealLLM>
 

@@ -1,4 +1,5 @@
 import { TrainedGptExplorer } from '../interactive/TrainedGptExplorer'
+import { Gpt2Explainer } from '../interactive/Gpt2Explainer'
 import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
@@ -375,6 +376,10 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
           real={<ul><li>Sub-word tokens, trained on trillions of tokens</li><li>Thousands of GPUs for weeks; the model is split across many devices</li><li>The same pipeline: embed, N blocks, norm, head, softmax, sample</li><li>Changed details inside the boxes: RoPE, RMSNorm, SwiGLU, grouped-query attention, no biases</li></ul>}
         />
         <Callout kind="established">GPT-2’s published architecture is what <code>tiny_gpt.py</code> implements: learned positions, pre-norm blocks, GELU MLPs, tied head. With vocab 50,257, context 1,024, D = 768 and 12 layers, the formula in this lesson gives exactly 124,439,808 parameters, the “124M” on the label.</Callout>
+        <p>Kabir stops at Riya’s desk on his way out and reads the number on her screen. “124,439,808. That’s GPT-2’s count.” He pulls up a chair. “Want to see the real one run? Same machine, full size.”</p>
+        <p>Below is GPT-2 small itself, with the weights OpenAI trained, running in your browser. Every stage is a box you built in this part. Press <b>Why?</b> on any stage to go back to the lesson that built it. It also has <a href="#/gpt2">a page of its own</a>.</p>
+        <Gpt2Explainer />
+        <p>Same wiring as Riya’s file. The difference is the numbers inside, and those come only from training.</p>
         <Callout kind="note" label="One difference: where the weights start">The wiring matches; the starting numbers do not. <code>tiny_gpt.py</code> keeps PyTorch’s defaults, which fill the embedding table with numbers of size about 1. GPT-2 starts every weight small (standard deviation 0.02) and shrinks the layers that write into the residual stream by a further 1/√(2N) for N blocks. You will see in the next lesson why that choice matters on the very first step.</Callout>
         <Callout kind="note">The last column differs in the details of almost every box, but not in the wiring diagram. Each of those changes (RoPE, RMSNorm, SwiGLU, grouped-query attention, mixture of experts) is explained in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>. For closed models such as GPT-4, Claude and Gemini, architecture details are not public.</Callout>
         <p>Riya runs the file one last time before leaving. It prints <span className="mono">params 0.81M</span> and a line of gibberish. Correct pipeline, wrong numbers. Tomorrow night: training.</p>

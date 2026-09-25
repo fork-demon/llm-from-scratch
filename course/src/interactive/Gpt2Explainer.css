@@ -1,0 +1,143 @@
+.Gpt2Explainer { min-width: 0; }
+.Gpt2Explainer-card { background: var(--paper-2); border-radius: 6px; padding: 10px 14px; margin-top: 0; }
+.Gpt2Explainer-label { display: block; font-size: 14px; color: var(--ink-3); margin-bottom: 4px; }
+.Gpt2Explainer-err { color: var(--bad); }
+.Gpt2Explainer-load { max-width: 620px; }
+.Gpt2Explainer-progress { margin-top: 12px; max-width: 460px; }
+.Gpt2Explainer-progress .meter { height: 8px; }
+.Gpt2Explainer-error { margin-top: 10px; }
+
+.Gpt2Explainer-prompt { margin: 12px 0 8px; }
+.Gpt2Explainer-promptrow { display: flex; gap: 8px; align-items: center; }
+.Gpt2Explainer-promptrow .input { font-family: var(--mono); font-size: 14px; min-width: 0; flex: 1; }
+.Gpt2Explainer-promptrow .btn { flex: none; white-space: nowrap; }
+
+/* ---- the pipeline: a numbered rail of stages ---- */
+.Gpt2Explainer-stage { position: relative; padding: 4px 0 14px 40px; margin: 0; min-width: 0; }
+.Gpt2Explainer-stage::before { content: ''; position: absolute; left: 13px; top: 34px; bottom: 0; width: 2px; background: var(--rule-strong); }
+.Gpt2Explainer-stage.is-sub { padding-left: 32px; padding-bottom: 10px; }
+.Gpt2Explainer-stage.is-sub::before { left: 10px; top: 28px; background: var(--rule); }
+.Gpt2Explainer-stagehead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 30px; }
+.Gpt2Explainer-num { position: absolute; left: 0; top: 4px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--mono); font-size: 13px; font-weight: 600; background: var(--paper-2); border: 2px solid var(--rule-strong); color: var(--ink-2); transition: background 0.15s, border-color 0.15s; }
+.Gpt2Explainer-stage.is-sub > .Gpt2Explainer-stagehead > .Gpt2Explainer-num { width: 22px; height: 22px; font-size: 12px; top: 6px; }
+.Gpt2Explainer-stage.is-active > .Gpt2Explainer-stagehead > .Gpt2Explainer-num { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.Gpt2Explainer-title { margin: 0; font-size: 16px; }
+.Gpt2Explainer-stage.is-sub .Gpt2Explainer-title { font-size: 14.5px; }
+.Gpt2Explainer-shape { font-family: var(--mono); font-size: 12px; color: var(--ink-3); background: var(--paper-2); padding: 1px 6px; border-radius: 4px; }
+.Gpt2Explainer-why { margin-left: auto; font-size: 12.5px; font-weight: 600; padding: 2px 10px; border-radius: 99px; border: 1px solid var(--rule-strong); background: var(--paper); color: var(--accent-ink); cursor: pointer; }
+.Gpt2Explainer-why[aria-expanded='true'] { background: var(--accent-soft); border-color: transparent; }
+.Gpt2Explainer-why:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.Gpt2Explainer-whytext { font-size: 14px; color: var(--ink-2); background: var(--accent-soft); border-radius: 6px; padding: 8px 12px; margin: 6px 0 4px; }
+.Gpt2Explainer-whytext a { white-space: nowrap; font-weight: 600; }
+.Gpt2Explainer-stagebody { margin-top: 6px; min-width: 0; }
+.Gpt2Explainer-stagebody > .lab-note:first-child { margin-top: 0; }
+
+/* ---- tokens ---- */
+.Gpt2Explainer-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.Gpt2Explainer-chip { display: inline-flex; flex-direction: column; align-items: center; font-family: var(--mono); font-size: 13.5px; line-height: 1.25; padding: 3px 7px; border-radius: 5px; border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor: pointer; max-width: 100%; }
+.Gpt2Explainer-chip.small { flex-direction: row; font-size: 12.5px; padding: 1px 5px; }
+.Gpt2Explainer-chip.is-gen { border-style: dashed; border-color: var(--accent); }
+.Gpt2Explainer-chip[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.Gpt2Explainer-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.Gpt2Explainer-chiptext { white-space: pre; overflow: hidden; text-overflow: ellipsis; max-width: 16ch; }
+.Gpt2Explainer-chipid { font-size: 10.5px; color: var(--ink-3); }
+.Gpt2Explainer-chip[aria-pressed='true'] .Gpt2Explainer-chipid { color: var(--paper); opacity: 0.8; }
+.Gpt2Explainer-heatchip { font-family: var(--mono); font-size: 12.5px; padding: 1px 5px; border-radius: 3px; white-space: pre; color: var(--ink); }
+
+/* ---- vectors and heatmaps ---- */
+.Gpt2Explainer-canvas { display: block; image-rendering: pixelated; }
+.Gpt2Explainer-strip { margin: 6px 0; min-width: 0; }
+.Gpt2Explainer-striplabel { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 12px; font-size: 13px; color: var(--ink-2); }
+.Gpt2Explainer-striplabel .mono { font-size: 11.5px; color: var(--ink-3); }
+.Gpt2Explainer-stripwrap { position: relative; }
+.Gpt2Explainer-stripcanvas { width: 100%; height: 16px; border-radius: 3px; border: 1px solid var(--rule); }
+.Gpt2Explainer-marks span { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--ink-3); }
+.Gpt2Explainer-matrix { width: 100%; height: auto; max-height: 260px; border: 1px solid var(--rule); border-radius: 3px; }
+.Gpt2Explainer-legend { font-size: 12.5px; color: var(--ink-3); margin: 4px 0; }
+.Gpt2Explainer-sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin: 0 2px 0 6px; }
+.Gpt2Explainer-sw.pos { background: var(--accent); }
+.Gpt2Explainer-sw.neg { background: var(--il-a); }
+
+/* ---- the 12 blocks ---- */
+.Gpt2Explainer-blocks { display: flex; flex-direction: column; gap: 4px; }
+.Gpt2Explainer-block { border: 1px solid var(--rule-strong); border-radius: 7px; background: var(--card); min-width: 0; }
+.Gpt2Explainer-block.is-open { border-color: var(--accent); }
+.Gpt2Explainer-block.is-active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.Gpt2Explainer-blockbtn { width: 100%; display: grid; grid-template-columns: 64px 36px minmax(0, 1fr) minmax(0, 150px) 14px; align-items: center; gap: 10px; padding: 5px 10px; background: none; border: 0; color: var(--ink); cursor: pointer; text-align: left; font: inherit; border-radius: 7px; }
+.Gpt2Explainer-blockbtn:hover { background: var(--paper-2); }
+.Gpt2Explainer-blockbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.Gpt2Explainer-blockname { font-weight: 600; font-size: 14px; }
+.Gpt2Explainer-thumb { width: 36px; height: 36px; border: 1px solid var(--rule); }
+.Gpt2Explainer-blocknums { display: flex; flex-wrap: wrap; gap: 0 12px; font-size: 12px; color: var(--ink-2); }
+.Gpt2Explainer-blocklens { font-size: 12.5px; white-space: pre; overflow: hidden; text-overflow: ellipsis; color: var(--accent-ink); }
+.Gpt2Explainer-caret { color: var(--ink-3); }
+.Gpt2Explainer-detail { border-top: 1px solid var(--rule); padding: 10px 10px 4px; min-width: 0; }
+
+.Gpt2Explainer-heads { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 4px 0; }
+.Gpt2Explainer-head { font-family: var(--mono); font-size: 12.5px; min-width: 28px; min-height: 28px; border-radius: 5px; border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor: pointer; }
+.Gpt2Explainer-head[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.Gpt2Explainer-head:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.Gpt2Explainer-qkv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.Gpt2Explainer-qkvfig { margin: 0; min-width: 0; }
+.Gpt2Explainer-qkvfig figcaption { margin-bottom: 4px; }
+.Gpt2Explainer-qkvcanvas { width: 100%; height: auto; border: 1px solid var(--rule); }
+
+.Gpt2Explainer-attn { display: grid; justify-content: start; gap: 4px; align-items: start; margin: 6px 0; }
+.Gpt2Explainer-attnlabels { display: flex; flex-direction: column; align-items: flex-end; }
+.Gpt2Explainer-attnlabels span { font-family: var(--mono); white-space: pre; color: var(--ink-2); max-width: 14ch; overflow: hidden; text-overflow: ellipsis; }
+.Gpt2Explainer-attnlabels span.is-q { color: var(--ink); font-weight: 700; }
+
+.Gpt2Explainer-mlp { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr); gap: 14px; align-items: start; margin: 8px 0; }
+.Gpt2Explainer-mlpgrid { margin: 0; }
+.Gpt2Explainer-grid { width: 100%; height: auto; border: 1px solid var(--rule); }
+.Gpt2Explainer-gelu { width: 100%; max-width: 260px; height: auto; display: block; }
+
+/* ---- logits, probabilities, lens ---- */
+.Gpt2Explainer-logitbar { position: absolute; left: 0; top: 2px; bottom: 2px; background: var(--ink-3); border-radius: 2px; }
+.Gpt2Explainer-probs { display: flex; flex-direction: column; gap: 4px; max-width: 560px; }
+.Gpt2Explainer-prob { display: grid; grid-template-columns: minmax(0, 110px) minmax(0, 1fr) 56px; gap: 8px; align-items: center; }
+.Gpt2Explainer-problabel { font-size: 13px; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+.Gpt2Explainer-probtrack { position: relative; height: 14px; background: var(--paper-2); border-radius: 3px; }
+.Gpt2Explainer-probbefore { position: absolute; left: 0; top: 0; bottom: 0; border: 1.5px solid var(--ink-3); border-radius: 3px; box-sizing: border-box; }
+.Gpt2Explainer-probafter { position: absolute; left: 0; top: 2px; bottom: 2px; background: var(--accent); border-radius: 2px; transition: width 0.15s; }
+.Gpt2Explainer-probval { font-size: 12.5px; text-align: right; }
+.Gpt2Explainer-prob.is-cut .Gpt2Explainer-problabel { color: var(--ink-3); text-decoration: line-through; }
+.Gpt2Explainer-prob.is-cut .Gpt2Explainer-probval { color: var(--ink-3); }
+
+.Gpt2Explainer-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--ink-2); }
+.Gpt2Explainer-text { font-family: var(--mono); font-size: 14px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--paper-2); border-radius: 6px; padding: 10px 12px; margin-top: 10px; }
+.Gpt2Explainer-prompttext { color: var(--ink-3); }
+.Gpt2Explainer-gentext { color: var(--ink); background: var(--accent-soft); border-radius: 2px; }
+
+.Gpt2Explainer-lens { display: flex; flex-direction: column; font-size: 14px; }
+.Gpt2Explainer-lensrow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 130px; gap: 4px 10px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--rule); }
+.Gpt2Explainer-lensrow.is-head { font-weight: 600; font-size: 13px; color: var(--ink-2); border-bottom-color: var(--rule-strong); }
+.Gpt2Explainer-lensrow [role='rowheader'] { white-space: nowrap; color: var(--ink-2); }
+.Gpt2Explainer-lenschips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.Gpt2Explainer-lenschips .chip { white-space: pre; }
+.Gpt2Explainer-lensfinal { white-space: nowrap; font-size: 12.5px; }
+.Gpt2Explainer-lensbar { display: inline-block; height: 8px; background: var(--accent); border-radius: 2px; vertical-align: middle; }
+
+@media (max-width: 640px) {
+  .Gpt2Explainer-stage { padding-left: 32px; }
+  .Gpt2Explainer-num { width: 24px; height: 24px; font-size: 12px; }
+  .Gpt2Explainer-stage::before { left: 11px; top: 30px; }
+  .Gpt2Explainer-stage.is-sub { padding-left: 0; }
+  .Gpt2Explainer-stage.is-sub::before { display: none; }
+  .Gpt2Explainer-stage.is-sub > .Gpt2Explainer-stagehead > .Gpt2Explainer-num { position: static; }
+  .Gpt2Explainer-blockbtn { grid-template-columns: 58px 32px minmax(0, 1fr) 12px; gap: 2px 8px; padding: 5px 8px; }
+  .Gpt2Explainer-blocknums { grid-column: 1 / 5; grid-row: 2; font-size: 11px; gap: 0 10px; }
+  .Gpt2Explainer-blocklens { grid-column: 3 / 4; grid-row: 1; }
+  .Gpt2Explainer-caret { grid-column: 4 / 5; grid-row: 1; }
+  .Gpt2Explainer-lensrow { grid-template-columns: 58px minmax(0, 1fr); }
+  .Gpt2Explainer-lensrow.is-head span:last-child { display: none; }
+  .Gpt2Explainer-lensfinal { grid-column: 2 / 3; }
+  .Gpt2Explainer-thumb { width: 32px; height: 32px; }
+  .Gpt2Explainer-detail { padding: 8px 6px 4px; }
+  .Gpt2Explainer-qkv { grid-template-columns: minmax(0, 1fr); }
+  .Gpt2Explainer-qkvcanvas { max-height: 180px; }
+  .Gpt2Explainer-mlp { grid-template-columns: minmax(0, 1fr); }
+  .Gpt2Explainer-mlpgrid { max-width: 220px; }
+  .Gpt2Explainer-prob { grid-template-columns: minmax(0, 84px) minmax(0, 1fr) 48px; }
+}

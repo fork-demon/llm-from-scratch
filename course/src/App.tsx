@@ -9,6 +9,8 @@ import { ConceptMapPage } from './pages/ConceptMap'
 import { SelfTestPage } from './pages/SelfTest'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ReviewPage } from './pages/Review'
+// the GPT-2 Explainer page is code-split: its engine and worker load only when someone opens it
+const Gpt2Page = lazy(() => import('./pages/Gpt2Page'))
 
 /* ---------- hash routing: static-host friendly, no dependency ---------- */
 const parseHash = () => {
@@ -80,6 +82,7 @@ function Sidebar({ open, current, onNavigate, theme, toggleTheme, onCollapse }: 
         <a href="#/map" aria-current={route.page === 'map' ? 'page' : undefined} onClick={onNavigate}>Concept map</a>
         <a href="#/glossary" aria-current={route.page === 'glossary' ? 'page' : undefined} onClick={onNavigate}>Glossary</a>
         <a href="#/review" aria-current={route.page === 'review' ? 'page' : undefined} onClick={onNavigate}>Review{dueCount > 0 ? ` (${dueCount})` : ''}</a>
+        <a href="#/gpt2" aria-current={route.page === 'gpt2' ? 'page' : undefined} onClick={onNavigate}>GPT-2 Explainer</a>
       </div>
 
       <nav className="nav" aria-label="Lessons">
@@ -156,7 +159,7 @@ export function App() {
     window.scrollTo(0, 0)
     document.getElementById('content')?.focus({ preventScroll: true })
     const l = route.page === 'lesson' ? lessonById(route.arg) : undefined
-    document.title = l ? `${l.title} · LLM From First Principles` : 'LLM From First Principles'
+    document.title = l ? `${l.title} · LLM From First Principles` : route.page === 'gpt2' ? 'GPT-2 Explainer · LLM From First Principles' : 'LLM From First Principles'
   }, [route.page, route.arg])
 
   useEffect(() => {
@@ -197,6 +200,7 @@ export function App() {
   else if (route.page === 'map') body = <ConceptMapPage />
   else if (route.page === 'selftest') body = <SelfTestPage />
   else if (route.page === 'review') body = <ReviewPage />
+  else if (route.page === 'gpt2') body = <Suspense fallback={<p className="muted">Loading the GPT-2 Explainer…</p>}><Gpt2Page arg={route.arg} /></Suspense>
   else body = <Home />
 
   return (
@@ -214,7 +218,7 @@ export function App() {
           <button className="btn small" onClick={() => setOpen(true)} aria-label="Open navigation" aria-expanded={open} style={{ minWidth: 40, minHeight: 40, justifyContent: 'center' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><path d="M4 7h16M4 12h16M4 17h16" /></svg>
           </button>
-          <span className="topbar-title">{meta ? meta.title : 'LLM From First Principles'}</span>
+          <span className="topbar-title">{meta ? meta.title : route.page === 'gpt2' ? 'GPT-2 Explainer' : 'LLM From First Principles'}</span>
         </div>
         <main id="content" tabIndex={-1} className={`page${route.page === 'map' ? ' wide' : ''}`} style={{ outline: 'none' }}>
           <ErrorBoundary what="this page">{body}</ErrorBoundary>

@@ -68,6 +68,14 @@ Text → Tokenization → Embeddings → Neural network → Attention → Transf
 The lessons follow one story: Riya, a backend developer at a Bengaluru fintech, learns how LLMs work from the
 bottom up, with help from her mentor Kabir, her mother Amma and her sceptical flatmate Dev (see `course/STORY.md`).
 
+Also in the app: the **GPT-2 Explainer** (`#/gpt2`, also embedded in "Build GPT"): the real GPT-2 small
+(124M parameters, int8, about 127 MB, downloaded once and cached by the browser) running in a Web Worker on your device.
+It shows every stage of one forward pass for your own prompt (tokens and ids, embeddings, each of the 12 blocks with
+Q/K/V, the attention heatmap of any head, the output projection, residual adds and the 768 → 3,072 → 768 MLP, the final
+LayerNorm, logits, probabilities reshaped live by temperature, top-k and top-p, and generation with a KV cache), plus a
+logit lens, and every stage has a **Why?** link to the lesson that explains it. Weights are exported by
+`phase6-engineering/export_gpt2.py`; the TypeScript engine and tokenizer are tested against PyTorch and tiktoken.
+
 Also in the app: **25 coding exercises that run in your browser** (write `softmax`, attention, a backprop step, a GPT
 forward pass or a KV cache yourself and have hidden tests check it, powered by Pyodide, no install), a **"Run this file"**
 button that runs 14 of the repository's NumPy scripts in the browser, a spaced **review queue** for questions
@@ -83,6 +91,7 @@ course/                  the interactive course (React + TypeScript + Vite, stat
   src/lib/               pure, unit-tested logic behind every interactive (softmax, attention, BPE, RAG, ...)
   src/components/        lesson layout, exercise system (hints → solution), quizzes, UI kit
   src/data/              curriculum map, glossary
+  public/models/gpt2/    GPT-2 small as int8 chunks (OpenAI, modified MIT license; see its README.md)
   AUTHORING.md           how lessons are written (read this before contributing)
 phase1-foundations/ … phase6-engineering/
                          the runnable Python implementations every lesson links to,
