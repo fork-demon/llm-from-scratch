@@ -10,17 +10,20 @@ export default function ContextWallLesson() {
   return (
     <Lesson id="context-wall">
       <Why>
-        <p className="lede">Here is what the model from the last lesson wrote when the repository’s Python file ran:</p>
+        <p className="lede">Dinner at the flat. Dev is telling a story.</p>
+        <p>“Monday, my manager says: keep your laptop charged, the CEO might drop in for a surprise demo.” Then five minutes about traffic, a broken chai machine and a meeting that should have been an email. “Friday, 4 p.m., the door opens. It’s the CEO. And my laptop?” He pauses. “Two percent.”</p>
+        <p>Riya laughs. Then she stops, fork in the air. The joke only worked because she still remembered Monday. Her model from last week would have forgotten Monday by the second word.</p>
+        <p>Here is what that model wrote when the repository’s Python file ran:</p>
         <div className="card mono" style={{ fontSize: 15 }}>hin is the ile sundr de arethe f eof auilonger reree me ththene ofaiven thersthe wigsle n awhe t m cks qumin qut wathe</div>
         <p>Look closely. Every <em>pair</em> of neighbouring characters is plausible English: “th”, “he”, “qu”, “in”. And the whole is nonsense.</p>
-        <p>That is not a bug. The model sees exactly one character. When it writes the “e” of “the”, it has already forgotten the “t”. It cannot finish a word it cannot remember starting, let alone a sentence.</p>
+        <p>That is not a bug. The model sees exactly one character. When it writes the “e” of “the”, it has already forgotten the “t”. It cannot finish a word it cannot remember starting. A sentence, or a joke, is out of reach.</p>
         <Callout kind="idea">
           A language model is only as good as the <b>context</b> it can use. So the obvious next move is: look further back. This lesson is about why the obvious ways of doing that hit a wall, and what question they leave behind.
         </Callout>
       </Why>
 
       <Problem title="The problem: why not just remember longer phrases?">
-        <p>The count table worked. So give it more to look at: instead of one row per previous character, one row per previous <em>two</em> characters, or five, or twenty words. Longer context, better guesses. What could go wrong?</p>
+        <p>Riya’s first idea is the obvious one. The count table worked, so give it more to look at. Instead of one row per previous character, use one row per previous <em>two</em> characters. Or five. Or twenty words. Longer context, better guesses. What could go wrong?</p>
         <WhyExists
           problem="One token of context produces text that is locally plausible and globally nonsense."
           naive="Keep counting, but use the last n tokens as the row key instead of one. A table like that is called an n-gram table: n is how many tokens it looks back."
@@ -28,10 +31,12 @@ export default function ContextWallLesson() {
           idea="Stop treating each context as an unrelated row. Turn the context tokens into embeddings and feed them to a neural network, so similar contexts share what they learn."
           tradeoff="The network has a fixed-size window with a separate set of weights for each position. It still cannot reach far back. That is the wall."
         />
-        <p>Do not take this on faith. Both failures are easy to measure.</p>
+        <p>Do not take this on faith. Both failures can be measured, in a few lines.</p>
+        <p><b>One fact about the text before we measure.</b> The last lesson’s training text had 1,479 characters. That is one 493-character text repeated three times, because the Python file writes <code>CORPUS = (...) * 3</code>. Repeating a text adds no new contexts. So in this lesson we count contexts on the single 493-character copy.</p>
       </Problem>
 
       <MentalModel title="A mental model: a phrasebook versus knowing the language">
+        <p>Amma, on the phone that night, has seen this before. “Your cousin went to Paris with a phrasebook,” she says. “Very good, until the waiter said something that was not in the book.”</p>
         <Callout kind="analogy">
           An n-gram table is a <b>phrasebook</b>. If your situation is printed in it, the answer is excellent. If your situation differs by one word, the phrasebook has nothing at all. Making the phrasebook longer does not help: there are more possible situations than pages you could ever print.
           <br /><br />
@@ -57,7 +62,7 @@ export default function ContextWallLesson() {
       </TryIt>
 
       <Numbers>
-        <p>The measurements on our 493-character text, side by side. (The 1,479 characters of the last lesson are this same text used three times over, as the Python file does. Repeating a text adds no new contexts, so we count on one copy.)</p>
+        <p>The measurements on the single 493-character copy of the text, side by side:</p>
         <div className="table-scroll">
           <table className="plain mono">
             <thead><tr><th>context length n</th><th>possible contexts 27ⁿ</th><th>contexts that occur</th><th>of those, seen exactly once</th></tr></thead>
@@ -70,8 +75,9 @@ export default function ContextWallLesson() {
             </tbody>
           </table>
         </div>
-        <p>Read the last row again. A text of 493 characters contains at most 484 windows of length 10. Collect ten times more text and you get roughly ten times more windows: the count grows in step with the text. But the number of possible contexts grows <em>exponentially</em> with n. Doubling n squares it. Data can never catch up.</p>
-        <p><b>Now the neural alternative.</b> The Python file’s Model C looks at 3 characters, but not with a table. It looks up an <a href="#/lesson/embeddings">embedding</a> for each of the 3 characters, glues the three vectors end to end, and feeds them to the small <a href="#/lesson/neurons">two-layer network</a> from Part 3.</p>
+        <p>Read the last row again. A text of 493 characters contains at most 484 windows of length 10.</p>
+        <p>Collect ten times more text and you get roughly ten times more windows: the count grows in step with the text. But the number of possible contexts grows <em>exponentially</em> with n. Doubling n squares it. Data can never catch up.</p>
+        <p><b>Now the neural alternative.</b> The Python file’s Model C looks at 3 characters, but not with a table. It looks up an <a href="#/lesson/embeddings">embedding</a> for each of the 3 characters. It glues the three vectors end to end. Then it feeds them to the small <a href="#/lesson/neurons">two-layer network</a> from Part 3.</p>
         <div className="table-scroll">
           <table className="plain mono">
             <thead><tr><th>model (3 characters of context)</th><th>numbers to store</th></tr></thead>
@@ -87,9 +93,17 @@ MODEL C: 3 chars of context -- breaking the bigram ceiling
   context-3 loss 0.3480  vs bigram optimum 1.7518
   -> more context beats any cleverness with less context.
 `}</Code>
-        <p>From 1.75 down to 0.35. In perplexity: from about 5.8 “effective choices” per character to e<sup>0.348</sup> = 1.4. No amount of cleverness with one character of context could do that, because 1.7518 was already the best possible with one character. <b>More context wins.</b></p>
+        <p>From 1.75 down to 0.35. In perplexity: from about 5.8 “effective choices” per character to e<sup>0.348</sup> = 1.4.</p>
+        <p>No amount of cleverness with one character of context could do that, because 1.7518 was already the best possible with one character. <b>More context wins.</b></p>
         <Callout kind="warn" label="Read that number honestly">
-          0.3480 is the loss on the last training batch, measured on the same tiny text the model trained on (493 characters, repeated three times). A good part of that drop is the model starting to memorise the text, just like the n = 3 count table, which scores 0.32 on this text. The fair conclusions are the modest ones: context matters enormously, and a network can use it with a hundred times fewer numbers than a table. Whether a model has <em>generalised</em> can only be judged on text it has not seen, which is how we will evaluate the GPT in Part 7.
+          <p>0.3480 looks wonderful. Before you believe it, check what it measures:</p>
+          <ul>
+            <li>It is the loss on <b>one batch</b>: the last 256 training examples, not new text.</li>
+            <li>Those examples come from the <b>same text the model trained on</b>: 493 characters, seen over and over.</li>
+            <li>So part of the drop is <b>memorisation</b>. For comparison, the n = 3 count table, which does nothing but memorise, scores 0.32 on this text.</li>
+          </ul>
+          <p>What we can fairly conclude is modest. Context matters enormously. And a network can use it with about a hundred times fewer numbers than a table (5,323 against 531,441).</p>
+          <p>Whether a model has <em>generalised</em> can only be judged on text it has not seen. That is how we will evaluate the GPT in Part 7.</p>
         </Callout>
       </Numbers>
 
@@ -277,6 +291,7 @@ loss_C = train_context3(ids, V, ctx=200)
           <br /><br />
           We want no fixed window, no weights bound to positions, no squeezing everything through one summary, and no waiting for step 499. Think about what such a mechanism would have to do for the word “it”. Then start Part 6.
         </Callout>
+        <p>Riya sends Kabir one line that night: “How does a model remember Monday?” He replies in the morning: “Good question. That one has a whole architecture named after it.”</p>
       </RealLLM>
 
       <BeforeMovingOn

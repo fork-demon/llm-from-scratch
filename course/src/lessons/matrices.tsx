@@ -9,9 +9,12 @@ export default function MatricesLesson() {
   return (
     <Lesson id="matrices">
       <Why>
-        <p className="lede">Open the source code of any LLM and search for the character <code>@</code>.</p>
-        <p>You will find lines like <code>x @ W</code>, <code>Q @ K.T</code> and <code>weights @ V</code> everywhere. Delete them and almost nothing is left. An LLM is, to a surprising degree, a long chain of one operation: the <b>matrix multiply</b>.</p>
-        <p>That sounds like bad news if you are not a maths person. It is good news. In the <a href="#/lesson/vectors">last lesson</a> you learned the dot product: one question, one answer. A matrix multiply is nothing new. It is <b>many dot products at once</b>, arranged in a grid.</p>
+        <p className="lede">Sunday evening. Amma is on video call again, and behind her, on the dining table, is a thick bundle of paper.</p>
+        <p>“Unit test marks,” she says. She retired years ago, but the school next door still asks for help. “Forty students. I used to mark one notebook, total it, write it in the register, pick up the next. Now I do it on one big sheet. Students down the side, questions across the top. One pass, whole class.”</p>
+        <p>Riya laughs, because that morning Kabir said almost the same thing about GPUs.</p>
+        <p>Open the source code of any LLM and search for the character <code>@</code>. You will find lines like <code>x @ W</code>, <code>Q @ K.T</code> and <code>weights @ V</code> everywhere.</p>
+        <p>Delete them and almost nothing is left. An LLM is, to a surprising degree, a long chain of one operation: the <b>matrix multiply</b>.</p>
+        <p>That sounds like bad news if you are not a maths person. It is good news. In the <a href="#/lesson/vectors">last lesson</a> you learned the dot product: one question, one answer. A matrix multiply is nothing new. It is <b>many dot products at once</b>, arranged in a grid, like Amma’s sheet.</p>
         <Callout kind="idea">
           One dot product asks one question of one vector. A model needs to ask thousands of questions of thousands of tokens, at every layer. A matrix multiply is how you write, and run, all of those at once.
         </Callout>
@@ -19,6 +22,7 @@ export default function MatricesLesson() {
 
       <Problem>
         <p>Suppose a layer wants to compute 64 different scores for each of 1,000 token vectors. Every score is a dot product. That is 64,000 dot products.</p>
+        <p>Riya’s first version is the one every programmer writes: two loops.</p>
         <WhyExists
           problem="Run many scoring formulas over many vectors."
           naive="Two nested for loops, calling dot() 64,000 times."
@@ -35,7 +39,7 @@ export default function MatricesLesson() {
           example={<>Three tokens, each described by 2 numbers: a grid with 3 rows and 2 columns. We say its <b>shape</b> is <code>(3, 2)</code>. Always rows first.</>}
           formal={<>A rectangular array of numbers with n rows and m columns, shape (n, m). In code: a 2D array.</>}
         />
-        <p>You will read matrices in two ways, and switch between them constantly:</p>
+        <p>You will read matrices in two ways, and switch between them all the time:</p>
         <div className="grid-2">
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>As data: a stack of records</h4>
@@ -58,13 +62,15 @@ export default function MatricesLesson() {
             </tbody>
           </table>
         </div>
-        <p>So <code>W @ x = [4, 4]</code>. Two questions asked of the same vector, two answers. W has shape (2, 3), x has 3 numbers, the output has 2. A layer with 64 outputs is a matrix with 64 rows: 64 questions asked at once.</p>
+        <p>So <code>W @ x = [4, 4]</code>. Two questions asked of the same vector, two answers.</p>
+        <p>W has shape (2, 3), x has 3 numbers, the output has 2. A layer with 64 outputs is a matrix with 64 rows: 64 questions asked at once.</p>
+        <p>Keep these two formulas in mind. You will meet them again below, written the other way round.</p>
 
         <h3>Matrix × matrix: every row with every column</h3>
-        <p>Now put <em>several</em> vectors on the right-hand side, standing up as columns. The rule:</p>
+        <p>Now put <em>several</em> vectors on the right-hand side, standing up as columns. This is Amma’s sheet. The rule:</p>
         <Callout kind="idea">In <code>A @ B</code>, the number in row i, column j of the result is <b>(row i of A) · (column j of B)</b>. Every row of A gets dotted with every column of B. That is the entire definition.</Callout>
         <Callout kind="analogy">
-          Think of a questionnaire. Each row of A is a question, each column of B is a respondent, and the result is the full table of answers: one cell per (question, respondent) pair.
+          Think of a questionnaire. Each row of A is a question. Each column of B is a respondent. The result is the full table of answers: one cell per (question, respondent) pair.
           <br /><br />
           Where the analogy stops: in a trained model the “questions” are learned numbers. Nobody wrote them, and most of them do not translate into a question a human would ask.
         </Callout>
@@ -107,8 +113,11 @@ X = [[1, 0],      W = [[2, 0, 1],      X @ W = [[2, 0, 1],    <- token 0
      [0, 1],           [1, 3, 0]]               [1, 3, 0],    <- token 1
      [1, 1]]                                    [3, 3, 1]]    <- token 2
 `}</Code>
-        <p>Check token 2: <span className="mono">[1, 1] · [2, 1] = 3</span>, <span className="mono">[1, 1] · [0, 3] = 3</span>, <span className="mono">[1, 1] · [1, 0] = 1</span>. Each row of the result depends only on the matching row of X. The tokens do not mix: the same transformation is applied to each of them, independently, in one go.</p>
-        <p className="muted">Written this way round, each <em>column</em> of W is one question and each row of X is one token being asked. The same dot products as before, laid out sideways.</p>
+        <p>Check token 2: <span className="mono">[1, 1] · [2, 1] = 3</span>, <span className="mono">[1, 1] · [0, 3] = 3</span>, <span className="mono">[1, 1] · [1, 0] = 1</span>.</p>
+        <p>Each row of the result depends only on the matching row of X. The tokens do not mix. The same transformation is applied to each of them, independently, in one go.</p>
+        <Callout kind="idea">
+          Notice the switch. In the house example the questions were the <b>rows</b> of W, and we wrote <code>W @ x</code>. Here the data is on the left, so each question is a <b>column</b> of W, and we write <code>X @ W</code>. Same dot products, laid out sideways. LLM code almost always uses this second form. The next section shows, with the house numbers, that the two are the same thing.
+        </Callout>
       </Numbers>
 
       <TheMath>
@@ -142,6 +151,32 @@ X @ X.T = [[1, 0, 1],
 `}</Code>
         <p><code>something @ something_else.T</code> is how you spell “dot every row of this with every row of that”. It is the heart of <a href="#/lesson/attention">attention</a>, where it appears as <code>Q @ K.T</code>.</p>
 
+        <h3>The bridge: W @ x and x @ W are the same layer</h3>
+        <p>Now the transpose pays for the switch you saw earlier. Take the house again: <code>x = [2, 1, 1]</code> and the two formulas as rows of <code>W</code>.</p>
+        <Code lang="text" title="questions as rows: W is (2, 3)">{`
+W = [[1, 0, 2],      # price
+     [0, 3, 1]]      # upkeep
+
+W @ x   = [4, 4]     # (2, 3) @ (3,) -> 2 answers
+`}</Code>
+        <p>Now lay x down as a row, the way LLM code stores tokens, and flip W so each formula stands up as a column:</p>
+        <Code lang="text" title="questions as columns: W.T is (3, 2)">{`
+W.T = [[1, 0],       # column 0 is the price formula
+       [0, 3],       # column 1 is the upkeep formula
+       [2, 1]]
+
+x @ W.T = [4, 4]     # (1, 3) @ (3, 2) -> the same 2 answers
+`}</Code>
+        <p>Same numbers, same answers. Only the layout changed. Stack a second house <code>[3, 2, 0]</code> under the first, and one multiply scores both:</p>
+        <Code lang="text" title="(2, 3) @ (3, 2) -> (2, 2): one row per house">{`
+X = [[2, 1, 1],      X @ W.T = [[4, 4],     <- house 0: price 4, upkeep 4
+     [3, 2, 0]]                 [3, 6]]     <- house 1: price 3, upkeep 6
+`}</Code>
+        <p>So a layer stored as <b>(inputs, outputs)</b>, with one column per question, is the transpose of the “rows are questions” matrix. Code stores it that way from the start and writes <code>x @ W</code>. When the <a href="#/lesson/neurons">Neurons</a> lesson says “each column of W is one neuron”, this is why.</p>
+        <Callout kind="established">
+          The rule behind the bridge: <b>(A @ B).T = B.T @ A.T</b>. Transposing a product flips the order and transposes each part. <a href="#/lesson/backprop">Backpropagation</a> leans on this: when you send blame backward through <code>x @ W</code>, the formulas contain <code>W.T</code> and <code>x.T</code>. If you can switch between the two layouts here, those formulas will read naturally.
+        </Callout>
+
         <DeepDive title="Two facts about matrix multiplication worth pinning to the wall">
           <p><b>Order matters.</b> A @ B is usually not B @ A. Often B @ A does not even have a legal shape. Think of function composition: “resize the image, then compress it” is not “compress, then resize”.</p>
           <p><b>Grouping does not matter.</b> (A @ B) @ C always equals A @ (B @ C). You can regroup a chain of multiplies however is convenient. Backpropagation quietly relies on this.</p>
@@ -163,7 +198,14 @@ out = A @ B
         <Callout kind="dev">
           A matrix multiply is a doubly nested loop of dot products (three loops, if you count the one hiding inside the dot product). <code>A @ B</code> is that loop, vectorised.
           <br /><br />
-          Now look at the loop body. No iteration reads anything another iteration wrote. So every cell can be worked out on its own, and all of them can be worked out at the same time. A GPU is a machine for doing thousands of identical multiply-adds at once. That match is why deep learning became practical.
+          Now look at the loop body. No iteration reads anything another iteration wrote. So every cell can be worked out on its own, and all of them can be worked out at the same time.
+          <br /><br />
+          A GPU is a machine for doing thousands of identical multiply-adds at once. That match is why deep learning became practical.
+        </Callout>
+        <Callout kind="dev">
+          Arithmetic is only half the story. To multiply by W, every number of W has to be read from memory first. When an LLM generates text one token at a time, each new token reads <em>all</em> the weights but does only a little arithmetic with each one.
+          <br /><br />
+          So during generation the usual bottleneck is <b>memory bandwidth</b>: how fast the weights can be streamed to the cores. GPUs help here too, because their memory is much faster than a typical CPU’s. You will see this again in <a href="#/lesson/inference">Inference</a>.
         </Callout>
         <p>From the repository, the hand calculation checked by an assert:</p>
         <Code source="phase1-foundations/math_primer.py" title="every row of A dotted with every column of B">{`
@@ -256,7 +298,7 @@ scores = Q @ K              # ValueError: ... (size 4 is different from 8)
         <ExplainBack
           id="matrices-explain"
           prompt="A backend developer asks you: “Why do LLMs need GPUs? My CPU can multiply numbers just fine.” Answer using what you know about what a matrix multiply is made of."
-          modelAnswer={<p>Almost all the work in an LLM is matrix multiplication, and a matrix multiply is just a huge grid of dot products. Every cell of the result is computed from one row and one column, and no cell depends on any other cell. So there is no need to do them one after another. A CPU has a handful of fast cores and can only work on a few cells at a time. A GPU has thousands of simple cores that can each take a cell and do its multiply-adds at the same time. The maths is the same, the GPU just does the independent pieces in parallel.</p>}
+          modelAnswer={<p>Almost all the work in an LLM is matrix multiplication, and a matrix multiply is a huge grid of dot products. Every cell of the result is computed from one row and one column, and no cell depends on any other cell. So there is no need to do them one after another. A CPU has a handful of fast cores and can only work on a few cells at a time. A GPU has thousands of simple cores that can each take a cell and do its multiply-adds at the same time. The maths is the same; the GPU does the independent pieces in parallel. There is a second reason. When the model writes one token at a time, every token has to read all the weights from memory, and that reading, not the arithmetic, is usually the slow part. GPUs have much faster memory than a typical CPU, so they win there too.</p>}
         />
       </Exercises>
 
@@ -290,7 +332,7 @@ scores = Q @ K              # ValueError: ... (size 4 is different from 8)
             q: 'Why can a GPU compute a big matrix multiply so much faster than a simple loop?',
             options: ['GPUs use a different, approximate formula', 'Each result cell is independent of the others, so thousands of cells can be computed at the same time', 'GPUs skip the cells that are zero', 'GPUs store matrices in compressed form'],
             answer: 1,
-            explain: 'Same arithmetic, exact same result. The win is parallelism, which is only possible because no cell needs another cell’s answer.',
+            explain: 'Same arithmetic, same result. The win is parallelism, which is only possible because no cell needs another cell’s answer. (When generating one token at a time, fast memory for reading the weights matters as much: see the callout in “Let’s code it”.)',
           },
         ]}
       />
@@ -316,7 +358,11 @@ scores = Q @ K              # ValueError: ... (size 4 is different from 8)
         <Callout kind="established">
           All T tokens of a prompt go through each layer together, as rows of one matrix. No loop over tokens. This is why reading your prompt is fast, and why hardware built for parallel multiply-adds (GPUs and similar accelerators) is what LLMs run on.
         </Callout>
+        <Callout kind="established">
+          Writing the answer is different. There, tokens come one at a time, so each multiply has only one new row, and the whole weight matrix must be read from memory for it. That makes token-by-token generation limited mostly by memory bandwidth, not by arithmetic. It is a big reason accelerators pair their cores with very fast memory.
+        </Callout>
         <p>You will see these exact patterns again: <code>x @ W</code> in <a href="#/lesson/neurons">every layer</a>, <code>Q @ K.T</code> in <a href="#/lesson/attention">attention</a>, and a final multiply that produces one score per word in the vocabulary, which is where the <a href="#/lesson/softmax">next lesson</a> picks up.</p>
+        <p>Amma finishes her forty students in one sitting. Riya finishes this lesson. Neither of them used a loop.</p>
       </RealLLM>
     </Lesson>
   )

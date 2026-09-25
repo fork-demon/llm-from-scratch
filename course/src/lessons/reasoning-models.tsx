@@ -27,21 +27,26 @@ export default function ReasoningModelsLesson() {
   return (
     <Lesson id="reasoning-models">
       <Why>
-        <p className="lede">A normal language model can produce an answer directly. What changes when we allow it to spend more computation thinking?</p>
-        <p>Try this on yourself. What is 7 × 8? You just <em>know</em>: 56. Now what is 47 × 86? You do not know. But give you a pencil and thirty seconds and you will get it.</p>
-        <p>The pencil did not make you smarter. It let you break one hard step into several easy ones, and it remembered the partial results for you.</p>
+        <p className="lede">Sunday afternoon in Mysuru. Amma has the newspaper puzzle page folded on the dining table, and Riya is teasing her the way she once teased her students.</p>
+        <p>“Seven eights?”</p>
+        <p>“Fifty-six.” Amma does not even look up.</p>
+        <p>“Forty-seven times eighty-six?”</p>
+        <p>This time Amma says nothing. She takes the pencil from behind her ear and writes in the margin: 47 × 80 = 3,760. 47 × 6 = 282. Add them. “Four thousand and forty-two,” she says, and goes back to her crossword.</p>
+        <p>She did not become cleverer in those thirty seconds. The pencil let her break one hard step into several easy ones, and the paper remembered the partial results for her.</p>
         <p>Since about 2024, some models visibly do the same. They write a long stretch of “thinking” before the answer. They are slower, they cost more, and they score clearly higher on maths, code and multi-step benchmarks.</p>
+        <p>So here is the question. A normal language model can produce an answer directly. What changes when we allow it to spend more computation thinking?</p>
         <Callout kind="idea">
           Nothing about the architecture has to change for this. You already own every part of the explanation: the <a href="#/lesson/inference">generation loop</a>, one forward pass per token, and attention over everything written so far. This lesson connects them.
         </Callout>
       </Why>
 
       <Problem>
-        <p>Go back to the loop you built in <a href="#/lesson/inference">Inference</a>. To produce one token, the input passes through the N blocks once. Then the token is fixed and the loop moves on.</p>
+        <p>Go back to the loop Riya built in <a href="#/lesson/inference">Inference</a>. To produce one token, the input passes through the N blocks once. Then the token is fixed, and the loop moves on.</p>
         <Callout kind="established">
           <b>One generated token = one forward pass = a fixed amount of compute.</b> The number of layers does not grow when the question gets harder. “2 + 2 =” and “the 40th prime number is” get exactly the same number of matrix multiplications before the next token must come out. (The one part that grows is attention, which reads a longer cache as the text gets longer. That depends on length, not on difficulty.)
         </Callout>
         <p>So if the model must answer immediately, the hard part of the problem has to fit inside that fixed budget. For many problems it does not.</p>
+        <p>Dev, back in Bengaluru, has a fix ready. “Then use a bigger model, na. Bigger is smarter.” It is a reasonable first guess. Here is why it is not enough.</p>
         <WhyExists
           problem="Some questions need more steps of computation than one forward pass provides."
           naive="Make the model deeper and bigger, so a single pass can do more."
@@ -52,7 +57,8 @@ export default function ReasoningModelsLesson() {
       </Problem>
 
       <MentalModel>
-        <p>A Transformer has no scratchpad inside it that survives from one token to the next, apart from the <G t="kv-cache">KV cache</G> of what is already on the page. So the page <em>is</em> the scratchpad.</p>
+        <p>A Transformer has no scratchpad inside it that survives from one token to the next, apart from the <G t="kv-cache">KV cache</G> of what is already on the page.</p>
+        <p>Kabir puts it in five words on the whiteboard: <b>the page is the scratchpad</b>.</p>
         <Term
           name="Chain of thought (a reasoning trace)"
           plain={<>Intermediate steps that the model writes out, as ordinary tokens, before it writes its final answer.</>}
@@ -71,9 +77,9 @@ export default function ReasoningModelsLesson() {
           </div>
         </div>
         <Callout kind="analogy">
-          It is like doing long multiplication on paper instead of in your head. The paper holds the partial results, and each line only asks for one easy step.
+          It is Amma’s pencil margin. The paper holds the partial results, and each line only asks for one easy step.
           <br /><br />
-          Where the analogy stops: you can look at your paper and know whether a line is right. The model has no such guarantee. A wrong line on the page is read back just as faithfully as a right one, and everything after it is built on top. And the text of the trace is not a readout of what happened inside the network (more on this at the end).
+          Where the analogy stops: Amma can look at her margin and see whether a line is right. The model has no such guarantee. A wrong line on the page is read back just as faithfully as a right one, and everything after it is built on top. And the text of the trace is not a readout of what happened inside the network (more on this at the end).
         </Callout>
         <p>Before you press anything below, commit to a prediction.</p>
         <Exercise
@@ -95,7 +101,8 @@ export default function ReasoningModelsLesson() {
       </MentalModel>
 
       <TryIt title="Spend compute at answer time">
-        <p>Longer traces are one way to spend more compute on a question. The other way is to try <b>several times</b>. That raises a question a developer will recognise: given N candidate answers, how do you choose one?</p>
+        <p>Longer traces are one way to spend more compute on a question. The other way is to try <b>several times</b>.</p>
+        <p>That raises a question any developer will recognise: given N candidate answers, how do you choose one?</p>
         <Term
           name="Test-time compute"
           plain={<>Computation spent while <em>answering</em> (longer reasoning, several attempts, checking), as opposed to computation spent while training.</>}
@@ -111,7 +118,8 @@ export default function ReasoningModelsLesson() {
           <li><b>Cost</b> is a straight line in N. Accuracy is not: each extra attempt buys less than the one before.</li>
         </ul>
         <h3>The methods, one card each</h3>
-        <p>You have now used two of these. Here is the full set that people mean by “test-time compute” and “reasoning models”. Each one exists because of a specific problem, and each one has a price.</p>
+        <p>You have now used two of these. Here is the full set that people mean by “test-time compute” and “reasoning models”.</p>
+        <p>Each one exists because of a specific problem. Each one has a price.</p>
         <Technique
           name="Reasoning traces (chain of thought)"
           problem="One forward pass is a fixed compute budget, and nothing but the page carries over between tokens."
@@ -150,13 +158,22 @@ export default function ReasoningModelsLesson() {
           idea="Let the model attempt many problems with checkable answers. Reward the attempts that the checker accepts, and update the weights to make such traces more likely."
           helps="The reward needs no human-written reasoning, only a checker. Behaviours that raise the success rate get reinforced."
           tradeoff="Limited to domains with reliable rewards. The model can learn to exploit a flawed checker. Traces become long and costly."
-          where="DeepSeek-R1 (published recipe, open weights, 2025) and other open reasoning models. Proprietary reasoning models are widely assumed to use related ideas, but their recipes are not public."
+          where="DeepSeek-R1 (published recipe, open weights, 2025) and many open reasoning models since. Since 2025 the same idea has been applied to multi-step tasks with tools, and to fuzzier tasks scored against a written rubric (see Real LLMs below). Proprietary reasoning models are widely assumed to use related ideas, but their recipes are not public."
+        />
+        <Technique
+          name="Distilling reasoning traces into a small model"
+          problem="RL needs a model that already succeeds sometimes. A small model rarely does, so it has little to reinforce, and RL runs are expensive."
+          idea="Let a strong reasoning model write many traces, keep the ones that end in right answers, and fine-tune a small model on them with ordinary next-token training (SFT)."
+          helps="The small model copies the behaviour directly instead of discovering it. The DeepSeek-R1 paper reports that distilling R1’s traces into small models worked better than running RL on those small models directly."
+          tradeoff="The student can only be as good as the traces it sees, and it inherits the teacher’s mistakes and habits. You need the strong model first."
+          where={<>The distilled R1 models (1.5B to 70B parameters, built on Qwen and Llama), and many small open reasoning models since. The general idea is the subject of <a href="#/lesson/distillation">Small models from big ones</a>.</>}
         />
         <p>The vocabulary of reinforcement learning is the one from <a href="#/lesson/training-pipeline">the previous lesson</a>: the policy is the model, an action is the next token, and the reward arrives only at the end, when the final answer is checked.</p>
       </TryIt>
 
       <Numbers>
-        <p>Let’s check two points of the lab by hand. Take p = 0.4 and four wrong answers, so each wrong answer turns up 0.6 ÷ 4 = 0.15 of the time. Use N = 3 attempts.</p>
+        <p>Riya does not trust a curve until she has computed one point of it herself. Let’s check two points of the lab by hand.</p>
+        <p>Take p = 0.4 and four wrong answers, so each wrong answer turns up 0.6 ÷ 4 = 0.15 of the time. Use N = 3 attempts.</p>
         <p><b>Best-of-3 with a perfect checker.</b> It fails only if all three attempts are wrong:</p>
         <p className="mono">0.6 × 0.6 × 0.6 = 0.216 → accuracy = 1 − 0.216 = 0.784</p>
         <p><b>Majority vote over 3.</b> Count the ways the right answer can win:</p>
@@ -200,11 +217,13 @@ export default function ReasoningModelsLesson() {
         >
           tokens spent = N × tokens per attempt
         </Equation>
-        <p>Put the two side by side. Cost grows in a straight line. The failure rate shrinks by the same <em>factor</em> (1 − p) with each attempt, so the gain from each extra attempt gets smaller and smaller. Going from 1 to 4 attempts at p = 0.4 buys 47 points. Going from 8 to 16 buys less than 2.</p>
+        <p>Put the two side by side. Cost grows in a straight line.</p>
+        <p>The failure rate shrinks by the same <em>factor</em> (1 − p) with each attempt, so the gain from each extra attempt gets smaller and smaller. Going from 1 to 4 attempts at p = 0.4 buys 47 points. Going from 8 to 16 buys less than 2.</p>
         <DeepDive title="Why does a noisy verifier hit a ceiling?">
           <p>Our verifier accepts a right attempt with probability a and a wrong one with probability 1 − a. With many attempts, something is almost always accepted, so the result is “a random accepted attempt”. What fraction of accepted attempts is actually right?</p>
           <p className="mono">P(right | accepted) = p·a / ( p·a + (1 − p)(1 − a) )</p>
-          <p>With p = 0.4 and a = 0.9: 0.36 / (0.36 + 0.06) = 0.857. No N gets you past 85.7%. With a hard problem, p = 0.05 and the same verifier: 0.045 / (0.045 + 0.095) = 0.321. When right answers are rare, even a small false-accept rate lets wrong answers flood the accepted pile. This is the same arithmetic as false positives in medical screening or spam filters.</p>
+          <p>With p = 0.4 and a = 0.9: 0.36 / (0.36 + 0.06) = 0.857. No N gets you past 85.7%.</p>
+          <p>With a hard problem, p = 0.05 and the same verifier: 0.045 / (0.045 + 0.095) = 0.321. When right answers are rare, even a small false-accept rate lets wrong answers flood the accepted pile. This is the same arithmetic as false positives in medical screening or spam filters.</p>
           <p>Practical consequence: sampling more is only as good as your checker. Unit tests, a proof checker or an exact numeric answer are near-perfect verifiers. “Ask another model whether this looks right” is not.</p>
         </DeepDive>
         <DeepDive title="How much compute is one forward pass?">
@@ -224,7 +243,11 @@ for _ in range(max_new_tokens):
     idx = torch.cat([idx, nxt], dim=1)              # feed back in
 `}</Code>
         <p>The last line is the working memory. Whatever was just written is part of the input next time. A reasoning trace uses this loop exactly as it is, with a bigger <code>max_new_tokens</code>.</p>
-        <p>The sampling strategies are a few lines wrapped <em>around</em> the model. These are sketches, not files in the repository. <code>sample</code> stands for “run the loop above and decode the text”, and <code>final_answer</code> pulls the last line out of a trace.</p>
+        <p>The sampling strategies are a few lines wrapped <em>around</em> the model. These are sketches, not files in the repository.</p>
+        <ul>
+          <li><code>sample</code> stands for “run the loop above and decode the text”.</li>
+          <li><code>final_answer</code> pulls the last line out of a trace.</li>
+        </ul>
         <Code title="Sketch: self-consistency (majority vote)">{`
 from collections import Counter
 
@@ -310,7 +333,7 @@ best = accepted[0] if accepted else candidates[0]
           ]}
           solution={<><p>With temperature 0 the sampler always takes the most likely token, so all 16 traces are identical. The vote is 16 to 0 for whatever the single greedy answer was. They paid 16× for the accuracy of 1×.</p><p>Self-consistency needs <em>diverse</em> attempts, so temperature must be above 0 (values around 0.5 to 1 are typical). There is a second trap to look for in code like this: voting on the whole trace text. Every trace is worded differently, so every “answer” gets one vote. Vote on the extracted final answer.</p></>}
         >
-          <p>A teammate adds self-consistency to a maths bot and sees exactly the same accuracy as before, at 16 times the cost. Why?</p>
+          <p>Riya’s teammate adds self-consistency to a maths bot and sees exactly the same accuracy as before, at 16 times the cost. Why?</p>
           <Code>{`
 answers = [final_answer(sample(prompt, temperature=0.0)) for _ in range(16)]
 best = Counter(answers).most_common(1)[0][0]
@@ -335,7 +358,7 @@ best = Counter(answers).most_common(1)[0][0]
 
         <ExplainBack
           id="reasoning-models-explain"
-          prompt="A colleague says: “Reasoning models are a new kind of AI that actually thinks, unlike normal LLMs that just predict tokens.” Using what you know about the generation loop, explain what is really different and what is not."
+          prompt="Dev says: “Reasoning models are a new kind of AI that actually thinks, unlike normal LLMs that just predict tokens.” Using what you know about the generation loop, explain what is really different and what is not."
           modelAnswer={<p>A reasoning model is still a next-token predictor running the same loop: one forward pass per token, a fixed amount of compute each time. What differs is how the tokens are used and how the model was trained. It writes intermediate steps before the answer, so it spends many forward passes on the question and can read its own partial results back through attention, like working on paper. Open recipes such as DeepSeek-R1 train this with reinforcement learning on problems whose answers can be checked, so traces that end in correct answers become more likely. The costs are real: more tokens, more latency, and no benefit on easy questions. And the visible trace is generated text, not a guaranteed faithful account of the computation inside the network.</p>}
         />
       </Exercises>
@@ -405,7 +428,7 @@ best = Counter(answers).most_common(1)[0][0]
           <><b>One token = one forward pass = fixed compute.</b> A model that must answer at once has a fixed budget for the hard part.</>,
           <>A <b>reasoning trace</b> buys more forward passes and uses the model’s own output as <b>working memory</b>, through the same generation loop you built.</>,
           <><b>Test-time compute</b> has three dials: longer traces, more attempts, and checking. <b>Majority vote</b> helps only if the right answer is the most common one. A <b>good verifier</b> helps much more, and a poor one sets a ceiling.</>,
-          <>Reasoning models are <b>trained</b> for this, in open recipes by reinforcement learning on problems with <b>checkable answers</b>. That is why maths and code improved first.</>,
+          <>Reasoning models are <b>trained</b> for this, in open recipes by reinforcement learning on problems with <b>checkable answers</b>. That is why maths and code improved first. Small reasoning models are often made by <b>distilling</b> a big model’s traces instead.</>,
           <>Thinking is <b>not free</b> (cost is linear in tokens and attempts, gains flatten out), not every question benefits, and a trace is <b>not a guaranteed faithful explanation</b>.</>,
         ]}
       />
@@ -417,10 +440,48 @@ best = Counter(answers).most_common(1)[0][0]
           real={<ul><li>p differs for every question, and nobody tells you what it is</li><li>Errors are correlated: a model tends to repeat the same misconception, which is the “one popular wrong answer” case</li><li>Verifiers are tests, proof checkers, exact answers, or another model with its own blind spots</li><li>The model decides how long to think, often within an effort or budget setting chosen by the caller</li></ul>}
         />
         <Callout kind="established">
-          The public reference point is <b>DeepSeek-R1</b> (2025), whose paper and weights are open. Its core is reinforcement learning on problems with automatically checkable results: maths answers, and code that must pass tests. The rewards are simple rules, one for a correct final answer and one for keeping the required output format. There is no learned reward model for the reasoning tasks at all.
+          The public reference point is <b>DeepSeek-R1</b> (2025), whose paper and weights are open. Its core is reinforcement learning on problems with automatically checkable results: maths answers, and code that must pass tests.
           <br /><br />
-          The algorithm is <b>GRPO</b>, group relative policy optimization. The idea in one line: for each problem, sample a group of answers, and judge each one against how the rest of the group did rather than against an absolute target. An answer better than its siblings gets pushed up, a worse one gets pushed down. For the variant trained by RL alone (R1-Zero), the authors report that responses grew longer and behaviours such as re-checking and trying a second approach became more frequent without being scripted. The released R1 model adds more stages: a small supervised “cold start” before the RL, then supervised fine-tuning on filtered samples of its own output, then a final RL round that also uses learned preference rewards for helpfulness and harmlessness.
+          The rewards are simple rules. An <b>accuracy reward</b> for a correct final answer. A <b>format reward</b> for putting the thinking between the required tags. In a later stage, a <b>language-consistency reward</b> as well, because the traces kept switching between languages mid-thought. There is no learned reward model for the reasoning tasks at all.
+          <br /><br />
+          The algorithm is <b>GRPO</b>, group relative policy optimization. The idea in one line: for each problem, sample a group of answers, and judge each one against how the rest of the group did rather than against an absolute target. An answer better than its siblings gets pushed up. A worse one gets pushed down. No separate value network is needed, which saves a lot of memory.
+          <br /><br />
+          For the variant trained by RL alone (R1-Zero), the authors report that responses grew longer, and that behaviours such as re-checking and trying a second approach became more frequent without being scripted. The released R1 model adds more stages: a small supervised “cold start” before the RL, then the reasoning RL, then supervised fine-tuning on filtered samples of its own output, then a final RL round that also uses learned preference rewards for helpfulness and harmlessness.
         </Callout>
+        <h3>After R1: what changed in 2025 and 2026</h3>
+        <p>R1 was the start of a very busy period, not the end of the story. Five threads are worth knowing by name.</p>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>thread</th><th>what it is</th><th>status</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><b>GRPO variants</b></td>
+                <td>Fixes to the training algorithm, each aimed at a flaw found in practice. <b>DAPO</b> (ByteDance and Tsinghua) changes the clipping, drops groups where every answer scored the same, and averages the loss per token so long answers are not under-weighted. <b>Dr. GRPO</b> removes two normalisations: one, by answer length, quietly favoured long wrong answers; the other, by the spread of scores in a group, gave extra weight to questions that were nearly always right or nearly always wrong. <b>GSPO</b> (Qwen team) judges the whole answer as one unit rather than token by token, which made training more stable, especially for mixture-of-experts models.</td>
+                <td>Published, open code</td>
+              </tr>
+              <tr>
+                <td><b>RL on agent tasks</b></td>
+                <td>The same loop, but one “attempt” is now many steps: the model calls tools (a search engine, a terminal, a code runner), reads the results, and carries on. The reward arrives at the end, for example when a software task’s tests pass. Open model reports from 2025, such as Kimi K2 and GLM-4.5, describe this kind of training.</td>
+                <td>Published for open models; widely used</td>
+              </tr>
+              <tr>
+                <td><b>Rubric and judge rewards</b></td>
+                <td>For tasks with no checker (writing, advice, research reports), another model grades the answer against a written rubric: “mentions the refund deadline”, “does not invent a policy”. This stretches RL beyond maths and code. It inherits the noisy-verifier ceiling from the deep dive above: the policy can learn to please the judge.</td>
+                <td>Active research; used in some published recipes</td>
+              </tr>
+              <tr>
+                <td><b>Hybrid thinking models</b></td>
+                <td>One model with two modes: answer at once, or think first. The caller can switch thinking off, or set a <b>thinking budget</b> (a cap on thinking tokens). Qwen3 made this public in an open model in 2025, and several commercial APIs expose an effort or budget setting.</td>
+                <td>Common in 2026 products</td>
+              </tr>
+              <tr>
+                <td><b>Distilled reasoners</b></td>
+                <td>Small models fine-tuned on a big reasoner’s traces, as in the card above. The R1 paper found this beat RL for small models. See <a href="#/lesson/distillation">Small models from big ones</a>.</td>
+                <td>Published; standard practice</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <Callout kind="warn" label="What is not public">
           The internals and training recipes of proprietary reasoning models are <b>not published</b>. Statements of the form “model X runs a tree search inside” or “model X uses N hidden samples” are guesses unless the vendor has documented them. Several vendors also hide or summarise the raw trace. What you can observe from outside: a thinking phase that costs tokens and time, often with a setting that controls how much.
         </Callout>
@@ -429,7 +490,8 @@ best = Counter(answers).most_common(1)[0][0]
           <br /><br />
           Also open: how well training on checkable domains transfers to fuzzy ones such as writing or strategy, how to build reliable checkers for half-finished work, and whether RL teaches genuinely new abilities or mainly makes the model reliably do what it could already do sometimes.
         </Callout>
-        <Callout kind="dev">If you call these models through an API, reasoning is a budget line. Thinking tokens are typically billed as output tokens and add latency before the first visible word. Route easy requests to a fast path, and keep long thinking for the requests that need it. You will meet the same loop again in <a href="#/lesson/agents">Agents</a>, where the “checker” is a tool result.</Callout>
+        <Callout kind="dev">If you call these models through an API, reasoning is a budget line. Thinking tokens are typically billed as output tokens and add latency before the first visible word. Route easy requests to a fast path, or switch thinking off, and keep long thinking for the requests that need it. You will meet the same loop again in <a href="#/lesson/agents">Agents</a>, where the “checker” is a tool result.</Callout>
+        <p>That evening Riya sets the Paisa Pal bot’s thinking budget to zero for “what is my balance” questions, and leaves it on for disputed refunds. Amma, told about it on the phone, approves. “Nobody needs a pencil for seven eights.”</p>
       </RealLLM>
 
       <BeforeMovingOn
@@ -477,6 +539,18 @@ best = Counter(answers).most_common(1)[0][0]
             options: ['It looked the fact up in its database and the record was corrupt', 'Its output is always a distribution over plausible next tokens; nothing in the architecture signals “unknown”, so thin knowledge still yields fluent text', 'The temperature was too low', 'The tokenizer dropped a word'],
             answer: 1,
             explain: 'No database, no record, no NOT FOUND. Retrieval, tools and training to abstain reduce the problem. None removes it.',
+          },
+          {
+            q: 'Part 8. How does a small “student” model usually learn from a much bigger “teacher” model in distillation?',
+            options: ['The teacher’s weights are copied into the student and then shrunk', 'The student is trained on the teacher’s outputs (its answers, traces or probabilities) with ordinary gradient descent', 'The student queries the teacher at answer time for every token', 'The two models are merged into one network'],
+            answer: 1,
+            explain: 'The architecture and weights of the student are its own. What it borrows is the teacher’s behaviour, as training data. That is how the small distilled R1 models were made.',
+          },
+          {
+            q: 'Part 8. A multimodal model is given a photo. What does the Transformer inside it actually work on?',
+            options: ['The raw file bytes, read left to right', 'A text caption that a separate program writes first, always', 'A sequence of vectors made from pieces of the image, placed in the same sequence as the text tokens', 'Nothing: images bypass the Transformer and go to a separate classifier'],
+            answer: 2,
+            explain: 'The image is cut into patches, each patch becomes a vector the same width as a token embedding, and attention then mixes image and text positions like any other tokens.',
           },
           {
             q: 'Part 8. What does preference tuning (RLHF or DPO) mainly change, compared with pretraining?',

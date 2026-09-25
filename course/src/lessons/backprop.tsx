@@ -1,3 +1,4 @@
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -9,7 +10,11 @@ export default function BackpropLesson() {
   return (
     <Lesson id="backprop">
       <Why>
-        <p className="lede">You now have two things that do not yet fit together.</p>
+        <p className="lede">Tuesday, 10 a.m. Yesterday’s release broke refunds: forty customers were refunded twice. Riya is in the post-mortem.</p>
+        <p>Nobody starts at the database. They start at the symptom and walk backward. The payout service sent two requests. Why? Its retry layer saw a timeout. Why? The ledger service answered slowly. Why? A new query in the ledger skipped an index.</p>
+        <p>Each team only has to answer one question: “given what reached you, what did you do with it?” Then it passes the question upstream. By lunch every service knows its share of the blame, and nobody had to understand the whole system.</p>
+        <p>Walking out, Kabir says: “You just did backpropagation. Now do it to a network.”</p>
+        <p>Here is why that matters. You now have two things that do not yet fit together.</p>
         <div className="grid-2">
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>A learning loop</h4>
@@ -21,15 +26,17 @@ export default function BackpropLesson() {
           </div>
         </div>
         <p>The loss is measured at the very end of the network. The weights are spread through every layer. When the prediction is wrong, how does a weight in the first layer, several steps away from the output, find out its share of the blame?</p>
-        <p>This is the hardest idea in Part 3, and the one place where it pays to go slowly. Work the numbers by hand with us, and it turns into three small rules you can hold in your head.</p>
+        <p>This is the part everyone finds strange at first, and the one place in Part 3 where it pays to go slowly. Work the numbers by hand with us, and it turns into three small rules you can hold in your head.</p>
         <Callout kind="idea">
-          The answer is <b>backpropagation</b>: run the chain rule backward through the network, once, and reuse intermediate results. It produces the gradient for every weight at about the cost of two extra forward passes. It is the reason training large networks is possible at all.
+          The answer is <b>backpropagation</b>: run the chain rule backward through the network, once, and reuse intermediate results.
+          <br /><br />
+          It produces the gradient for every weight at about the cost of two extra forward passes. It is the reason training large networks is possible at all.
         </Callout>
       </Why>
 
       <Problem>
-        <p>We already have a method that needs no formulas. It is the nudge experiment from <a href="#/lesson/derivatives">lesson 1.4</a>, applied to a model: nudge one parameter, run the model again, see how the loss moved, divide. A gradient measured this way is called a <b>numerical gradient</b>.</p>
-        <p>It works for any model. Count what it costs, though: one full forward pass <em>per parameter</em>, for every single training step.</p>
+        <p>Riya’s first idea is the one she trusts most: the nudge experiment from <a href="#/lesson/derivatives">lesson 1.4</a>. Nudge one parameter, run the model again, see how the loss moved, divide. A gradient measured this way is called a <b>numerical gradient</b>.</p>
+        <p>“It works,” Kabir agrees. “Now count.” It costs one full forward pass <em>per parameter</em>, for every single training step.</p>
         <div className="table-scroll">
           <table className="plain">
             <thead><tr><th>model</th><th>parameters</th><th>forward passes for one update, by nudging</th></tr></thead>
@@ -46,7 +53,7 @@ export default function BackpropLesson() {
           naive="Nudge each weight in turn and re-run the network to see how the loss changes."
           fails="One forward pass per weight per step. And almost all of that work is repeated: nudging two weights in the same layer re-computes every later layer twice, identically."
           idea="Compute the sensitivities from the loss backward, layer by layer. Each layer’s result is computed once and reused by everything upstream of it."
-          tradeoff="The backward pass needs the values from the forward pass, so they must all be kept in memory until it is done. Training costs far more memory than just running the model."
+          tradeoff="The backward pass needs the values from the forward pass, so they must all be kept in memory until it is done. Training costs far more memory than running the model."
         />
       </Problem>
 
@@ -67,9 +74,11 @@ export default function BackpropLesson() {
           formal={<>Backpropagation is reverse-mode automatic differentiation: the chain rule evaluated from the output toward the inputs, so that all partial derivatives of one scalar (the loss) come out of a single sweep.</>}
         />
         <Callout kind="analogy">
-          A factory line: station 1 shapes a part, station 2 paints it, station 3 packs it. Final inspection finds a flaw. To find out who should change what, you walk the line backward. The inspector tells station 3 how the flaw relates to the packed product. Station 3 knows exactly what it did to what it received, so it can translate that into a message about its <em>input</em>, and pass it to station 2. No station needs to understand the whole factory. It only needs its own operation and the message from downstream.
+          This is the post-mortem from this morning. The symptom (the loss) is known at the end. The payout team knows exactly what it did with what it received, so it can turn “the refund was doubled” into a question about its <em>input</em>, and pass that to the retry layer. And so on, upstream.
           <br /><br />
-          Where the analogy stops: “blame” here is not a judgement and it is not all-or-nothing. It is a number per value: how much the loss would change if that value were nudged. It can be positive, negative or zero.
+          No service needs to understand the whole system. It only needs its own operation and the message from downstream.
+          <br /><br />
+          Where the analogy stops: “blame” here is not a judgement and it is not all-or-nothing. A post-mortem usually finds one culprit. Backpropagation gives <em>every</em> value a number: how much the loss would change if that value were nudged. It can be positive, negative or zero.
         </Callout>
         <p>One clarification that prevents a common confusion: backpropagation does not learn anything. Learning is still <code>w -= lr * grad</code>. Backpropagation is only the fast way to <em>get</em> <code>grad</code>.</p>
 
@@ -108,7 +117,37 @@ export default function BackpropLesson() {
       </Numbers>
 
       <TheMath>
-        <p>For this network, the entire backward pass is three local rules. In each one, <code>d_out</code> is the message arriving from downstream: the sensitivity of the loss to this operation’s output. This is the full list, exactly as it is written at the top of the repository file:</p>
+        <p>This is the densest point in the course, so we take it in two passes: first one example with real numbers, then the batch version the code uses.</p>
+        <p>In every rule, <code>d_out</code> is the message arriving from downstream: the sensitivity of the loss to this operation’s output.</p>
+        <h3>First pass: one example, the output layer</h3>
+        <p>A reminder of the convention. In this course and in the repository, a layer computes <code>out = x @ W + b</code>. The input x is a <em>row</em>. W has one <b>row per input</b> and one <b>column per output</b>, so W[i, j] is the wire from input i to output j. (Some books write W x instead; their rules look transposed, but they say the same thing.)</p>
+        <p>Our output layer, with the numbers from the table above:</p>
+        <div className="table-scroll">
+          <table className="plain">
+            <tbody>
+              <tr><td>input (hidden layer) h</td><td className="mono">[2, 0]</td></tr>
+              <tr><td>W2 (row = from h₁ or h₂, column = to logit 1 or 2)</td><td className="mono">[[0.5, −0.5], [0.5, 1.0]]</td></tr>
+              <tr><td>forward: h @ W2</td><td className="mono">[2×0.5 + 0×0.5, 2×(−0.5) + 0×1.0] = [1, −1]</td></tr>
+              <tr><td>message from downstream d_out</td><td className="mono">[0.88, −0.88]</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><b>Weights.</b> Each weight gets (the input that flowed into it) × (the blame at the output it fed). That fills a grid with every input times every blame, called an <em>outer product</em>:</p>
+        <div className="table-scroll">
+          <table className="plain mono">
+            <thead><tr><th>d_W2</th><th>to logit 1 (blame 0.88)</th><th>to logit 2 (blame −0.88)</th></tr></thead>
+            <tbody>
+              <tr><td>from h₁ = 2</td><td>2 × 0.88 = 1.76</td><td>2 × (−0.88) = −1.76</td></tr>
+              <tr><td>from h₂ = 0</td><td>0 × 0.88 = 0</td><td>0 × (−0.88) = 0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><b>Inputs.</b> Each input collects blame from every output it fed, through the weight it used: d_h₁ = 0.88×0.5 + (−0.88)×(−0.5) = 0.88, and d_h₂ = 0.88×0.5 + (−0.88)×1.0 = −0.44. That is row i of W, dotted with d_out. In matrix form: <code>d_out @ W2.T</code>.</p>
+        <p><b>Bias.</b> A bias is added straight onto its output, so it gets that output’s blame unchanged: d_b = [0.88, −0.88].</p>
+        <p>These are exactly steps 2 and 3 of the hand-worked table. Nothing new has happened yet.</p>
+        <h3>Second pass: a whole batch at once</h3>
+        <p>Now stack many examples as the rows of X, and their messages as the rows of d_out. Each example contributes its own outer product, and the weight gradient is their sum. <code>X.T @ d_out</code> is precisely “the outer product for every example, added up”. The bias gradient likewise adds up the blame over all rows. The input rule works row by row, as before.</p>
+        <p>That gives the full list, exactly as it is written at the top of the repository file:</p>
         <Code source="phase1-foundations/mlp_numpy.py" title="the three rules (module docstring)">{`
 linear:   d_W = X.T @ d_out ;  d_X = d_out @ W.T ;  d_b = sum(d_out)
 relu:     d_x = d_out * (x > 0)
@@ -145,7 +184,9 @@ softmax+cross-entropy at the logits:  d_logits = probs - one_hot
           <p>The log in cross-entropy undoes the exponential in softmax. That is why the pair is always used together, and why frameworks fuse them into one operation (it is also numerically safer).</p>
         </DeepDive>
         <DeepDive title="Why backward, and not forward?">
-          <p>You can also push sensitivities forward through the network: “if I nudge this one weight, how does every later value move?” That gives the effect of <em>one input on all outputs</em>, per sweep. Training has the opposite shape: millions of inputs (the weights) and <em>one</em> output (the loss). Going backward from that single number gives its sensitivity to everything in one sweep. With many outputs and few inputs, forward mode would be the cheaper one.</p>
+          <p>You can also push sensitivities forward through the network: “if I nudge this one weight, how does every later value move?” That gives the effect of <em>one input on all outputs</em>, per sweep.</p>
+          <p>Training has the opposite shape: millions of inputs (the weights) and <em>one</em> output (the loss). Going backward from that single number gives its sensitivity to everything in one sweep.</p>
+          <p>With many outputs and few inputs, forward mode would be the cheaper one.</p>
         </DeepDive>
       </TheMath>
 
@@ -218,7 +259,11 @@ diff = abs(numerical - analytic)
           In PyTorch you will never write <code>backward</code> yourself. Every operation (matmul, relu, softmax…) ships with its own local backward rule. During the forward pass PyTorch records which operations ran and keeps their inputs. <code>loss.backward()</code> then walks that record in reverse, applying the rules, exactly like the loop above. That system is called autograd. From <a href="#/lesson/build-gpt">Part 7</a> on we rely on it, and you will know what it is doing.
         </Callout>
         <Callout kind="established">
-          <b>Why training needs so much memory.</b> The backward pass needs every layer’s forward values, so they all stay in memory until it has run. Just using a model (inference) can throw each layer’s values away as soon as the next layer is computed. Add the gradients themselves (one number per parameter) and the optimiser’s bookkeeping, and training a model takes several times the memory of running it.
+          <b>Why training needs so much memory.</b> The backward pass needs every layer’s forward values, so they all stay in memory until it has run.
+          <br /><br />
+          Just using a model (inference) has no backward pass, so it keeps no activations <em>for gradients</em>. An LLM at inference does keep something: the keys and values of earlier tokens, the <G t="kv-cache">KV cache</G>, so it does not redo work for every new token. That is a different cache for a different reason, and you will meet it in <a href="#/lesson/inference">Inference</a>.
+          <br /><br />
+          Add the gradients themselves (one number per parameter) and the optimiser’s bookkeeping, and training a model takes several times the memory of running it.
         </Callout>
       </CodeIt>
 
@@ -235,6 +280,8 @@ diff = abs(numerical - analytic)
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="backprop-code-linear-backward" />
+        <CodeExercise id="backprop-code-two-layer" />
         <Exercise
           id="backprop-calc"
           type="calculate"
@@ -277,7 +324,7 @@ diff = abs(numerical - analytic)
           ]}
           solution={<><p>The ReLU gate is missing: after <code>d = d @ self.W[i].T</code> there must be <code>d = d * (self.cache[i] &gt; 0)</code>. Without it, blame flows through hinges that were shut, so weights get corrected for outputs they never influenced.</p><p>The nasty part: nothing crashes and the loss still goes down, because many of the gradients are still roughly right. With the repository’s settings the accuracy ends at 66.3% instead of 98.7%. You could spend days tuning the learning rate. The gradient check finds it in one second: it reports FAIL.</p></>}
         >
-          <p>A colleague’s version of <code>backward</code> runs without errors. The spiral network trains, but gets stuck around 66% instead of 98.7%. What is wrong?</p>
+          <p>A teammate’s version of <code>backward</code> runs without errors. The spiral network trains, but gets stuck around 66% instead of 98.7%. What is wrong?</p>
           <Code>{`
 for i in reversed(range(len(self.W))):
     h_in = self.cache[i]
@@ -298,7 +345,7 @@ return d_W, d_b
             'Hidden size: in train_mlp(), change net = MLP() to net = MLP(sizes=(2, 4, 4, 3)), then (2, 8, 8, 3).',
             'Removing ReLU means changing both passes, so that they still describe the same network: in forward, drop np.maximum(0, …); in backward, delete the “rule 2: ReLU gate” line.',
           ]}
-          solution={<><p>With the file’s fixed seed: hidden size 4 reaches about 96%, hidden size 8 about 99%, and the original 64 about 99% as well. Eight hinges per layer are already enough for this spiral.</p><p>Without ReLU (both passes changed): <b>54.0%</b>, identical to the linear model, and the gradient check still passes. Your backward pass is correct; the <em>model</em> is a straight-line classifier again. If you remove the ReLU only in <code>forward</code>, the backward pass computes gradients for a different network than the one that ran: the loss explodes and accuracy falls to 33%. Forward and backward must always mirror each other.</p></>}
+          solution={<><p>With the file’s fixed seed, on the training points: hidden size 4 reaches <b>72.0%</b>, hidden size 8 reaches 99.0%, and the original 64 reaches 98.7%. Eight hinges per layer are already enough for this spiral.</p><p>Why does 4 stall at 72%? Two of its four second-layer units go dead early (one is shut for every point from the start). Their blame is multiplied by 0 at the ReLU gate, so they never recover, and the network is left with two working hinges in that layer. You met this in the playground as a “dead ReLU”.</p><p>Without ReLU (both passes changed): <b>54.0%</b>, identical to the linear model, and the gradient check still passes. Your backward pass is correct; the <em>model</em> is a straight-line classifier again. If you remove the ReLU only in <code>forward</code>, the backward pass computes gradients for a different network than the one that ran: the loss explodes and accuracy falls to 33%. Forward and backward must always mirror each other.</p></>}
         >
           <p>Open <code>mlp_numpy.py</code>. (1) Run it unchanged and write down the linear and MLP accuracies. (2) Try hidden sizes 4 and 8. (3) Remove the ReLU and report the accuracy. Predict each result before you run it.</p>
         </Exercise>
@@ -316,7 +363,7 @@ return d_W, d_b
             q: 'Why not train a large network with numerical gradients (nudge each weight, re-measure the loss)?',
             options: ['They are too inaccurate to learn from', 'They need one forward pass per parameter per step: billions of passes for a single update', 'They only work for linear models', 'They require calculus that nobody can do'],
             answer: 1,
-            explain: 'They are accurate enough and need no calculus at all. They are just hopelessly slow, which makes them a perfect test oracle and a useless training method.',
+            explain: 'They are accurate enough and need no calculus at all. They are hopelessly slow, which makes them a perfect test oracle and a useless training method.',
           },
           {
             q: 'A model predicts [0.2, 0.7, 0.1] and the correct class is the first. The gradient at the logits is…',
@@ -334,7 +381,7 @@ return d_W, d_b
             q: 'Why does the forward pass store (“cache”) every layer’s activations during training?',
             options: ['To print them for debugging', 'So the next forward pass can skip work', 'Because the backward rules need them: d_W = X.T @ d_out uses the input X each layer saw', 'Because Python cannot free memory inside a loop'],
             answer: 2,
-            explain: 'This is the memory cost of training. At inference time there is no backward pass, so nothing needs to be kept.',
+            explain: 'This is the memory cost of training. At inference time there is no backward pass, so no activations need to be kept for gradients. (An LLM still keeps its KV cache at inference, but that is for speed, not for gradients.)',
           },
           {
             q: 'What does PyTorch’s loss.backward() do?',
@@ -363,6 +410,7 @@ return d_W, d_b
         />
         <Callout kind="established">Every neural language model is trained with backpropagation plus a gradient-descent-style update. When you read that training a model took thousands of GPUs for months, this is what those GPUs were doing: forward pass, backward pass, update, on batch after batch of text.</Callout>
         <Callout kind="model">“Blame” is a convenient word for a partial derivative. A gradient tells you how the loss would change for a <em>tiny</em> nudge to one weight, with everything else held fixed. It does not tell you what a weight “means” or what would happen after a large change.</Callout>
+        <p>That evening Riya writes the post-mortem for the refund bug. Out of habit she lists the services in reverse order, from the symptom back to the cause. She notices, smiles, and leaves it that way.</p>
       </RealLLM>
 
       <BeforeMovingOn

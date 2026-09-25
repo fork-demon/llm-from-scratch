@@ -7,24 +7,14 @@ import { RopeLab } from '../interactive/RopeLab'
 import { GqaCalculator } from '../interactive/GqaCalculator'
 import { NormCompare } from '../interactive/NormCompare'
 
-/** The fixed five-row card used for every technique in this lesson. */
-function TechCard({ name, problem, idea, helps, tradeoff, where }: { name: string; problem: ReactNode; idea: ReactNode; helps: ReactNode; tradeoff: ReactNode; where: ReactNode }) {
-  const rows: [string, ReactNode][] = [['Problem', problem], ['Idea', idea], ['Why it helps', helps], ['Trade-off', tradeoff], ['Where it appears', where]]
+/** Problem, idea, trade-off: the three lines every repair in this lesson is told with. */
+function Fix({ problem, idea, tradeoff }: { problem: ReactNode; idea: ReactNode; tradeoff: ReactNode }) {
+  const rows: [string, ReactNode][] = [['Problem', problem], ['Idea', idea], ['Trade-off', tradeoff]]
   return (
     <div className="card" style={{ margin: '14px 0' }}>
-      <h4 style={{ fontSize: 17, marginBottom: 6 }}>{name}</h4>
-      <div className="table-scroll">
-        <table className="plain" style={{ fontSize: 15 }}>
-          <tbody>
-            {rows.map(([label, body]) => (
-              <tr key={label}>
-                <th scope="row" style={{ whiteSpace: 'nowrap', verticalAlign: 'top', textAlign: 'left', width: 120 }}>{label}</th>
-                <td>{body}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {rows.map(([label, body]) => (
+        <p key={label} style={{ margin: '6px 0' }}><b className="acc">{label}.</b> {body}</p>
+      ))}
     </div>
   )
 }
@@ -33,17 +23,28 @@ export default function ModernArchitectureLesson() {
   return (
     <Lesson id="modern-architecture">
       <Why>
-        <p className="lede">Open the published code of a 2020s open model such as Llama, Mistral or Qwen. What would you recognise?</p>
-        <p>Almost everything. Token embeddings. A stack of blocks. Each block: attention, then an MLP, each wrapped in a normalisation and a <G t="residual">residual</G> “+”. A final projection to <G t="logits">logits</G>. It is the model you built in <a href="#/lesson/build-gpt">Build GPT</a>.</p>
-        <p>But a handful of lines are different. There is no <code>pos_emb</code> table. <code>LayerNorm</code> is gone. The MLP has three matrices, not two. Attention has fewer key heads than query heads.</p>
-        <p>The names attached to those changes are the ones you meet on every model card: RMSNorm, RoPE, SwiGLU, GQA, FlashAttention, MoE. This lesson unpacks each of them.</p>
+        <p className="lede">Friday afternoon. Kabir plugs his laptop into the big screen in the meeting room and opens a plain text file. “This is the config of DeepSeek-V3,” he says. “An open-weight model. Many 2025 and 2026 models borrow its design.”</p>
+        <Code lang="output" title="config.json (a few lines of it)">{`
+"num_hidden_layers": 61,
+"hidden_size": 7168,
+"rms_norm_eps": 1e-06,
+"hidden_act": "silu",
+"rope_scaling": { "type": "yarn", ... },
+"kv_lora_rank": 512,
+"n_routed_experts": 256,
+"n_shared_experts": 1,
+"num_experts_per_tok": 8,
+`}</Code>
+        <p>Riya reads it slowly. Layers: she built those. <code>hidden_size</code>: that is her <code>n_embd</code>, only 56 times wider. Then the lines get strange. RMS norm? Experts? Why only 8 of 256?</p>
+        <p>Dev leans in from the doorway. “So it’s a totally new architecture. Way more parameters, way smarter.”</p>
+        <p>Kabir smiles. “Let’s see how much of it Riya already wrote.”</p>
         <Callout kind="idea">
-          None of these changes is a new architecture. Each one is a <b>repair</b>: a specific, nameable problem with the GPT-2 design, and a small fix. If you know the problem, the fix is easy to remember. This lesson goes through them one at a time, always in the same five rows: Problem, Idea, Why it helps, Trade-off, Where it appears.
+          None of these changes is a new architecture. Each one is a <b>repair</b>: a specific, nameable problem with the GPT-2 design, and a small fix. If you know the problem, the fix stays in your head. This lesson tells every repair the same way: the problem, the idea, and what it costs.
         </Callout>
       </Why>
 
       <Problem title="What goes wrong when you scale our tiny GPT">
-        <p>Our tiny GPT has 4 layers, 128 numbers per token and a 64-token window. Imagine turning every dial up by a factor of a thousand and serving it to a million users. Three kinds of pain appear.</p>
+        <p>Our tiny GPT has 4 layers, 128 numbers per token and a 64-token window. Now imagine turning every dial up a thousand times and serving it to a million users. Three kinds of pain appear.</p>
         <div className="grid-3">
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>Position</h4>
@@ -68,85 +69,93 @@ export default function ModernArchitectureLesson() {
       </Problem>
 
       <MentalModel title="Same skeleton, swapped parts">
-        <p>Here is the whole lesson on one screen. The left column is what you built. The right column is what you would find in many open models from 2023 onwards.</p>
+        <p>Here is the whole lesson on one screen. The left column is what you built. The right column is what you would find in most open models today.</p>
         <div className="table-scroll">
           <table className="plain">
-            <thead><tr><th>Part</th><th>Our tiny GPT (GPT-2 style)</th><th>Typical 2020s open model</th><th>Fixes</th></tr></thead>
+            <thead><tr><th>Part</th><th>Our tiny GPT (GPT-2 style)</th><th>Typical open model, 2024 to 2026</th><th>Fixes</th></tr></thead>
             <tbody>
-              <tr><td>Normalisation</td><td>LayerNorm</td><td>RMSNorm (root mean square norm)</td><td>cost</td></tr>
+              <tr><td>Normalisation</td><td>LayerNorm</td><td>RMSNorm (root mean square norm), often also on q and k (QK-norm)</td><td>cost, stability</td></tr>
               <tr><td>Position</td><td>learned table, added to embeddings</td><td>RoPE (rotary position embedding): rotate <span className="q">q</span> and <span className="k">k</span></td><td>position</td></tr>
               <tr><td>MLP</td><td>2 matrices + GELU</td><td>3 matrices, gated (SwiGLU)</td><td>quality per parameter</td></tr>
-              <tr><td>Attention heads</td><td>one K/V head per query head</td><td>several query heads share a K/V head (GQA, grouped-query attention)</td><td>memory</td></tr>
+              <tr><td>Attention heads</td><td>one K/V head per query head</td><td>shared K/V heads (GQA), a compressed cache (MLA), or a sliding window in some layers</td><td>memory</td></tr>
               <tr><td>Attention execution</td><td>build the full T×T table</td><td>FlashAttention: same result, tiled</td><td>memory, speed</td></tr>
-              <tr><td>Context window</td><td>64 (GPT-2: 1,024)</td><td>thousands to hundreds of thousands</td><td>usefulness</td></tr>
-              <tr><td>Size</td><td>0.8M parameters, all used</td><td>billions; sometimes mixture-of-experts (MoE)</td><td>capability</td></tr>
+              <tr><td>Context window</td><td>64 (GPT-2: 1,024)</td><td>tens of thousands to over a hundred thousand tokens</td><td>usefulness</td></tr>
+              <tr><td>Size</td><td>0.8M parameters, all used</td><td>billions; dense or, increasingly, mixture-of-experts (MoE)</td><td>capability per unit of compute</td></tr>
             </tbody>
           </table>
         </div>
+        <p>Dev’s “way more parameters, way smarter” hides the most interesting row. In the biggest open models, most parameters sit idle for any one token. We will get there in part 8.</p>
         <Callout kind="analogy">
-          Think of a car engine from 1990 and one from 2020. Same cycle: intake, compression, ignition, exhaust. But the carburettor became fuel injection, and the distributor became electronic ignition. Each swap fixed one known weakness.
+          Amma’s old pressure cooker and her new one work the same way: seal the lid, build steam, cook faster. But the new one has a better gasket, a safety valve that actually works, and a whistle she can hear from the balcony. Each change fixed one known annoyance.
           <br /><br />
-          Where the analogy stops: engine parts were redesigned from physical theory. Several of the swaps below were found by trying things and measuring the loss. We will mark those honestly.
+          Where the analogy stops: cooker parts were redesigned from physics. Several of the swaps below were found by trying things and measuring the loss. We will mark those honestly.
         </Callout>
-        <Callout kind="established">Everything in this lesson is taken from published papers and openly released model code (Llama, Mistral, Qwen and similar families). The internals of closed commercial models are not public, so this lesson makes no claims about them.</Callout>
+        <Callout kind="established">Everything in this lesson is taken from published papers and openly released model code and configs (Llama, Mistral, Qwen, Gemma, DeepSeek, Kimi, gpt-oss and similar families). The internals of closed commercial models are not public, so this lesson makes no claims about them.</Callout>
       </MentalModel>
 
       <TryIt title="The changes, one at a time">
         <h3>1. RMSNorm: a cheaper LayerNorm</h3>
-        <p>In <a href="#/lesson/transformer-block">The Transformer block</a>, <G t="layernorm">LayerNorm</G> kept each token’s vector in a stable range: subtract the mean, divide by the spread, then apply a learned gain and bias. It runs twice per block, on every token.</p>
+        <p>In <a href="#/lesson/transformer-block">The Transformer block</a>, <G t="layernorm">LayerNorm</G> kept each token’s vector in a stable range. It subtracts the mean, divides by the spread, then applies a learned gain and bias. It runs twice per block, on every token.</p>
         <p>Which of those steps actually matters? Try it on four numbers.</p>
         <NormCompare />
-        <TechCard
-          name="RMSNorm"
-          problem="LayerNorm computes two statistics (mean and spread) and carries two learned vectors (gain and bias), twice per block. Is all of that needed for stable training?"
-          idea={<>Drop the mean subtraction and the bias. Just divide the vector by its root-mean-square size, then multiply by a learned gain: <span className="mono">x / √(mean(x²)) × g</span>.</>}
-          helps="Experiments found that the rescaling is what stabilises training; re-centring adds little. RMSNorm does less arithmetic and has fewer parameters for roughly the same result."
-          tradeoff="The output no longer has mean 0. Published comparisons (Zhang and Sennrich, 2019, and later large models) found no consistent loss in quality from this. The saving is real but modest: normalisation is a small share of total compute."
-          where="Llama, Mistral, Qwen, Gemma and most open models since 2023. It was used earlier in T5."
+        <Fix
+          problem="LayerNorm computes two statistics (mean and spread) and carries two learned vectors (gain and bias), twice per block. Is all of that needed?"
+          idea={<>Drop the mean subtraction and the bias. Divide the vector by its root-mean-square size, then multiply by a learned gain: <span className="mono">x / √(mean(x²)) × g</span>.</>}
+          tradeoff="The output no longer has mean 0. Published comparisons found no consistent loss in quality from this. The saving is real but modest: normalisation is a small share of total compute."
         />
+        <DeepDive title="RMSNorm: why it helps, where it appears, and QK-norm">
+          <p><b>Why it helps.</b> Experiments (Zhang and Sennrich, 2019) found that the rescaling is what stabilises training; re-centring adds little. RMSNorm does less arithmetic and has fewer parameters for roughly the same result.</p>
+          <p><b>Where it appears.</b> Llama, Mistral, Qwen, Gemma, DeepSeek and most open models since 2023. It was used earlier in T5.</p>
+          <p><b>QK-norm.</b> A newer, related habit: apply an RMSNorm to each <span className="q">query</span> and <span className="k">key</span> vector just before the dot product. Very large training runs sometimes suffer loss spikes when attention scores grow huge and softmax saturates. Normalising q and k keeps the size of their dot product in check, which makes training more stable. OLMo 2, Qwen3 and Gemma 3 use it. It adds a tiny amount of work and is otherwise invisible: the attention formula stays the same.</p>
+        </DeepDive>
 
         <h3>2. RoPE: position as rotation</h3>
-        <p>Our tiny GPT adds a learned position vector to each token embedding: <code>x = tok_emb + pos_emb</code>. Two problems.</p>
+        <p>Our tiny GPT adds a learned position vector to each token embedding: <code>x = tok_emb + pos_emb</code>. That has two problems.</p>
         <ul>
           <li><b>No row, no position.</b> The table has 64 rows. Position 64 does not exist. A model trained with 1,024 rows cannot read token 1,025.</li>
           <li><b>Distance is not built in.</b> Language cares mostly about <em>relative</em> position: “the adjective right before this noun”. A table of unrelated vectors forces the model to learn “two apart” separately for positions (3, 5), (40, 42), (900, 902)…</li>
         </ul>
-        <p>The idea of <G t="rope">RoPE</G> (rotary position embedding): do not add anything. Instead, just before the <span className="q">query</span>·<span className="k">key</span> dot product, <b>rotate</b> each vector by an angle proportional to its position. You know from <a href="#/lesson/vectors">lesson 1.1</a> that a dot product depends on the angle <em>between</em> two vectors. If both are rotated, only the difference in rotation survives.</p>
+        <p>The idea of <G t="rope">RoPE</G> (rotary position embedding) is to add nothing at all. Instead, just before the <span className="q">query</span>·<span className="k">key</span> dot product, <b>rotate</b> each vector by an angle proportional to its position.</p>
+        <p>You know from <a href="#/lesson/vectors">lesson 1.1</a> that a dot product depends on the angle <em>between</em> two vectors. If both are rotated, only the difference in rotation survives.</p>
         <RopeLab />
-        <TechCard
-          name="RoPE (rotary position embedding)"
+        <Fix
           problem="A learned position table stops at its last row and does not express how far apart two tokens are."
           idea={<>Rotate <span className="q">q</span> and <span className="k">k</span> by (position × θ) inside every attention layer. The score <span className="q">q</span>·<span className="k">k</span> then depends only on the offset between the two positions.</>}
-          helps="Relative distance is built into the attention score, the same way at every position. There is no table to run out of, and no extra parameters. Values are not rotated: position only influences who attends to whom."
-          tradeoff="It must be applied in every attention layer, to q and k, at the right positions (easy to get wrong with a KV cache). And “no table” does not mean “any length works”: models still degrade beyond the lengths they were trained on, unless the rotation speeds are rescaled and the model is trained further on long text."
-          where="Llama, Mistral, Qwen, Gemma, GPT-NeoX, PaLM: the default in open models. Introduced in the RoFormer paper (Su et al., 2021)."
+          tradeoff="It must be applied in every attention layer, to q and k, at the right positions (easy to get wrong with a KV cache). And “no table” does not mean “any length works”: models still degrade beyond the lengths they were trained on."
         />
+        <DeepDive title="RoPE: why it helps and where it appears">
+          <p><b>Why it helps.</b> Relative distance is built into the attention score, the same way at every position. There is no table to run out of, and no extra parameters. Values are not rotated: position only influences who attends to whom.</p>
+          <p><b>Where it appears.</b> Llama, Mistral, Qwen, Gemma, DeepSeek, GPT-NeoX, PaLM: the default in open models. Introduced in the RoFormer paper (Su et al., 2021). Part 7 below shows how its rotation speeds are adjusted to stretch the context window.</p>
+        </DeepDive>
 
         <h3>3. SwiGLU: a gated MLP</h3>
         <p>Our <G t="ffn">feed-forward layer</G> expands each token to 4× its width, applies GELU (a smooth ReLU), and projects back. Two matrices.</p>
-        <p>A gated MLP uses three. Two of them read the input in parallel. One result goes through a smooth switch, then the two are multiplied together number by number. One path says <em>what</em> to write, the other says <em>how much of it to let through</em>. That is what “gated” means, and the G in SwiGLU.</p>
+        <p>A gated MLP uses three. Two of them read the input side by side. One result goes through a smooth switch, then the two are multiplied together, number by number.</p>
+        <p>One path says <em>what</em> to write. The other says <em>how much of it to let through</em>. That is what “gated” means, and the G in SwiGLU.</p>
         <p>The switch itself is <b>Swish</b>, also written SiLU: the function z × sigmoid(z), a smooth version of the ReLU hinge you met in <a href="#/lesson/neurons">Neurons and layers</a>. It gives the Swi in the name.</p>
-        <TechCard
-          name="SwiGLU"
-          problem="Most of a Transformer’s parameters sit in the MLPs. Any MLP design that gives lower loss for the same parameter count is worth a lot at scale."
+        <Fix
+          problem="Most of a dense Transformer’s parameters sit in the MLPs. Any MLP design that gives lower loss for the same parameter count is worth a lot at scale."
           idea={<>Replace <span className="mono">W₂ · gelu(W₁x)</span> with <span className="mono">W₂ · ( swish(W₁x) ⊙ W₃x )</span>, where ⊙ multiplies matching entries. To keep the parameter count equal, the hidden width shrinks from 4d to about 8d/3.</>}
-          helps="In controlled comparisons (Shazeer, 2020) gated variants reached lower loss than ReLU or GELU MLPs with the same number of parameters and compute."
-          tradeoff="Three matrix multiplies instead of two, and one more matrix to split across GPUs when the model is too big for one. And no satisfying theory: see the note below."
-          where="Llama, Mistral, Qwen, PaLM. Gemma uses a close relative with GELU as the switch (GeGLU)."
+          tradeoff="Three matrix multiplies instead of two, and one more matrix to split across GPUs. And no satisfying theory: see the note below."
         />
+        <DeepDive title="SwiGLU: why it helps and where it appears">
+          <p><b>Why it helps.</b> In controlled comparisons (Shazeer, 2020) gated variants reached lower loss than ReLU or GELU MLPs with the same number of parameters and compute.</p>
+          <p><b>Where it appears.</b> Llama, Mistral, Qwen, DeepSeek, PaLM, and the experts inside most MoE models. Gemma uses a close relative with GELU as the switch (GeGLU).</p>
+        </DeepDive>
         <Callout kind="research">Why does multiplying two projections help? There are intuitions (the layer can compute products of features, which a plain MLP can only approximate). But the paper that introduced these variants offers no explanation and famously attributes the success to “divine benevolence”. Treat SwiGLU as an empirical result: it was measured to be better, so people use it.</Callout>
 
         <h3>4. The KV cache, and why it became the bottleneck</h3>
         <p>A quick recap from <a href="#/lesson/inference">Inference</a>. With a causal mask, the keys and values of past tokens never change, so we store them and only run the newest token through the model. That is the <G t="kv-cache">KV cache</G>.</p>
-        <p>The cache is not an optional trick any more: every serving system uses it. So its size is a design constraint. For every token, in every layer, for every head, we keep one key vector and one value vector.</p>
-        <TechCard
-          name="KV cache (recap)"
+        <p>Every serving system uses it, so its size is a design constraint. For every token, in every layer, for every K/V head, we keep one key vector and one value vector. Most of the rest of this lesson is about shrinking that pile.</p>
+        <Fix
           problem="Without a cache, generating token 1,001 reprocesses the previous 1,000 tokens, again, at every step."
           idea="Store each layer’s K and V for all past tokens. Process only the new token; let its query read the stored keys and values."
-          helps="Each step runs only the new token through the layers. The past is read from the cache, not recomputed. Output is identical: you proved that in kv_cache_demo.py."
           tradeoff="Memory. The cache grows linearly with context length, and it is per conversation. At long contexts and many users it, not the weights, limits how many requests fit on a GPU."
-          where="Every production inference stack. “Prompt caching” on API price lists is, in essence, this cache kept between requests for a prompt prefix that has not changed."
         />
+        <DeepDive title="KV cache: why it helps and where it appears">
+          <p><b>Why it helps.</b> Each step runs only the new token through the layers. The past is read from the cache, not recomputed. Output is identical: you checked that in <code>kv_cache_demo.py</code>.</p>
+          <p><b>Where it appears.</b> Every production inference stack. “Prompt caching” on API price lists is, in essence, this cache kept between requests for a prompt prefix that has not changed.</p>
+        </DeepDive>
 
         <h3>5. GQA and MQA: share the keys and values</h3>
         <p>In <a href="#/lesson/masks-and-heads">multi-head attention</a> every head has its own <span className="q">Q</span>, <span className="k">K</span> and <span className="v">V</span>. But only K and V are cached. Queries are used once and thrown away.</p>
@@ -158,55 +167,97 @@ export default function ModernArchitectureLesson() {
           formal={<>With H query heads and G key/value heads (G divides H), query head h attends using K/V head ⌊h / (H/G)⌋. MHA is G = H, MQA is G = 1.</>}
         />
         <GqaCalculator />
-        <TechCard
-          name="GQA / MQA"
-          problem="KV-cache memory (and the time spent reading it from GPU memory for every generated token) grows with the number of K/V heads."
+        <Fix
+          problem="KV-cache memory (and the time spent reading it for every generated token) grows with the number of K/V heads."
           idea="Keep many query heads, so the model can still ask many different questions. Let groups of them share one K/V head."
-          helps="The cache shrinks by the factor (query heads ÷ K/V heads). Generation is usually limited by memory traffic, not arithmetic, so a smaller cache also means faster decoding and more users per GPU."
-          tradeoff="Fewer distinct keys and values means slightly less expressive attention. MQA (one K/V head) showed measurable quality loss in some studies; GQA with around 8 K/V heads was reported to stay close to full multi-head quality (Ainslie et al., 2023)."
-          where="GQA: Llama-2 70B, Llama-3 8B and 70B, Mistral 7B, Qwen2. MQA: PaLM, Falcon-7B (Falcon-40B uses 8 K/V heads). Llama-2 7B still used plain multi-head attention. MQA itself is from Shazeer, 2019."
+          tradeoff="Fewer distinct keys and values means slightly less expressive attention. MQA showed measurable quality loss in some studies; GQA with around 8 K/V heads was reported to stay close to full multi-head quality (Ainslie et al., 2023)."
         />
+        <DeepDive title="GQA: why it helps and where it appears">
+          <p><b>Why it helps.</b> The cache shrinks by the factor (query heads ÷ K/V heads). At long context the cache is a large part of what each decoding step must read from memory, so a smaller cache also means faster decoding and more users per GPU.</p>
+          <p><b>Where it appears.</b> GQA: Llama-2 70B, Llama-3 8B and 70B, Mistral 7B, Qwen2 and Qwen3, Gemma 2 and 3, gpt-oss. MQA: PaLM, Falcon-7B (Falcon-40B uses 8 K/V heads). Llama-2 7B still used plain multi-head attention. MQA itself is from Shazeer, 2019.</p>
+        </DeepDive>
+
+        <h3>5b. Beyond GQA: three more ways to shrink the cache</h3>
+        <p>GQA was the first answer, and it is still everywhere. Since 2024, open models have tried three bolder ones. Each attacks a different factor of the cache formula.</p>
+        <p><b>Compress what you store (MLA).</b> Multi-head latent attention, from DeepSeek-V2 and used again in DeepSeek-V3 and Kimi K2, does not cache keys and values at all. For each token it caches one short <em>compressed</em> vector (a “latent”), and rebuilds every head’s keys and values from it with learned matrices when needed.</p>
+        <Fix
+          problem="Even with GQA, each token stores full key and value vectors for several heads, in every layer."
+          idea="Store one small latent vector per token per layer: in DeepSeek-V3, 512 numbers, plus a 64-number key part that carries the RoPE rotation. Expand it into per-head keys and values on the fly."
+          tradeoff="More arithmetic per step to expand the latent, and a more complicated attention layer (RoPE needs its own separate part, because a rotation cannot pass through the compression). The published reports found quality comparable to or better than standard attention."
+        />
+        <p><b>Look back only so far (sliding windows).</b> In a <em>sliding-window</em> layer each token attends only to the last W tokens, so that layer’s cache never holds more than W tokens. Models interleave these “local” layers with ordinary “global” layers that still see everything.</p>
+        <Fix
+          problem="Every layer caches every past token, although many layers mostly use nearby context."
+          idea="Make most layers local (window W), keep some global. Gemma 2 alternates local and global layers one to one, with a 4,096-token window. Gemma 3 uses five local layers per global one, with a 1,024-token window. gpt-oss alternates a 128-token banded window with full attention."
+          tradeoff="Information from far back can only travel through the global layers. And the global layers still cache everything, so the cache still grows with context, only more slowly."
+        />
+        <p><b>Replace some attention with a fixed-size memory (hybrids).</b> A few recent models swap most attention layers for layers from the <em>linear attention</em> or <em>state-space</em> family. Such a layer keeps one fixed-size running summary instead of a growing cache, a little like the RNNs attention replaced, but designed to train in parallel. A few full-attention layers remain for exact look-back.</p>
+        <Fix
+          problem="Any full-attention layer has a cache that grows with every token, and T² prompt-reading compute."
+          idea="Use mostly layers with a fixed-size state. Qwen3-Next mixes Gated DeltaNet layers with gated attention layers at roughly three to one; Kimi Linear mixes Kimi Delta Attention layers with MLA layers at roughly three to one."
+          tradeoff="A fixed-size summary must forget something. Exact recall of a detail far back depends on the few full-attention layers that remain."
+        />
+        <Callout kind="research">MLA and interleaved sliding windows are established in widely used open models. Hybrid linear-attention designs are newer: how well they hold up on long, recall-heavy tasks compared with full attention, and what mix is best, is still being measured. Treat the ratios above as one lab’s choices, not settled rules.</Callout>
 
         <h3>6. FlashAttention: same maths, less memory traffic</h3>
         <p>Look at <code>tiny_gpt.py</code>: <code>att = q @ k.transpose(-2, -1)</code> builds the full T×T table of scores, for every head. Then softmax reads it and writes another T×T table.</p>
         <p>At T = 4,096 in 16-bit numbers, one table for one head is 4,096 × 4,096 × 2 bytes = 32 MiB. With 32 heads that is 1 GiB per layer, per sequence, written to GPU memory and read back, only to be thrown away.</p>
         <p>A GPU has a small amount of very fast on-chip memory and a large amount of slower main memory. For attention, the arithmetic is quick. Moving those big tables between the two memories is what takes the time.</p>
-        <TechCard
-          name="FlashAttention"
-          problem="Standard attention materialises T×T tables in the GPU’s large, slower memory. Memory use grows with T², and most of the time is spent moving data, not computing."
+        <Fix
+          problem="Standard attention writes T×T tables to the GPU’s large, slower memory. Memory use grows with T², and most of the time is spent moving data, not computing."
           idea="Cut Q, K and V into tiles small enough for the fast on-chip memory. Compute attention tile by tile, keeping a running softmax total so the final result is exactly right. Never store the full T×T table."
-          helps="Extra memory grows with T instead of T². Far fewer slow memory reads and writes, so it is several times faster on long sequences. The output is the same as standard attention up to floating-point rounding: it is not an approximation."
-          tradeoff="It is a hand-written GPU kernel (a small program that runs directly on the GPU), tied to hardware details, and much harder to read or modify than three lines of PyTorch. The T² arithmetic is still done; only the T² storage is avoided."
-          where={<>Inside PyTorch’s <code>F.scaled_dot_product_attention</code> and practically every training and serving stack. Dao et al., 2022.</>}
+          tradeoff="It is a hand-written GPU kernel (a small program that runs directly on the GPU), tied to hardware details, and much harder to read or change than three lines of PyTorch. The T² arithmetic is still done; only the T² storage is avoided."
         />
-        <Callout kind="dev">This is an I/O optimisation, exactly like processing a huge file in blocks that fit in cache instead of seeking all over the disk. The algorithm’s answer is unchanged; its memory access pattern is what changed.</Callout>
+        <DeepDive title="FlashAttention: why it helps and where it appears">
+          <p><b>Why it helps.</b> Extra memory grows with T instead of T². Far fewer slow memory reads and writes, so it is several times faster on long sequences. The output is the same as standard attention up to floating-point rounding: it is not an approximation.</p>
+          <p><b>Where it appears.</b> Inside PyTorch’s <code>F.scaled_dot_product_attention</code> and practically every training and serving stack. Dao et al., 2022, with later versions for newer GPUs.</p>
+        </DeepDive>
+        <Callout kind="dev">This is an I/O optimisation, like processing a huge file in blocks that fit in cache instead of seeking all over the disk. The algorithm’s answer is unchanged; its memory access pattern is what changed.</Callout>
 
         <h3>7. Longer context windows</h3>
-        <p>GPT-2 read 1,024 tokens. Llama-2 reads 4,096, Llama-3 8,192, Llama-3.1 about 128 thousand (131,072 in its config). RoPE, GQA and FlashAttention are what made this affordable. But affordable is not free.</p>
-        <TechCard
-          name="Larger context windows"
+        <p>GPT-2 read 1,024 tokens. Llama-2 reads 4,096, Llama-3 8,192, Llama-3.1 about 128 thousand (131,072 in its config). RoPE, a smaller cache and FlashAttention are what made this affordable. But affordable is not free.</p>
+        <Fix
           problem="Whole codebases, long documents and long conversations do not fit in 1,024 tokens. Whatever does not fit, the model cannot see at all."
-          idea="Train (or continue training) on longer sequences, with RoPE speeds adjusted for the longer range, and rely on GQA and FlashAttention to keep memory manageable."
-          helps="More of the relevant material can be in front of the model at once, which is the only way it can use information that is not in its weights."
+          idea="Pretrain on moderate lengths, then continue training briefly on long sequences with the RoPE rotations slowed down, so long distances look like distances the model already knows."
           tradeoff={<>Attention compute for reading a prompt grows with T²: going from 4,096 to 131,072 tokens is 32× more tokens but 1,024× more query-key scores. The KV cache grows linearly: a 70B-class model with GQA needs about 40 GiB of cache for one 131,072-token conversation.</>}
-          where="Most current open and commercial models advertise windows from tens of thousands to a million or more tokens."
         />
+        <DeepDive title="How the rotations are slowed: position interpolation, base scaling, YaRN">
+          <p>A model trained on 4,096 positions has only ever seen rotation angles up to 4,096 × θ. Show it position 20,000 and the fast pairs have spun into angles it has never met.</p>
+          <p><b>Position interpolation</b> squeezes the positions: divide every position by the stretch factor, so 16,000 tokens use the same angles 4,000 used to. <b>Base scaling</b> (sometimes called NTK-aware scaling) raises the RoPE base instead, which slows the slow pairs a lot and the fast pairs hardly at all, so nearby tokens stay sharp. <b>YaRN</b> combines the two per pair and adds a small correction to the attention scores. Qwen and DeepSeek models use YaRN; you saw <code>"type": "yarn"</code> in Kabir’s config.</p>
+          <p>All of these need some further training on long text to work well. Which method is best is still argued about, and each lab tunes its own recipe.</p>
+        </DeepDive>
         <Callout kind="research">“Fits in the window” is not the same as “is used well”. Studies such as “Lost in the Middle” (Liu et al., 2023) found that some models used information at the start and end of a long prompt much better than information in the middle. Newer models have improved on simple find-the-sentence tests, but how reliably models reason over very long inputs is still being measured. Test on your own task before trusting a number on a model card.</Callout>
 
         <h3>8. More parameters, and mixture-of-experts</h3>
-        <p>The bluntest change: size. Our model has under a million <G t="parameters">parameters</G>. GPT-2 small had 124 million. Open models now range from about 1 billion to several hundred billion. The previous lesson, <a href="#/lesson/why-llms-know">Why LLMs know things</a>, covered why bigger models reach lower loss.</p>
-        <p>But in a normal (“dense”) model every parameter is used for every token. Twice the parameters means twice the compute per token. Mixture-of-experts breaks that link.</p>
-        <TechCard
-          name="Mixture-of-experts (MoE)"
-          problem="More parameters give a better model, but in a dense model compute per token grows in step with parameter count."
-          idea="In each block, replace the one MLP with several parallel MLPs (“experts”) plus a small learned router. For each token the router picks a few experts (often 2 of 8, or a handful of many). Only those run."
-          helps="Total parameters (capacity) grow with the number of experts. Compute per token grows only with the number of experts that are active."
-          tradeoff="All experts must still sit in memory, so an MoE needs far more GPU memory than a dense model of the same speed. The router must be trained to spread tokens evenly. That usually needs an extra balancing loss term (DeepSeek-V3 relies mainly on adjusting a per-expert routing bias instead) and it makes distributed training harder."
-          where="Mixtral 8x7B (8 experts, 2 active per token: about 47B parameters in total, about 13B used per token) and DeepSeek-V3 (about 671B total, about 37B active), both openly documented."
+        <p>The bluntest change is size. Our model has under a million <G t="parameters">parameters</G>. GPT-2 small had 124 million. Open models now range from about 1 billion to around a trillion. <a href="#/lesson/why-llms-know">Why LLMs know things</a> covered why bigger models reach lower loss.</p>
+        <p>But in a normal (“dense”) model every parameter is used for every token. Twice the parameters means twice the compute per token. Mixture-of-experts breaks that link, and by 2025 it had become the usual design for the largest open-weight models.</p>
+        <Fix
+          problem="More parameters give a better model, but in a dense model the compute per token grows in step with parameter count."
+          idea="In each block, replace the one MLP with many smaller parallel MLPs (“experts”) plus a small learned router. For each token the router picks a few experts, and only those run. Many designs also keep one “shared” expert that every token uses."
+          tradeoff="All experts must still sit in GPU memory, so an MoE needs far more memory than a dense model of the same speed. The router must be trained to spread tokens evenly, and splitting experts across many GPUs makes training and serving harder."
         />
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>Open-weight model</th><th>experts per MoE layer</th><th>used per token</th><th>parameters: total / active</th></tr></thead>
+            <tbody>
+              <tr><td>Mixtral 8x7B (2023)</td><td className="mono">8</td><td className="mono">2</td><td className="mono">≈ 47B / ≈ 13B</td></tr>
+              <tr><td>DeepSeek-V3 and R1</td><td className="mono">256 + 1 shared</td><td className="mono">8 + 1 shared</td><td className="mono">671B / ≈ 37B</td></tr>
+              <tr><td>Qwen3-235B-A22B</td><td className="mono">128</td><td className="mono">8</td><td className="mono">235B / 22B</td></tr>
+              <tr><td>Kimi K2</td><td className="mono">384 + 1 shared</td><td className="mono">8 + 1 shared</td><td className="mono">≈ 1T / ≈ 32B</td></tr>
+              <tr><td>gpt-oss-120b</td><td className="mono">128</td><td className="mono">4</td><td className="mono">≈ 117B / ≈ 5.1B</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Read DeepSeek-V3’s row. Each token touches about 37B of 671B parameters: roughly 5.5%. Notice the trend too. Early MoEs had a few big experts. Newer ones have <b>many small, fine-grained experts</b>, pick several of them, and add a shared expert for the knowledge every token needs. Llama 4 Scout and Maverick are MoE models as well, and gpt-oss-20b uses 32 experts with 4 active.</p>
+        <p><b>Why do active parameters decide the serving bill?</b> Two reasons. The arithmetic per token is about 2 operations per <em>active</em> parameter, so 37B active costs like a 37B dense model, not a 671B one. And at small batch sizes each decoding step is limited by reading weights from memory, and it only reads the experts it uses. What the total still decides is how much GPU memory you must buy to hold the model at all.</p>
+        <DeepDive title="MoE: routing, balance, and where it appears">
+          <p><b>The router</b> is one small matrix: it scores every expert for the current token, keeps the top few, and mixes their outputs using those scores. It is trained along with everything else.</p>
+          <p><b>Balance.</b> Left alone, a router tends to send most tokens to a few favourite experts, leaving the rest untrained and some GPUs idle. Most designs add a small balancing term to the loss. DeepSeek-V3 relies mainly on adjusting a per-expert routing bias instead.</p>
+          <p><b>Where it appears.</b> Mixtral, DeepSeek-V2 and V3, Qwen3’s large models, Kimi K2, Llama 4, gpt-oss. Dense models remain common at small and medium sizes, where memory is tight and simplicity pays.</p>
+        </DeepDive>
         <Callout kind="model">“Expert” is a misleading name. Published analyses of open MoE models found that experts do not split into tidy human subjects such as “the maths expert”. Routing tends to follow lower-level token patterns. Think “sharded MLP with a learned shard key”, not “committee of specialists”.</Callout>
+        <p>Riya turns to Dev. “So the biggest one on the list uses about 32 billion parameters per token. More parameters on disk, yes. Not more work per word.” Dev frowns at the table for a long moment. “Okay. That’s actually clever.”</p>
       </TryIt>
-
       <Numbers>
         <h3>The KV cache of two real models, by hand</h3>
         <p>For every token we store one key and one value (that is the 2), in every layer, for every K/V head, <code>head_dim</code> numbers each. In 16-bit precision each number is 2 bytes.</p>
@@ -225,6 +276,9 @@ export default function ModernArchitectureLesson() {
         </div>
         <p>Read the middle column again. The 70B model is ten times larger than the 7B model, yet its cache per token is <em>smaller</em>, because 8 K/V heads replaced 64. The saving is exactly 64 ÷ 8 = 8×.</p>
         <p>Stretch the context to 131,072 tokens and the 70B cache is 40 GiB with GQA, or 320 GiB with plain multi-head attention. For comparison, the 70B weights themselves take about 140 GB in 16-bit. Check all of these in the calculator.</p>
+        <p>Now MLA. DeepSeek-V3 has 61 layers and caches 512 + 64 = 576 numbers per token per layer, with no separate key and value and no K/V heads:</p>
+        <p className="mono" style={{ fontSize: 14.5 }}>61 layers × 576 × 2 bytes = 70,272 bytes ≈ 68.6 KiB per token</p>
+        <p>That is about 4.7 times less than Llama-2 70B’s 327,680 bytes with GQA, in a model with roughly ten times the parameters. At 131,072 tokens it comes to about 8.6 GiB, against 40 GiB. (The calculator only models GQA, so check this one by hand.)</p>
 
         <h3>RoPE by hand</h3>
         <p>Take the simplest vectors: <span className="q mono">q = [1, 0]</span> and <span className="k mono">k = [1, 0]</span>, with θ = 30° per position. Put the query at position 5 and the key at position 3.</p>
@@ -474,7 +528,7 @@ def forward(self, x, cache=None):          # with a cache, x holds only the NEW 
 
         <ExplainBack
           id="modern-architecture-explain"
-          prompt="A teammate reads a model card: “RMSNorm, RoPE, SwiGLU, GQA, FlashAttention, 128k context.” They say: “So it is a completely different architecture from GPT-2?” Answer them. For at least three of those terms, say what problem it fixes and what it costs."
+          prompt="Dev forwards you a model card: “RMSNorm, RoPE, SwiGLU, GQA, FlashAttention, 128k context.” He writes: “So it is a completely different architecture from GPT-2?” Answer them. For at least three of those terms, say what problem it fixes and what it costs."
           modelAnswer={<><p>No. It is the same skeleton: token embeddings, a stack of blocks with attention and an MLP, residual connections, next-token logits. Each term is a repair to one part.</p><p>RoPE replaces the learned position table, which had a hard last row and no notion of distance, with rotations of q and k so that scores depend on relative offset; it still does not make unlimited length free. GQA lets groups of query heads share K/V heads because the KV cache was eating memory; the cache shrinks by query heads ÷ K/V heads, at a small quality risk. FlashAttention computes exactly the same attention but in tiles, so the T×T table never sits in slow GPU memory; the cost is a complicated hardware-specific kernel. RMSNorm is LayerNorm without the mean subtraction and bias: cheaper, same quality. SwiGLU is a gated three-matrix MLP that measured better per parameter, without a solid theory of why. 128k context is what those make affordable, but compute to read a prompt still grows with T², and models do not necessarily use the middle of a long context well.</p></>}
         />
       </Exercises>
@@ -511,16 +565,22 @@ def forward(self, x, cache=None):          # with a cache, x holds only the NEW 
             answer: 1,
             explain: 'Cache is linear in T, attention scores are T². FlashAttention avoids storing the T² table but still does the T² arithmetic. How well long context is used is an empirical question.',
           },
+          {
+            q: 'DeepSeek-V3 has 671B parameters but about 37B active per token. Compared with a 37B dense model, what does serving it cost?',
+            options: ['About the same compute per token, but far more GPU memory, because all 671B parameters must be loaded', 'About 18 times more compute per token, because every parameter still takes part', 'Less memory, because inactive experts are deleted after training', 'Exactly the same in every respect'],
+            answer: 0,
+            explain: 'Only the chosen experts run, so arithmetic per token follows the active count. But the router can pick any expert for the next token, so every expert must be in memory.',
+          },
         ]}
       />
 
       <Remember
         items={[
-          <>A 2020s open model is <b>the same skeleton</b> you built: blocks of attention + MLP with residuals. The differences are targeted repairs, each with a cost.</>,
+          <>A modern open model is <b>the same skeleton</b> you built: blocks of attention + MLP with residuals. The differences are targeted repairs, each with a cost.</>,
           <><b>RoPE</b> rotates <span className="q">q</span> and <span className="k">k</span> by position × θ, so the score depends only on the <b>offset</b> between two tokens. No position table, no extra parameters. It does not make unlimited length free.</>,
           <><b>KV cache bytes = 2 × layers × KV heads × head_dim × tokens × bytes.</b> <b>GQA</b> shrinks the “KV heads” factor: 64 query heads on 8 K/V heads = 8× less cache.</>,
           <><b>FlashAttention</b> is exact attention with a better memory access pattern. <b>RMSNorm</b> is LayerNorm minus the mean and bias. <b>SwiGLU</b> is a gated MLP that measured better; why is mostly empirical.</>,
-          <><b>Long context</b> costs T² compute and linear cache memory, and fitting in the window does not mean being used well. <b>MoE</b> buys more parameters at similar compute per token, and pays in memory and routing complexity.</>,
+          <><b>Long context</b> costs T² compute and linear cache memory, and fitting in the window does not mean being used well. <b>MoE</b>, now the usual design for the largest open-weight models, buys more parameters at the compute of its <b>active</b> parameters, and pays in memory and routing complexity. Beyond GQA, <b>MLA</b>, <b>sliding windows</b> and <b>hybrid</b> layers shrink the cache further.</>,
         ]}
       />
 
@@ -547,11 +607,12 @@ def forward(self, x, cache=None):          # with a cache, x holds only the NEW 
         <p>Rows 5 and 8, the residual stream, did not change at all. Neither did the attention formula, the causal mask, the training loss or the generation loop.</p>
         <ToyVsReal
           toy={<ul><li>4 blocks, 128 numbers per token, 4 heads of 32</li><li>64-token window from a learned table</li><li>KV cache (if you add one, in 32-bit): 256 KiB</li><li>every parameter used for every token</li></ul>}
-          real={<ul><li>Llama-3 70B: 80 blocks, 8,192 numbers per token, 64 query heads of 128 sharing 8 K/V heads</li><li>8,192 to 128,000+ tokens via RoPE</li><li>KV cache: gigabytes per conversation, the main serving constraint</li><li>some models are mixture-of-experts: only a few expert MLPs run per token</li></ul>}
+          real={<ul><li>Llama-3 70B: 80 blocks, 8,192 numbers per token, 64 query heads of 128 sharing 8 K/V heads</li><li>8,192 to 128,000+ tokens via RoPE</li><li>KV cache: gigabytes per conversation, the main serving constraint</li><li>the largest open-weight models are mostly mixture-of-experts: DeepSeek-V3 runs about 37B of its 671B parameters per token</li></ul>}
         />
-        <Callout kind="established">The mechanisms here (RMSNorm, RoPE, gated MLPs, GQA, FlashAttention, MoE routing) are published, implemented in open code, and you can read them in the released Llama, Mistral, Qwen or DeepSeek model files. The arithmetic of KV-cache size and T² attention cost follows directly from the definitions.</Callout>
-        <Callout kind="model">“Modern LLM = GPT-2 + these eight repairs” is a simplification. Real models differ in many further details: tokenizer size, how RoPE speeds are scaled for long context, sliding-window or other restricted attention patterns, where norms are placed, how weights are initialised and quantised. The list here is the common core, not a complete specification of any one model.</Callout>
-        <Callout kind="research">Why gating helps, how well very long contexts are actually used, the best way to extend RoPE beyond the training length, and how MoE experts specialise are all open or actively studied. And the architectures of closed commercial models are not published: statements about what is inside them are guesses, however confidently they are made.</Callout>
+        <Callout kind="established">The mechanisms here (RMSNorm, QK-norm, RoPE, gated MLPs, GQA, MLA, sliding-window attention, FlashAttention, MoE routing) are published, implemented in open code, and you can read them in the released Llama, Mistral, Qwen, Gemma, DeepSeek, Kimi or gpt-oss model files and configs. The arithmetic of KV-cache size and T² attention cost follows directly from the definitions.</Callout>
+        <Callout kind="model">“Modern LLM = GPT-2 + these repairs” is a simplification. Real models combine them differently: GQA or MLA, all-global or interleaved local and global layers, dense or MoE, pure attention or a hybrid with linear-attention layers, and different long-context recipes (position interpolation, base scaling, YaRN). They also differ in tokenizer size, where norms are placed, and how weights are initialised and quantised. The list here is the common core, not a complete specification of any one model.</Callout>
+        <Callout kind="research">Why gating helps, how well very long contexts are actually used, the best way to extend RoPE beyond the training length, how MoE experts specialise, and whether hybrid linear-attention models match full attention on long, recall-heavy work are all open or actively studied. And the architectures of closed commercial models are not published: statements about what is inside them are guesses, however confidently they are made.</Callout>
+        <p>Kabir closes the config file. Riya realises she read every line of it, and could name the problem each line fixes. Next, the question she has been saving: this model continues text, so how does it become something that answers?</p>
       </RealLLM>
     </Lesson>
   )

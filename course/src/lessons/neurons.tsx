@@ -1,3 +1,4 @@
+import { RepoRunner } from '../components/RepoRunner'
 import { Diagnostic } from '../components/Diagnostic'
 import { DIAGNOSTICS } from '../data/diagnostics'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
@@ -14,9 +15,12 @@ export default function NeuronsLesson() {
     <Lesson id="neurons">
       <Why>
         <Diagnostic id="diag-neural-nets" part={DIAGNOSTICS["neural-nets"].part} questions={DIAGNOSTICS["neural-nets"].questions} />
-        <p className="lede">Last lesson ended at a wall.</p>
-        <p>Gradient descent found the best line through the data. But if the data follows a curve, the best line is still a bad answer. Training harder does not help: the model <em>cannot express</em> the shape.</p>
-        <p>Almost nothing interesting is a straight line. Think about whether an email is spam, or which word comes next, or which of three interleaved spiral arms a point lies on (that last one is the test data for this lesson). None of them is “the output goes up steadily as the input goes up”.</p>
+        <p className="lede">Monday morning, Paisa Pal. Kabir gives Riya her first real task: 300 dots on a plane, in three spiral arms that curl around each other. “Tell me which arm each dot belongs to.”</p>
+        <p>She uses the loop from the weekend. A linear classifier, gradient descent, 300 steps. Accuracy: 54%. She trains for 3,000 steps. 54%. Twenty thousand. Still 54%.</p>
+        <p>Kabir looks at her plot. The model has cut the plane into three wedges with straight edges, and the arms curl straight through all of them.</p>
+        <p>“A straight line cannot fold,” he says. “Training longer won’t teach it to.”</p>
+        <p>That is the wall the last lesson ended at. Gradient descent finds the best line. But if the data follows a curve, the best line is still a bad answer. The model <em>cannot express</em> the shape.</p>
+        <p>Almost nothing interesting is a straight line. Is this email spam? Which word comes next? Which spiral arm is this dot on? None of them is “the output goes up steadily as the input goes up”.</p>
         <Callout kind="idea">
           We need a model that can bend, and whose bends can be <em>learned</em> by the same gradient descent loop. That is all a neural network is:
           <br /><br />
@@ -26,7 +30,8 @@ export default function NeuronsLesson() {
       </Why>
 
       <Problem title="The problem: a line cannot bend, and stacking lines does not help">
-        <p>Your first idea might be: if one linear step is too simple, do two in a row. Multiply by a matrix W1, then by another matrix W2. Surely two transformations are more powerful than one?</p>
+        <p>That evening Riya tells Dev about the spiral. He has an answer ready. “Add more layers. Bigger is smarter, everybody knows that.”</p>
+        <p>It sounds right. If one linear step is too simple, do two in a row: multiply by a matrix W1, then by another matrix W2. Surely two transformations are more powerful than one?</p>
         <p>Let’s check with real numbers. Take the input x = [1, 2] (as a column) and two small matrices:</p>
         <div className="table-scroll">
           <table className="plain">
@@ -45,7 +50,8 @@ export default function NeuronsLesson() {
             </tbody>
           </table>
         </div>
-        <p>Same answer. And it will be the same for <em>every</em> x, because W2(W1 x) = (W2 W1) x is how matrix multiplication works: you are allowed to regroup a chain of multiplies. So two linear layers are one linear layer in disguise. So are a hundred.</p>
+        <p>Same answer. And it will be the same for <em>every</em> x, because W2(W1 x) = (W2 W1) x. That is how matrix multiplication works: you are allowed to regroup a chain of multiplies.</p>
+        <p>So two linear layers are one linear layer in disguise. So are a hundred. The stack can never do <em>more</em> than one layer. It can even do less: if a middle layer is narrow, say one number wide, everything must squeeze through that one number, and some information is lost on the way.</p>
         <WhyExists
           problem="A linear model can only draw straight lines (or flat planes). Real patterns bend."
           naive="Stack several linear layers to get a more powerful model."
@@ -56,6 +62,7 @@ export default function NeuronsLesson() {
       </Problem>
 
       <MentalModel>
+        <p>Next morning Kabir draws a hinge on the whiteboard: a flat line along the floor that bends once and rises. “This is the only new thing,” he says. “Everything else you already know.”</p>
         <p>Build it up in three steps.</p>
         <h3>1. One neuron: a weighted sum, then a bend</h3>
         <NeuronAnatomy />
@@ -81,11 +88,14 @@ export default function NeuronsLesson() {
         <p>Multiply, shift, bend.</p>
 
         <h3>3. A network: layers, stacked</h3>
-        <p>Feed the outputs of one layer in as the inputs of the next. The second layer builds hinges out of things that are <em>already bent</em>, so complexity compounds. The last layer usually has no activation: it just produces the final scores.</p>
+        <p>Feed the outputs of one layer in as the inputs of the next. The second layer builds hinges out of things that are <em>already bent</em>, so complexity compounds.</p>
+        <p>The last layer usually has no activation. It only produces the final scores.</p>
         <LayerStack />
         <p>Running an input through all layers to get the output is called the <b>forward pass</b>. It is ordinary function evaluation, nothing more.</p>
         <Callout kind="analogy">
-          Why do sums of hinges work? Think of drawing a circle with a ruler. Every piece is straight, but with enough short pieces nobody can tell. Each hinge lets the network’s output change direction once. Add enough of them, scaled and shifted, and you can trace any reasonable curve as closely as you like.
+          Why do sums of hinges work? Think of drawing a circle with a ruler. Every piece is straight, but with enough short pieces nobody can tell.
+          <br /><br />
+          Each hinge lets the network’s output change direction once. Add enough of them, scaled and shifted, and you can trace any reasonable curve as closely as you like.
           <br /><br />
           Where it stops: the word “neuron” comes from a loose 1940s analogy with brain cells. A unit here is a dot product and a max(0, ·). It is arithmetic, not biology, and nothing in this course depends on how real neurons work.
         </Callout>
@@ -178,10 +188,10 @@ class MLP:
         return logits
 `}</Code>
         <p><code>sizes=(2, 64, 64, 3)</code> means: 2 inputs, two hidden layers of 64 neurons, 3 output scores. Count the parameters: (2×64 + 64) + (64×64 + 64) + (64×3 + 3) = <b>4,547</b> adjustable numbers.</p>
-        <p>The file trains this network on a dataset built to defeat straight lines: three interleaved spiral arms, one per class. It first trains a purely linear classifier on the same data, for comparison. Actual output:</p>
+        <p>The file trains this network on Riya’s spiral: three interleaved arms, 100 points each, one class per arm. It first trains a purely linear classifier on the same data, for comparison. Actual output:</p>
         <div className="table-scroll">
           <table className="plain">
-            <thead><tr><th>model</th><th>accuracy on the spiral</th></tr></thead>
+            <thead><tr><th>model</th><th>accuracy on the 300 training points</th></tr></thead>
             <tbody>
               <tr><td>guessing (3 classes)</td><td className="mono">33%</td></tr>
               <tr><td>linear classifier, 300 steps</td><td className="mono"><b>54.0%</b></td></tr>
@@ -190,7 +200,17 @@ class MLP:
           </table>
         </div>
         <p>Same data, same loss, same gradient descent loop. The only difference is <code>np.maximum(0, …)</code>.</p>
+        <Callout kind="warn" label="Careful: this is a training score">
+          The file scores the model on the <em>same 300 points it trained on</em>. That is like a student grading their own homework. It shows the model can fit the spiral. It does not yet show it has learned the spiral <em>shape</em>.
+          <br /><br />
+          The honest test uses fresh points the model never saw during training, called a <b>validation set</b>. If training accuracy is high but validation accuracy is much lower, the model has memorised its examples instead of learning the pattern. That is called <b>overfitting</b>.
+          <br /><br />
+          You can check this one yourself. Right after the line that prints the final accuracy, add <code>Xv, yv = make_spiral()</code> (300 new points with new random noise) and print <code>net.accuracy(Xv, yv)</code>. With the file’s seed, the 64-wide network scores <b>97.7%</b> on the fresh points, against 98.7% on its training points. A small gap: this model learned the shape. We come back to validation properly in <a href="#/lesson/training-gpt">Training GPT</a>, where it is watched as <G t="validation-loss">validation loss</G>.
+        </Callout>
         <Callout kind="dev">Why random starting weights and not zeros? If every neuron in a layer starts identical, every neuron receives an identical gradient, and they stay identical forever: 64 copies of one neuron. Small random values break the tie.</Callout>
+        <RepoRunner path="phase1-foundations/mlp_numpy.py" title="Run mlp_numpy.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
@@ -230,7 +250,7 @@ class MLP:
             'Write the network as W10 · ( … (W2 · (W1 · x)) … ). What can you do with a chain of matrix multiplications?',
             'Biases do not rescue it: a line plus an offset, fed into another line plus an offset, is still a line plus an offset.',
           ]}
-          solution={<p>Exactly as powerful as a single linear layer. The ten matrices multiply together into one matrix (and the biases fold into one bias), so the network can only draw straight lines, however long you train it. On the spiral it would stay near 54%. It is also slower and harder to train than the one-layer version, so it is strictly worse.</p>}
+          solution={<p>No more powerful than a single linear layer. The ten matrices multiply together into one matrix (and the biases fold into one bias), so the network can only draw straight lines, however long you train it. On the spiral it would stay near 54% at best. It is also slower and harder to train than the one-layer version, so it is strictly worse.</p>}
         >
           <p>A colleague builds a 10-layer network for the spiral data but forgets every activation function. Predict: roughly what accuracy will it reach, and why?</p>
         </Exercise>
@@ -276,9 +296,14 @@ logits = h
             'Run python phase1-foundations/mlp_numpy.py first and note the final accuracy.',
             'In train_mlp(), change net = MLP() to net = MLP(sizes=(2, 8, 8, 3)), then try (2, 2, 2, 3), (2, 4, 4, 3) and (2, 16, 16, 3).',
           ]}
-          solution={<><p>With the file’s fixed random seed: width 2 reaches about 63%, width 4 about 96%, and widths 8, 16 and 64 all reach about 99%.</p><p>Two hinges per layer cannot carve out three interleaved arms, so width 2 stays far behind. By 8 units per layer there is enough capacity, and adding more barely moves the number. The lesson: capacity, meaning how many hinges you have, sets a ceiling on what training can reach, in the same way that “a line” set a ceiling last lesson.</p></>}
+          solution={<><p>With the file’s fixed random seed, on the 300 training points:</p>
+            <div className="table-scroll"><table className="plain"><thead><tr><th>hidden width</th><th>2</th><th>4</th><th>8</th><th>16</th><th>64</th></tr></thead><tbody><tr><td>accuracy</td><td className="mono"><b>33.3%</b></td><td className="mono">72.0%</td><td className="mono">99.0%</td><td className="mono">99.0%</td><td className="mono">98.7%</td></tr></tbody></table></div>
+            <p>Width 2 does <b>not</b> beat the 54% line. It scores 33.3%, which is pure guessing among three classes. Its loss sits at 1.0986 = ln 3 from step 400 on: the loss of a model that says “⅓ each” for every point.</p>
+            <p>What happened is a lesson in itself. One of the two second-layer units started out shut for every point, and after two training steps the other one was shut for every point too. A shut hinge outputs 0 and passes back a gradient of 0. With both shut, the output layer sees only zeros, and no signal reaches the layers below. The network is stuck, and more training cannot unstick it. These are called <b>dead ReLUs</b>, and the next lesson shows exactly why they block learning.</p>
+            <p>So a tiny network is not only less capable, it is also fragile: with very few hinges, losing one or two can switch the whole model off. Width 4 lost two of its four second-layer units the same way and still reached 72%. From width 8 on there is capacity to spare, and extra width barely moves the number.</p>
+            <p>Two lessons, then. Capacity (how many hinges you have) sets a ceiling on what training can reach, the same way “a line” set a ceiling last lesson. And a model with enough capacity on paper can still fail to train, which is why you always look at the loss curve and not only at the design.</p></>}
         >
-          <p>Open <code>mlp_numpy.py</code> and change the hidden layer sizes. Try widths 2, 4, 8 and 16. Before each run, predict whether it will beat the linear model’s 54%.</p>
+          <p>Riya wants to know how small the network can be. Open <code>mlp_numpy.py</code> and change the hidden layer sizes. Try widths 2, 4, 8 and 16. Before each run, predict whether it will beat the linear model’s 54%.</p>
         </Exercise>
 
         <ExplainBack
@@ -304,9 +329,9 @@ logits = h
           },
           {
             q: 'You stack 5 linear layers with no activation. Compared with 1 linear layer, the stack can represent…',
-            options: ['5 times more complex functions', 'curves, but only gentle ones', 'exactly the same functions: the matrices multiply into one', 'nothing at all'],
+            options: ['5 times more complex functions', 'curves, but only gentle ones', 'at most the same functions: the matrices multiply into one', 'nothing at all'],
             answer: 2,
-            explain: 'W5·W4·W3·W2·W1 is one matrix. You verified W2(W1 x) = (W2 W1) x with numbers above.',
+            explain: 'W5·W4·W3·W2·W1 is one matrix. You verified W2(W1 x) = (W2 W1) x with numbers above. “At most”, because a narrow layer in the middle can throw information away, so the stack can even do less than one full layer.',
           },
           {
             q: 'In relu(w·x + b), what does changing the bias b do to the hinge?',
@@ -328,20 +353,23 @@ logits = h
           <>A <b>neuron</b> = dot product with its weights + bias, then an activation. A <b>layer</b> = many neurons = one matrix multiply: <code>h = relu(x @ W + b)</code>.</>,
           <>Without activations, stacked layers <b>collapse into one matrix</b>: W2(W1 x) = (W2 W1) x. Depth alone adds nothing.</>,
           <><b>ReLU</b>, max(0, z), is a hinge. The weight sets its steepness and direction, the bias moves the bend. Sums of hinges can approximate any curve.</>,
-          <>The <b>forward pass</b> is just evaluating the layers in order. Hidden layers bend; the last layer outputs raw scores.</>,
-          <>On the spiral: linear model <b>54%</b>, the same loop with ReLU layers <b>98.7%</b>. The weights are not designed. They are learned.</>,
+          <>The <b>forward pass</b> is evaluating the layers in order. Hidden layers bend; the last layer outputs raw scores.</>,
+          <>On the spiral’s training points: linear model <b>54%</b>, the same loop with ReLU layers <b>98.7%</b> (97.7% on fresh points). The weights are not designed. They are learned.</>,
         ]}
       />
 
       <RealLLM>
         <Flow horizontal steps={[{ label: 'This lesson', sub: '2 → 64 → 64 → 3' }, { label: 'Backpropagation', sub: 'next lesson' }, { label: 'Feed-forward block', sub: 'inside every Transformer block' }, { label: 'GPT' }]} active={0} />
-        <p>Every Transformer block contains two parts: attention, and a <G t="ffn">feed-forward network</G>. The feed-forward network is exactly this lesson’s network with one hidden layer: widen each token’s vector from d numbers to 4d, bend, and project back down to d.</p>
+        <p>Every Transformer block contains two parts: attention, and a <G t="ffn">feed-forward network</G>. The feed-forward network is this lesson’s network with one hidden layer.</p>
+        <p>In GPT-2 it widens each token’s vector from d numbers to 4d, bends, and projects back down to d.</p>
         <ToyVsReal
           toy={<ul><li>2 → 64 → 64 → 3, about 4,500 parameters</li><li>ReLU</li><li>Input: a 2-D point. Output: 3 class scores</li><li>One network is the whole model</li></ul>}
-          real={<ul><li>d → 4d → d inside every block, e.g. 768 → 3,072 → 768 in the smallest GPT-2: about 4.7 million parameters per block, in each of 12 blocks</li><li>GELU or a gated variant (SwiGLU): a hinge with a rounded corner</li><li>Input and output: one token’s vector, processed independently of the other tokens</li><li>One such network per block, alternating with attention</li></ul>}
+          real={<ul><li>In GPT-2: d → 4d → d inside every block, e.g. 768 → 3,072 → 768 in the smallest GPT-2: about 4.7 million parameters per block, in each of 12 blocks</li><li>GELU or a gated variant (SwiGLU): a hinge with a rounded corner</li><li>Input and output: one token’s vector, processed independently of the other tokens</li><li>One such network per block, alternating with attention</li></ul>}
         />
-        <Callout kind="established">In a standard GPT-style block the feed-forward network holds about two thirds of the block’s weights (8d² versus 4d² for attention). So most of the parameters of a typical LLM sit in plain “multiply, shift, bend, multiply” layers like the one you just built.</Callout>
+        <Callout kind="established">In a GPT-2-style block the feed-forward network holds about two thirds of the block’s weights: two d × 4d matrices make 8d², against 4d² for attention’s four d × d matrices. So most of the parameters of a typical LLM sit in plain “multiply, shift, bend, multiply” layers like the one you just built.</Callout>
+        <Callout kind="note">Modern models such as Llama use <G t="swiglu">SwiGLU</G> instead. It has <em>three</em> matrices instead of two (one of them acts as a gate), so the hidden width is shrunk to about 8/3 · d to keep the count near 8d². Llama 2 7B, for example, has d = 4,096 and a hidden width of 11,008. The shape of the idea is unchanged: widen, bend, project back. More in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>.</Callout>
         <Callout kind="research">What those feed-forward parameters <em>do</em> is much less settled. There is experimental evidence that they play a large part in recalling facts, and you will often read “facts are stored in the feed-forward layers”. Treat that as a useful hypothesis with supporting experiments, not as a known mechanism. We come back to it in <a href="#/lesson/why-llms-know">Why LLMs know things</a>.</Callout>
+        <p>Riya reruns the spiral with the hinges in. 98.7%. She shows Kabir. He nods, then asks the question that makes the next lesson necessary: “4,547 weights. How did the loop know which way to turn each one?”</p>
       </RealLLM>
     </Lesson>
   )

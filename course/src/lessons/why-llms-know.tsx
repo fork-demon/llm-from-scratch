@@ -10,7 +10,10 @@ export default function WhyLlmsKnowLesson() {
   return (
     <Lesson id="why-llms-know">
       <Why>
-        <p className="lede">Ask a model two questions.</p>
+        <p className="lede">Thursday. The support team forwards Riya a screenshot from the vendor chatbot they are testing. A customer asked about refunds.</p>
+        <div className="card" style={{ fontFamily: 'var(--serif)' }}>“As per Paisa Pal’s 14-day refund policy, failed UPI payments are refunded within 3 working days, and you are entitled to a ₹100 inconvenience credit.”</div>
+        <p>Paisa Pal has no 14-day policy. There is no ₹100 credit. The whole policy was invented, in perfect customer-service English.</p>
+        <p>Dev, reading over her shoulder: “But it sounded so sure. It must have got that from somewhere.” Did it? To find out, ask a model two simpler questions.</p>
         <div className="grid-2">
           <div className="card">
             <p className="mono" style={{ fontSize: 14 }}>What is the capital of France?</p>
@@ -21,7 +24,7 @@ export default function WhyLlmsKnowLesson() {
             <p>You may get a title, authors, a journal and a year. Well formatted. Confident. <b>And the paper may not exist.</b></p>
           </div>
         </div>
-        <p>These look like opposite behaviours: knowing and inventing. This lesson argues they are <em>the same mechanism</em>, working on well-covered and on thinly-covered ground.</p>
+        <p>These look like opposite behaviours: knowing and inventing. This lesson argues they are <em>the same mechanism</em>, working on well-covered and on thinly-covered ground. The refund policy is the second card, wearing a Paisa Pal badge.</p>
         <Callout kind="idea">
           A trained model is a fixed set of numbers plus a fixed recipe of arithmetic. Everything it “knows” must be somewhere in those numbers. Understanding how makes both its knowledge and its mistakes unsurprising.
         </Callout>
@@ -32,6 +35,7 @@ export default function WhyLlmsKnowLesson() {
       </Why>
 
       <Problem title="The problem: there is nothing inside to look things up in">
+        <p>Kabir answers Dev’s question with one of his own: “Got it from where? Open the model file and show me the documents.”</p>
         <p>Think about what survives <a href="#/lesson/training-gpt">training</a>. The text is read in batches, each batch nudges the weights a little, and then the batch is discarded. When training ends, you ship one file.</p>
         <TextIntoWeights />
         <Callout kind="established">
@@ -44,7 +48,8 @@ export default function WhyLlmsKnowLesson() {
           idea="Facts are not entries. They are statistical regularities of the training text, absorbed as small adjustments to many shared weights, because getting them right lowered next-token loss."
           tradeoff="Compact and able to generalise, but there is no way to list what is known, no clean way to update one fact, and no built-in signal for “this is not in here”."
         />
-        <p>Recall <a href="#/lesson/surprising-idea">the surprising idea</a> from Part 0: the model only predicts the next token. To predict the token after “The capital of France is”, it helps enormously to have absorbed that Paris goes there. <b>Knowledge is a side effect of prediction.</b></p>
+        <p>Recall <a href="#/lesson/surprising-idea">the surprising idea</a> from Part 0: the model only predicts the next token. To predict the token after “The capital of France is”, it helps enormously to have absorbed that Paris goes there.</p>
+        <p><b>Knowledge is a side effect of prediction.</b></p>
       </Problem>
 
       <MentalModel title="A mental model: knowledge as learned tendencies">
@@ -124,7 +129,8 @@ export default function WhyLlmsKnowLesson() {
             </tbody>
           </table>
         </div>
-        <p>The false answer about Austria is slightly <em>more</em> confident than the true answer about France. <G t="softmax">Softmax</G> divides by the total, so the outputs always add up to 100%, whether or not any of the options is right. “None of the above” can only win if it is one of the options.</p>
+        <p>The false answer about Austria is slightly <em>more</em> confident than the true answer about France. This is Dev’s “but it sounded so sure”, in three numbers.</p>
+        <p><G t="softmax">Softmax</G> divides by the total, so the outputs always add up to 100%, whether or not any of the options is right. “None of the above” can only win if it is one of the options.</p>
         <h3>Why making things up is structural</h3>
         <p>That row is a hallucination in miniature. It was not caused by a fault. Put three things you have already seen side by side.</p>
         <ol>
@@ -362,7 +368,8 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
           How well models “know what they know” is an open question. Studies find that a model’s internal probabilities carry real information about whether its answer is correct, but imperfectly, and less so on unfamiliar topics. There is also an argument that common benchmarks make things worse by scoring a confident guess above an honest “I do not know”.
         </Callout>
         <Callout kind="established">This is why production systems put <a href="#/lesson/rag">retrieval</a> and <a href="#/lesson/agents">tools</a> <em>around</em> the model for anything that must be current, exact or auditable, and why <a href="#/lesson/fine-tuning">fine-tuning</a> is a good way to change behaviour and a poor way to install facts. The knowledge cut-off of a model follows from the same point: the weights stopped changing when training ended.</Callout>
-        <Callout kind="research">Interpretability research is trying to turn weights into something readable, for example by decomposing activations into large dictionaries of more interpretable features. Results so far are striking in places and far from a complete account. Treat any diagram that shows “the neuron for Paris” as an illustration.</Callout>
+        <Callout kind="research">Reading the weights directly is the job of interpretability research. It has striking results in places and is far from a complete account; treat any “neuron for Paris” diagram as an illustration. What can and cannot be read today is the subject of <a href="#/lesson/interpretability">Looking inside the model</a>.</Callout>
+        <p>Riya writes back to the support team: the bot did not look anything up, so it cannot be trusted with policy until it is given the real policy documents. Dev, to his credit, is the first to ask how.</p>
       </RealLLM>
     </Lesson>
   )

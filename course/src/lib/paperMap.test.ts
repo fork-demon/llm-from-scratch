@@ -33,8 +33,8 @@ describe('the paper map', () => {
   it('no em dashes anywhere in the text', () => {
     expect(JSON.stringify(SECTIONS) + JSON.stringify(READING_PATH)).not.toMatch(/—/)
   })
-  it('the reading path has the 13 agreed papers with arXiv links where an id exists', () => {
-    expect(READING_PATH).toHaveLength(13)
+  it('the reading path has the 15 agreed papers with arXiv links where an id exists', () => {
+    expect(READING_PATH).toHaveLength(15)
     for (const p of READING_PATH) {
       const m = p.id.match(/arXiv:(\d{4}\.\d{5})/g)
       if (m) expect(m.some((x) => p.url.endsWith(x.replace('arXiv:', ''))), p.short).toBe(true)

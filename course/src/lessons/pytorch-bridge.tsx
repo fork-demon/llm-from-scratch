@@ -10,7 +10,9 @@ export default function PytorchBridgeLesson() {
   return (
     <Lesson id="pytorch-bridge">
       <Why>
-        <p className="lede">Open <a href="https://huggingface.co/openai-community/gpt2/tree/main" target="_blank" rel="noreferrer">huggingface.co/openai-community/gpt2</a> and click “Files”. You see this:</p>
+        <p className="lede">Saturday morning. Dev is still asleep, the filter coffee is still hot, and Riya has a question she has been saving all week: would she recognise a real model if she opened one?</p>
+        <p>Until now everything has been her own code. Kabir’s advice on Friday was short: “Open GPT-2. Don’t read about it. Open it.”</p>
+        <p>So she goes to <a href="https://huggingface.co/openai-community/gpt2/tree/main" target="_blank" rel="noreferrer">huggingface.co/openai-community/gpt2</a> and clicks “Files”. Try it with her. You see this:</p>
         <Code lang="text" title="the files that matter in the GPT-2 repository">{`
 config.json                   665 B
 generation_config.json        124 B
@@ -20,15 +22,22 @@ tokenizer.json               1.36 MB
 model.safetensors             548 MB
 `}</Code>
         <p>Six files. No Python. Somewhere in there is a working language model.</p>
-        <p>You have already built every part of it: the tokenizer in <a href="#/lesson/tokenization">Part 4</a>, the GPT in <a href="#/lesson/build-gpt">Part 7</a>, the sampling loop in <a href="#/lesson/inference">Inference</a>, LoRA in <a href="#/lesson/fine-tuning">Fine-tuning</a>. What you have not done is match your parts to theirs.</p>
+        <p>You have already built every part of it:</p>
+        <ul>
+          <li>the tokenizer in <a href="#/lesson/tokenization">Part 4</a>,</li>
+          <li>the GPT in <a href="#/lesson/build-gpt">Part 7</a>,</li>
+          <li>the sampling loop in <a href="#/lesson/inference">Inference</a>,</li>
+          <li>LoRA in <a href="#/lesson/fine-tuning">Fine-tuning</a>.</li>
+        </ul>
+        <p>What you have not done is match your parts to theirs.</p>
         <Callout kind="idea">
           A real open model is your <code>tiny_gpt.py</code> with different names, bigger numbers and a file format. After this lesson you can open <b>any</b> decoder-only model on the Hub, read its <code>config.json</code>, predict its size and memory, list its tensors and say which lesson built each one.
         </Callout>
-        <p>We will do it properly: load GPT-2, recompute its 124,439,808 parameters from the config alone, and reproduce its logits by hand from the raw tensors. Then fine-tune it with the LoRA library people actually use.</p>
+        <p>We will do it properly. Load GPT-2. Recompute its 124,439,808 parameters from the config alone. Reproduce its logits by hand from the raw tensors. Then fine-tune it with the LoRA library people actually use.</p>
       </Why>
 
       <Problem title="What stands between your GPT and theirs?">
-        <p>Not ideas. Four practical things:</p>
+        <p>Dev wanders in, sees the file list and says, “So that’s the brain? I thought it would be, like, a program.” It is a fair surprise. What stands between Riya’s GPT and this one is not ideas. It is four practical things:</p>
         <div className="grid-2">
           <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Names</h4><p>Your fused QKV layer is <code>attn.qkv</code>. GPT-2 calls it <code>attn.c_attn</code>. Llama splits it into <code>q_proj</code>, <code>k_proj</code>, <code>v_proj</code>. Same maths, three vocabularies.</p></div>
           <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Files</h4><p>A model is shipped as data, not as a program. You need to know which file holds what, and which of them can hurt you.</p></div>
@@ -110,7 +119,7 @@ model.safetensors             548 MB
       </TryIt>
 
       <Numbers title="Let’s see the numbers: will it fit?">
-        <p>The question every engineer asks first. Take Llama 3 8B: 8,030,261,248 parameters, published in <b>bf16</b>.</p>
+        <p>The question every engineer asks first, and the one Riya’s manager will ask on Monday. Take Llama 3 8B: 8,030,261,248 parameters, published in <b>bf16</b>.</p>
         <Term
           name="dtype, and why bf16"
           plain={<>The dtype is the number format of a tensor: how many bytes each number takes and how those bits are split between range and precision.</>}
@@ -188,7 +197,9 @@ with torch.no_grad():   # do not record the forward pass: we will not call backw
         <ul>
           <li><b><code>model.eval()</code></b> switches dropout off. Forget it and you get different logits on every call. You will measure that below.</li>
           <li><b><code>torch.no_grad()</code></b> stops PyTorch keeping the recording it would need for <code>loss.backward()</code>. Same results, much less memory.</li>
-          <li><b><code>dtype=torch.bfloat16</code></b> loads the weights in bf16. The default depends on the library version. Transformers 4.x loads in fp32 whatever the file contains, so an 8B model silently takes 32 GB. Version 5 loads in the format the checkpoint was saved in. Pass the dtype explicitly and you never have to remember which one you are on. (Before version 4.56 the argument was spelled <code>torch_dtype</code>, and many config files still use that key.)</li>
+          <li><b>Pass the dtype: <code>dtype=torch.bfloat16</code>.</b> Always say which number format you want the weights in. Leave it out and an older library version may load an 8B model in fp32, silently taking 32 GB instead of 16.
+            <p className="muted" style={{ fontSize: 14, marginTop: 4 }}>Version trivia, if you hit it: transformers 4.x defaults to fp32 whatever the file holds; version 5 defaults to the checkpoint’s own format. Before 4.56 the argument was spelled <code>torch_dtype</code>, and many config files still use that key.</p>
+          </li>
           <li><b><code>device_map="auto"</code></b> decides which piece of the model goes where: GPU first, then ordinary CPU memory once the GPU is full. It needs the <code>accelerate</code> package. For a model that fits on the card anyway, <code>model.to("cuda")</code> does the same job.</li>
         </ul>
         <h3>2. Walk the tensors</h3>
@@ -480,11 +491,12 @@ with torch.no_grad():
       <RealLLM>
         <ToyVsReal
           toy={<ul><li><code>tiny_gpt.py</code>: 0.8M parameters, fp32, one file, names you chose</li><li>GPT-2 small in this lesson: 124M, fp32, runs on a laptop CPU</li><li>LoRA on 40 tickets, 8 held out, checked by eye</li><li>Your loop re-runs the whole sequence for each new token</li></ul>}
-          real={<ul><li>Billions of parameters in bf16, sharded across several safetensors files with an index</li><li>Served in bf16, int8 or int4, by engines such as the ones in <a href="#/lesson/inference-systems">Inference systems</a></li><li>Thousands to millions of examples, a held-out set sized as in <a href="#/lesson/evals">Evals</a>, often LoRA on all linear layers over a 4-bit base (QLoRA)</li><li>KV cache, batching, stop tokens and chat templates handled by the serving stack</li></ul>}
+          real={<ul><li>Billions of parameters in bf16, sharded across several safetensors files with an index</li><li>Served in bf16, FP8 or a 4-bit format (int4, MXFP4, NVFP4), by engines such as the ones in <a href="#/lesson/inference-systems">Inference systems</a></li><li>Thousands to millions of examples, a held-out set sized as in <a href="#/lesson/evals">Evals</a>, often LoRA on all linear layers over a 4-bit base (QLoRA)</li><li>KV cache, batching, stop tokens and chat templates handled by the serving stack</li></ul>}
         />
         <Callout kind="established">The names and shapes in this lesson are read from the published files, and the architecture code is open: you can read <code>modeling_gpt2.py</code> and <code>modeling_llama.py</code> in the transformers repository and find every line of your own GPT in them. For closed models such as Claude, GPT or Gemini none of this is published. What you can say is that openly released models from many labs share this layout.</Callout>
         <Callout kind="warn" label="Careful: two things that can still run code">A safetensors file cannot execute anything. Two other things can. Pickled checkpoints (<code>.bin</code>, <code>.pt</code>, <code>.ckpt</code>). And <code>trust_remote_code=True</code>, which downloads and runs Python from the model’s repository because the architecture is not in the library yet. Read that code, or pin a revision you have read, before you pass the flag.</Callout>
         <Callout kind="model" label="Simplified: what this lesson left out">Dense models only. A mixture-of-experts config has many MLPs per block and uses a few per token, so “parameters” and “parameters used per token” diverge; the config reader refuses those rather than guess. Some families add small things the Llama rules do not know about (extra norms, biases without a config field, a vocabulary padded beyond the tokenizer’s size), so for an unfamiliar <code>model_type</code> treat the count as an estimate and check it against the Hub’s number.</Callout>
+        <p>By lunch the coffee is cold and Riya’s notebook has a two-column list: her names on the left, theirs on the right. Not one row is a mystery. Dev reads it over her shoulder and, for once, has no theory.</p>
       </RealLLM>
     </Lesson>
   )

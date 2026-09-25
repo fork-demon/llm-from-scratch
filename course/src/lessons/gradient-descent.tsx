@@ -1,3 +1,4 @@
+import { RepoRunner } from '../components/RepoRunner'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -10,12 +11,16 @@ export default function GradientDescentLesson() {
   return (
     <Lesson id="gradient-descent">
       <Why>
-        <p className="lede">Here is a function you could write in ten seconds:</p>
+        <p className="lede">Riya is home in Mysuru for the weekend, and Amma has handed her the ladle. “Taste the sambar.”</p>
+        <p>Too sour. Amma adds a small pinch of jaggery, stirs, and tastes. Then a pinch of salt. Tastes again. A smaller pinch. Tastes again.</p>
+        <p>She never measures anything. She never looks at a recipe. Taste, correct a little, taste again.</p>
+        <p>“Why not put everything in at once?” Riya asks. “Because then you have a whole pot of mistakes,” says Amma.</p>
+        <p>On the train back to Bengaluru, Riya opens her laptop and writes a function she could write in ten seconds:</p>
         <Code>{`
 def predict(x):
     return 3.0 * x - 1.5
 `}</Code>
-        <p>You chose the 3.0 and the −1.5. Now imagine nobody tells you those numbers. You only get examples: “for x = 1 the answer was 1.4, for x = 2 it was 4.6, …”. Could a program find the 3.0 and the −1.5 by itself?</p>
+        <p>She chose the 3.0 and the −1.5. Now imagine nobody tells you those numbers. You only get examples: “for x = 1 the answer was 1.4, for x = 2 it was 4.6, …”. Could a program find the 3.0 and the −1.5 by itself, by tasting and correcting?</p>
         <p>That is the whole of machine learning. A language model is also a function with numbers in it. It has billions of them instead of two, and nobody could ever type them in by hand.</p>
         <Callout kind="idea">
           We need a procedure that starts with <em>wrong</em> numbers and improves them automatically, using only examples. That procedure is called <b>gradient descent</b>. With small variations, it is how every neural network you have heard of was trained, including GPT.
@@ -37,7 +42,9 @@ def predict(x):
           formal={<>A function from (parameters, data) to a single number, lower meaning better. Here: mean squared error, MSE, which is never negative.</>}
         />
         <p>In lesson 1.3 the loss was “surprise” (<G t="cross-entropy">cross-entropy</G>), which fits when the answer is a choice among options. Here the answer is a number, so we measure the squared distance instead. Everything else in this lesson works the same for both.</p>
-        <p><b>Why must the loss be a single number?</b> Because we are about to ask “did that change make things better or worse?”. With one number, that question always has an answer. With a list of 40 separate errors, one change might improve some and worsen others, and you could not say which way is “better”.</p>
+        <p><b>Why must the loss be a single number?</b> Because we are about to ask “did that change make things better or worse?”. With one number, that question always has an answer.</p>
+        <p>With a list of 40 separate errors, one change might improve some and worsen others. Then you could not say which way is “better”. You taste the whole pot, not each lentil.</p>
+        <p>Back in the flat, Dev has a plan. “Easy. Make a spreadsheet. Try every w and every b, keep the best row.” For two numbers, that even works. Count what happens next.</p>
         <WhyExists
           problem="A model has adjustable numbers. We have examples, and a loss that scores any setting of the numbers. We want the setting with the lowest loss."
           naive="Try random settings, or try every combination on a grid, and keep the best."
@@ -56,12 +63,13 @@ def predict(x):
         <p>The gradient points uphill. We want downhill. So we step the <em>other</em> way:</p>
         <div className="card center mono" style={{ fontSize: 16 }}>new w = old w − learning_rate × grad_w</div>
         <p>A knob with a steep slope gets a big correction. A knob that barely matters gets a tiny one. Nobody has to decide which parameters are important: the slopes already say so.</p>
+        <p>Put it in kitchen words. The <b>loss</b> is the taste: one verdict for the whole pot. The <b>gradient</b> is “too sour, so more jaggery; a bit flat, so more salt”: which way, for each ingredient. The <b>learning rate</b> is the size of the pinch.</p>
         <Callout kind="analogy">
-          You are on a hillside in thick fog and want to reach the valley. You cannot see it. But you can feel the tilt of the ground under your feet. So: feel the slope, take a small step downhill, feel again, step again.
+          Here is a second picture, and the one most people use. You are on a hillside in thick fog and want to reach the valley. You cannot see it. But you can feel the tilt of the ground under your feet. So: feel the slope, take a small step downhill, feel again, step again.
           <br /><br />
-          <b>Why small steps?</b> Because the slope is only true where you stand. Ten metres away the ground may tilt differently. A giant leap based on a local reading can land you higher than you started.
+          <b>Why small steps?</b> Because the slope is only true where you stand. Ten metres away the ground may tilt differently. A giant leap based on a local reading can land you higher than you started. In the kitchen: a fistful of salt ruins the pot.
           <br /><br />
-          Where the analogy stops: a real hill has 2 directions. A model has one direction per parameter, so billions. There is no picture of that landscape, which is exactly why the fog is the honest part of the story. The arithmetic, though, is identical for 2 knobs or 2 billion.
+          Where the analogy stops: a real hill has 2 directions, and a pot has a handful of ingredients. A model has one direction per parameter, so billions. There is no picture of that landscape, which is exactly why the fog is the honest part of the story. The arithmetic, though, is identical for 2 knobs or 2 billion.
         </Callout>
         <p>The full loop, which you will see again in every remaining part of this course:</p>
         <DescentLoop />
@@ -73,7 +81,7 @@ def predict(x):
       </TryIt>
 
       <Numbers title="One full update, by hand">
-        <p>Three data points, all exactly on the hidden line y = 3x − 1.5. We start knowing nothing: w = 0, b = 0. The learning rate is 0.1.</p>
+        <p>Riya does one full taste-and-correct on paper, somewhere past Mandya. Three data points, all exactly on the hidden line y = 3x − 1.5. We start knowing nothing: w = 0, b = 0. The learning rate is 0.1.</p>
         <div className="table-scroll">
           <table className="plain">
             <thead><tr><th /><th>point 1</th><th>point 2</th><th>point 3</th><th>average</th></tr></thead>
@@ -94,7 +102,8 @@ def predict(x):
           b = 0 − 0.1 × (−1) = <b>0.1</b>
         </div>
         <p>Check that it helped. The new predictions are 1.1, 2.1 and −0.9. The new errors are −0.4, −2.4 and 3.6. The new loss is (0.16 + 5.76 + 12.96) / 3 = <b>6.29</b>. It was 14.25.</p>
-        <p>Notice something odd: b moved <em>up</em> to 0.1, but its final value is −1.5. That is fine. Each step only uses the slope where you stand right now. On the next step grad_b already turns positive (0.53) and b heads back down. The path wiggles; the loss still falls.</p>
+        <p>Notice something odd: b moved <em>up</em> to 0.1, but its final value is −1.5. That is fine.</p>
+        <p>Each step only uses the slope where you stand right now. On the next step grad_b already turns positive (0.53), and b heads back down. The path wiggles; the loss still falls. A cook who adds a little too much salt adds a little water next.</p>
       </Numbers>
 
       <TheMath>
@@ -170,12 +179,13 @@ for step in range(30):
     w -= lr * grad                       # THE update. This line is all of deep learning.
 `}</Code>
         <p>Run it and w walks from 0 to 0.71 after one step, 2.41 after six, and ends at 3.0011. Nobody told it the answer was 3.</p>
-        <p>Stage C is the version the playground runs: two parameters, and one new trick. Instead of all the data, each step looks at a small random sample.</p>
+        <p>Riya reads that last line twice. Then she sends Kabir a screenshot. His reply: “Good. Now add b.”</p>
+        <p>Stage C is the version the playground runs: two parameters, and one new trick. Instead of all the data, each step looks at a small random sample. A cook does not eat the whole pot to check the salt either. One spoonful is enough.</p>
         <Term
           name="Mini-batch"
           plain={<>A small random handful of training examples used to <em>estimate</em> the gradient, instead of computing it on all the data.</>}
           example={<>1,000 points, batch of 32: each step is about 30× cheaper. The estimate is a bit noisy, but you take many steps and the noise averages out.</>}
-          formal={<>Gradient descent with random batches is called stochastic gradient descent (SGD). “Stochastic” just means “involving randomness”.</>}
+          formal={<>Gradient descent with random batches is called stochastic gradient descent (SGD). “Stochastic” means “involving randomness”.</>}
         />
         <Code source="phase1-foundations/gradient_descent.py" title="stage_c(): two parameters, mini-batches">{`
 w, b = 0.0, 0.0
@@ -213,13 +223,16 @@ for step in range(30):
           <p>The catch is cost: one extra loss evaluation <em>per parameter</em>, every step. Fine for 1 parameter, impossible for a billion.</p>
           <p>But it makes a perfect <b>test oracle</b>. It is slow, it is hard to get wrong, and it does not depend on your clever formula being right. In <a href="#/lesson/backprop">Backpropagation</a> we compute gradients the fast way and check them against exactly this. You already do this as a developer: test the optimised implementation against a brute-force reference.</p>
         </DeepDive>
+        <RepoRunner path="phase1-foundations/gradient_descent.py" title="Run gradient_descent.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
         <p>Predict first, then check in the playground (mode B).</p>
         <ul>
           <li><b>Learning rate 1.</b> Press Run. What will the line do? (It swings past the data, further each time. Watch the path on the map zig-zag outward and the loss grow by orders of magnitude.)</li>
-          <li><b>Learning rate 0.001.</b> Run all 300 steps. Is it broken? (No. The loss falls on every step. It is just painfully slow.)</li>
+          <li><b>Learning rate 0.001.</b> Run all 300 steps. Is it broken? (No. The loss falls on every step. It is painfully slow.)</li>
           <li><b>Mini-batch of 1</b> at learning rate 0.1. The path staggers around like a drunk walker, yet it still ends up near the cross. Why does it never settle completely? (Each single point pulls the line toward itself, and the points disagree because of the noise.)</li>
           <li><b>In the Python file</b>, change Stage C’s data to <code>y = 3.0 * x**2 + 2</code> and leave the model a line. The loss falls, then stops at a floor it never breaks. Gradient descent finds the best <em>line</em>, but the truth is a curve. No amount of training fixes a model that cannot express the answer. That wall is the subject of <a href="#/lesson/neurons">the next lesson</a>.</li>
         </ul>
@@ -310,7 +323,7 @@ for step in range(30):
         <ExplainBack
           id="gradient-descent-explain"
           prompt="A teammate asks: “How can a program possibly find good values for a million numbers without trying all the combinations?” Explain gradient descent to them in plain words. Include why the steps have to be small."
-          modelAnswer={<p>We define one number, the loss, that says how wrong the model is. For each adjustable number we work out the slope: if I turn this one up slightly, does the loss go up or down, and how fast? That list of slopes is the gradient. Then we move every number a small step in the direction that lowers the loss, all at once, and repeat. We never search combinations; we just keep walking downhill. The steps must be small because a slope is only valid near where you measured it: a big leap can overshoot the valley and end up worse than before.</p>}
+          modelAnswer={<p>We define one number, the loss, that says how wrong the model is. For each adjustable number we work out the slope: if I turn this one up slightly, does the loss go up or down, and how fast? That list of slopes is the gradient. Then we move every number a small step in the direction that lowers the loss, all at once, and repeat. We never search combinations; we keep walking downhill. The steps must be small because a slope is only valid near where you measured it: a big leap can overshoot the valley and end up worse than before.</p>}
         />
       </Exercises>
 
@@ -367,6 +380,7 @@ for step in range(30):
         />
         <Callout kind="established">The loop itself does not change. Predict, measure the loss, get the gradient, step against it, repeat over batches. Every neural language model, from the character-level toy we build later to the largest production systems, is trained by a variant of this loop.</Callout>
         <Callout kind="model">“Walking downhill in a landscape” is a picture for two parameters. Treat it as intuition for the update rule, not as a claim about what a billion-dimensional loss surface looks like.</Callout>
+        <p>Taste, correct a little, taste again. Riya now knows that the same loop, run on billions of knobs, is how the chatbot her CEO wants was made. What she does not have yet is a model worth training. A line is too plain for anything interesting, as the next lesson shows.</p>
       </RealLLM>
 
       <BeforeMovingOn

@@ -1,3 +1,4 @@
+import { RepoRunner } from '../components/RepoRunner'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -11,9 +12,12 @@ export default function RagLesson() {
   return (
     <Lesson id="rag">
       <Why>
-        <p className="lede">Ask any LLM this:</p>
+        <p className="lede">Tuesday morning, and the Paisa Pal support bot has invented a policy again.</p>
+        <p>A customer asked how long they have to dispute a failed payment. The bot replied, very politely, with a number it made up. The real answer sits on page 14 of a policy PDF that the bot has never seen.</p>
+        <p>Dev reads the chat log over Riya’s shoulder. “Just tell it to read the PDFs, na. It’s AI.”</p>
+        <p>Kabir walks past with his chai. “It can read. It cannot go and find. Finding is our job.” He suggests a small rehearsal before the real policy PDFs: the engineering wiki, four short documents. Riya asks it a question she already knows the answer to:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 21 }}>“How quickly must I acknowledge a page when I am on call at our company?”</div>
-        <p>The honest answer is in <code>oncall.md</code> on your company wiki: five minutes. The model has never seen that file. It was not in the training data, so it is not in the weights.</p>
+        <p>The honest answer is in <code>oncall.md</code> on the wiki: five minutes. The model has never seen that file. It was not in the training data, so it is not in the weights.</p>
         <p>You know from <a href="#/lesson/why-llms-know">Why LLMs know things</a> what happens next. The model has no “I have no record of this” mechanism. It produces the most plausible continuation: “Typically within 15 minutes”. Fluent, confident, wrong.</p>
         <p>The same gap appears for anything <b>private</b> (your documents), anything <b>recent</b> (after training stopped), and anything <b>rare</b> (seen too few times to be stored reliably).</p>
         <Callout kind="idea">
@@ -22,7 +26,8 @@ export default function RagLesson() {
       </Why>
 
       <Problem>
-        <p>So far, “How does an LLM know?” had one answer: patterns stored in weights during training. Now the question is: <b>what if the information is not inside the model?</b></p>
+        <p>So far, “How does an LLM know?” had one answer: patterns stored in weights during training.</p>
+        <p>Riya’s question is the opposite one. <b>What if the information is not inside the model at all?</b></p>
         <WhyExists
           problem="The model must answer from information it was never trained on: private, recent, or rare."
           naive="Train it on that information (fine-tune on the company wiki)."
@@ -40,12 +45,13 @@ export default function RagLesson() {
       </Problem>
 
       <MentalModel>
+        <p>That evening Riya explains the problem to Amma on the phone. Amma, who set school exams for thirty years, is not impressed by the difficulty.</p>
         <Callout kind="analogy">
-          A closed-book exam tests what you memorised. An <b>open-book exam</b> lets you look things up, and tests whether you can read and use what you found. RAG turns every question into an open-book question.
+          “Closed book tests what you memorised,” says Amma. “Open book tests whether you can find the page and read it properly.” An <b>open-book exam</b> is exactly the change we want. RAG turns every question into an open-book question.
           <br /><br />
           Where the analogy stops: a student chooses which page to open. Here the model chooses nothing. <em>Your code</em> picks the pages, by a fairly blunt similarity search, before the model sees the question. If your code opens the wrong page, the “student” never finds out that a better page existed.
         </Callout>
-        <p>The pipeline has two halves that run at different times: ingest (once, offline) and query (every question). They meet at one table.</p>
+        <p>The pipeline has two halves that run at different times. <b>Ingest</b> runs once, offline. <b>Query</b> runs for every question. They meet at one table.</p>
         <RagTwoLanes />
         <p>Follow the highlighted rows. The three best-scoring chunks leave the table, land under “Context:” in the prompt, and come out as the citation. Nothing else in the picture is new to the model: the box marked “LLM, unchanged” is the same model with the same weights.</p>
         <p>Two pieces are new. The rest you already own.</p>
@@ -69,8 +75,10 @@ export default function RagLesson() {
         <p>Start with the first question and walk stages 1 to 6. Pay most attention to stage 5: that text is everything the LLM would ever see.</p>
         <RagPlayground />
         <h3>At scale: do we have to compare with every vector?</h3>
-        <p>With 19 chunks, search is 19 dot products. As you saw in <a href="#/lesson/matrices">Matrices</a>, comparing one question against N stored vectors is a single matrix multiply. That stays fast up to around a million vectors. It is worth knowing how far the boring solution goes.</p>
-        <p>At hundreds of millions of vectors, comparing against everything is too slow and too costly. The fix is the same one a database uses: an <b>index</b> that lets you skip most of the data. One simple kind is called IVF, for “inverted file”. Group the vectors into clusters once, then at query time search only the few clusters nearest the question. The number of clusters you search is called <b>nprobe</b>, and it is the one dial.</p>
+        <p>Riya’s wiki has 19 chunks, so search is 19 dot products. Paisa Pal’s policy library will be bigger. How far does the simple approach go?</p>
+        <p>Further than you might think. As you saw in <a href="#/lesson/matrices">Matrices</a>, comparing one question against N stored vectors is a single matrix multiply. That stays fast up to around a million vectors. It is worth knowing how far the boring solution goes.</p>
+        <p>At hundreds of millions of vectors, comparing against everything is too slow and too costly. The fix is the same one a database uses: an <b>index</b> that lets you skip most of the data.</p>
+        <p>One simple kind is called IVF, for “inverted file”. Group the vectors into clusters once. Then, at query time, search only the few clusters nearest the question. The number of clusters you search is called <b>nprobe</b>, and it is the one dial.</p>
         <IvfLab />
         <p>The real benchmark in the repo does this with 20,000 vectors of 64 numbers in 32 clusters, and asks for the 10 nearest neighbours. Exact search would find all 10. <b>Recall@10</b> is the share of those true 10 that the index actually found, so 0.51 means it missed about half of them:</p>
         <div className="table-scroll">
@@ -83,10 +91,13 @@ export default function RagLesson() {
           </table>
         </div>
         <p className="muted" style={{ fontSize: 14.5 }}>Output of <code>python phase4-modern-llms/vector_db.py</code> on the machine used to write this lesson. Recall is reproducible (the data is seeded). The speed-ups are timings and will differ on yours.</p>
-        <p>Read the two ends. At nprobe = 1 the search is 12 times faster and <b>misses half</b> of the true neighbours. At nprobe = 32 it searches everything, finds everything, and is <em>slower</em> than plain exact search, because it pays for the index on top. The knob <em>is</em> the trade-off. For RAG this matters because a missed neighbour is a passage that never reaches the prompt.</p>
+        <p>Read the two ends. At nprobe = 1 the search is 12 times faster and <b>misses half</b> of the true neighbours.</p>
+        <p>At nprobe = 32 it searches everything and finds everything. It is also <em>slower</em> than plain exact search, because it pays for the index on top.</p>
+        <p>The knob <em>is</em> the trade-off. For RAG this matters because a missed neighbour is a passage that never reaches the prompt.</p>
       </TryIt>
 
       <Numbers>
+        <p>Kabir draws three arrows on the whiteboard and hands Riya the marker. “Which one is closest to the question? Work it out.”</p>
         <p>“Similar direction” is measured by cosine similarity, which you met in <a href="#/lesson/vectors">lesson 1.1</a>: the dot product with both lengths divided out. Here it is by hand, with a vocabulary of just three words: <span className="mono">[pages, acknowledge, budget]</span>.</p>
         <div className="table-scroll">
           <table className="plain">
@@ -111,7 +122,8 @@ export default function RagLesson() {
             </tbody>
           </table>
         </div>
-        <p>A word that appears almost everywhere tells you almost nothing about which chunk you want, so it gets almost no weight. This scheme has a name, TF-IDF (term frequency × inverse document frequency). The rarity weight is the IDF part, which dates from the 1970s (Spärck Jones, 1972). Counting how often the word occurs in the chunk is the TF part.</p>
+        <p>A word that appears almost everywhere tells you almost nothing about which chunk you want, so it gets almost no weight.</p>
+        <p>This scheme has a name, TF-IDF (term frequency × inverse document frequency). The rarity weight is the IDF part, which dates from the 1970s (Spärck Jones, 1972). Counting how often the word occurs in the chunk is the TF part.</p>
       </Numbers>
 
       <TheMath>
@@ -203,10 +215,13 @@ def search_ivf(self, qvec, k=5, nprobe=1):
     order = np.argsort(-sims)[:k]
     return [(self.ids[cand[i]], float(sims[i])) for i in order]
 `}</Code>
+        <RepoRunner path="phase4-modern-llms/mini_rag.py" title="Run mini_rag.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
-        <p>Use the “Break it” buttons in the playground. For each one, predict which stage fails <em>before</em> you look.</p>
+        <p>Riya’s instinct as a backend developer is to try to break the thing before customers do. Do the same. Use the “Break it” buttons in the playground, and for each one predict which stage fails <em>before</em> you look.</p>
         <ul>
           <li><b>Different words, same meaning.</b> The right chunk scrapes in at 0.33. Rephrase the question with words from the document (“are manual deploys forbidden”) and watch the top score jump to 0.57. Retrieval quality is capped by the embedder.</li>
           <li><b>The answer is not there</b>, then set sentences per chunk to 1. The refusal turns into a confident, cited, <em>wrong</em> answer about the onboarding buddy (similarity 0.38, just over the threshold). Nothing about the question changed. Only the chunking did. A citation proves where a sentence came from, not that it answers the question.</li>
@@ -220,6 +235,7 @@ def search_ivf(self, qvec, k=5, nprobe=1):
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="rag-code-chunk" />
         <CodeExercise id="rag-code-retrieve" />
         <Exercise
           id="rag-calc-cosine"
@@ -328,7 +344,9 @@ def search_ivf(self, qvec, k=5, nprobe=1):
           real={<ul><li>Millions of documents; chunks of a few hundred tokens that respect headings</li><li>A Transformer encoder producing dense vectors, often combined with keyword search (“hybrid”) and a slower re-ranking model over the top candidates</li><li>An approximate index (IVF, or the graph-based HNSW) with metadata filters</li><li>A real LLM that can combine passages, and can also ignore or misread them</li></ul>}
         />
         <Callout kind="established">The shape is the same in every production system: chunk, embed, index, retrieve, assemble a prompt, generate. “Search the web” and “chat with your PDF” features are this pipeline. Long context windows reduce how much you must retrieve, but do not remove the need: someone still has to decide what goes in the prompt, and you pay for every token.</Callout>
+        <p>One change is now common. Instead of your code running one search before the model call, the model is given search as a <em>tool</em>. It writes its own queries, reads the results, and searches again if the first results were poor. This is often called agentic search. It is the same pipeline, driven by a loop, and you will build that loop in <a href="#/lesson/agents">Agents</a>.</p>
         <Callout kind="research">How faithfully models use retrieved context is an active research area. Measured effects include weaker use of information in the middle of long contexts, and models preferring what is in their weights when it conflicts with the context. Treat “grounded” as a property you test for, not one you get by construction.</Callout>
+        <p>By Friday the bot answers the dispute question from page 14, with the PDF’s name beside the answer. Dev asks, “So it learned the policy?” Riya smiles. “No. It read it. Nothing inside it changed.”</p>
       </RealLLM>
     </Lesson>
   )

@@ -9,9 +9,11 @@ export default function FromMemoryLesson() {
   return (
     <Lesson id="from-memory">
       <Why title="Can you rebuild the whole picture without looking?">
-        <p className="lede">In the first lesson you typed “What is a cat?” and could not say what happened next. Here is the same question again, with one difference: no diagram this time.</p>
+        <p className="lede">Sunday night in Mysuru. The rasam is finished, the plates are pushed aside, and Amma has put Riya’s phone face down on the table.</p>
+        <p>“Every weekend on video call you are doing school maths with me,” she says. “Now tell me what it was for. From the start. No phone, no drawing.”</p>
+        <p>Months ago, in the first lesson, you typed “What is a cat?” and could not say what happened next. Here is the same question again, with one difference: no diagram this time.</p>
         <p>You have built a tokenizer, embeddings, attention, a Transformer, a training loop, a sampler, a KV cache, a retriever, a fine-tuning run and an agent. Each made sense on the day you built it.</p>
-        <p>The real test of understanding is different. It is whether you can stand at a whiteboard, with nothing in front of you, and explain to a colleague how text goes in and an answer comes out. This lesson is that whiteboard.</p>
+        <p>The real test is different. Can you sit across from someone, with nothing in front of you, and explain how text goes in and an answer comes out? This lesson is that dining table.</p>
         <Callout kind="idea">
           If you can reconstruct the pipeline from memory and say in plain words what happens at every arrow, you understand LLMs better than most people who use them every day. If you cannot yet, this lesson will show you exactly which arrows to revisit.
         </Callout>
@@ -31,7 +33,7 @@ export default function FromMemoryLesson() {
       </Problem>
 
       <MentalModel title="A skeleton to hang it on">
-        <p>Twelve stages are hard to hold as a flat list. They are easy as four moves. If you blank during the challenge, come back to these four and fill each one in.</p>
+        <p>Riya does not start with twelve stages. Twelve are hard to hold as a flat list. She starts with four moves, and fills each one in as Amma nods. If you blank during the challenge, come back to these four.</p>
         <FourMovements />
         <p>The slots are empty on purpose. Naming them is your job in the challenge below.</p>
         <Callout kind="dev">
@@ -98,7 +100,7 @@ export default function FromMemoryLesson() {
           </div>
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>Read the paper</h4>
-            <p><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noreferrer">“Attention Is All You Need”</a> (Vaswani et al., 2017). Read section 3.2 closely: it is the attention you coded, equation for equation. Skim the encoder-decoder parts; GPT-style models keep only the decoder.</p>
+            <p><a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noreferrer">“Attention Is All You Need”</a> (Vaswani et al., 2017). Read section 3.2 closely: it is the attention you coded, equation for equation. Then follow the reading path at the end of <a href="#/lesson/reading-papers">How to read an LLM paper</a>, through DeepSeek-V3 and a look inside a trained model.</p>
           </div>
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>The repository’s reading list</h4>
@@ -107,8 +109,14 @@ export default function FromMemoryLesson() {
         </div>
         <p>Then build something real. Put RAG over documents you care about with a hosted model. Fine-tune a small open model with LoRA. Write an agent with two tools and a step limit. You already know what each of those is doing underneath, and, just as usefully, what it cannot do.</p>
         <Callout kind="research">
-          Much is still open: why these models generalise as well as they do, what their internal computations mean, how far next-token prediction plus reasoning at inference time can go, and how to make their behaviour reliably safe. You now have the mechanism needed to read that research critically instead of taking anyone’s word for it, including ours.
+          Much is still open: why these models generalise as well as they do, what their internal computations mean (<a href="#/lesson/interpretability">Looking inside the model</a> showed how little we can read yet), how far next-token prediction plus reasoning at inference time can go, and how to make their behaviour reliably safe (<a href="#/lesson/alignment-safety">Alignment and safety</a>). You now have the mechanism needed to read that research critically instead of taking anyone’s word for it, including ours.
         </Callout>
+        <h3>The best question of the evening</h3>
+        <p>Riya gets all the way round the loop at the dining table. Tokens, vectors, attention, blocks, scores, one token chosen, round again. Then the bank that became a river, the refund policy the bot invented, the Diwali queue, the finance meeting, launch day.</p>
+        <p>Amma listens without interrupting, the way she used to listen to a student reciting a proof. Then she asks one question.</p>
+        <p>“When it says ‘I don’t know’, is that also only a likely next word?”</p>
+        <p>Riya opens her mouth, closes it, and laughs. “Yes, Amma. Training made those words more likely in the places they belong. Nothing inside checks that they are true. That is why we test it, every time.”</p>
+        <p>Amma nods, satisfied, and gets up to make coffee. It is exactly the question a good teacher asks: not “what does it do?” but “how would you know?”. You can answer it now too.</p>
         <p>This course was built to let you say one sentence and mean it:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 24, padding: '28px 16px' }}>
           “I don’t use LLMs as magic anymore.”

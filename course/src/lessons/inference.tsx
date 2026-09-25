@@ -1,3 +1,4 @@
+import { RepoRunner } from '../components/RepoRunner'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -11,7 +12,10 @@ export default function InferenceLesson() {
   return (
     <Lesson id="inference">
       <Why>
-        <p className="lede">Training is over. The weights are frozen. Now you use the model, and two things are odd.</p>
+        <p className="lede">Monday, 11 a.m. The AI team’s meeting room, the projector warm, a plate of Parle-G going round. Riya connects her laptop to demo the model she trained.</p>
+        <p>She types a prompt and presses Enter. The characters crawl out, slower with every line. Someone asks for the same prompt again, and it writes something completely different. Dev, who has wandered in for the biscuits: “Is it broken? It changed its mind.”</p>
+        <p>Kabir, quietly: “Neither of those is the model. Both are the code around it.”</p>
+        <p>Training is over. The weights are frozen. Now you use the model, and two things are odd.</p>
         <div className="grid-2">
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>Same question, different answers</h4>
@@ -22,7 +26,8 @@ export default function InferenceLesson() {
             <p>Paste in a long document. There is a noticeable wait, then words stream out at a steady pace. Why is the first word slow and the rest fast?</p>
           </div>
         </div>
-        <p>Both have small, mechanical answers. The first is a dice roll that happens <em>after</em> the network has finished. The second is a cache. Using a trained model to produce output is called <b>inference</b>, and this lesson is about what happens around the network while it runs.</p>
+        <p>Both have small, mechanical answers. The first is a dice roll that happens <em>after</em> the network has finished. The second is a cache.</p>
+        <p>Using a trained model to produce output is called <b>inference</b>. This lesson is about what happens around the network while it runs.</p>
         <Callout kind="idea">
           The model’s job ends at the <G t="logits">logits</G>: one score per token in the vocabulary. <b>Choosing</b> a token from those scores, and <b>not redoing work</b> while generating thousands of them, are both ordinary code that lives outside the network.
         </Callout>
@@ -38,7 +43,7 @@ export default function InferenceLesson() {
               <tr><td><b>Positions</b></td><td>All T positions predicted in parallel, in one pass</td><td>One new token at a time: each one depends on the one before</td></tr>
               <tr><td><b>After the forward pass</b></td><td>Loss, then a backward pass, then a weight update</td><td>Pick a token, append it, go again. No gradients, weights never change</td></tr>
               <tr><td><b>Randomness</b></td><td>Which batch comes next</td><td>Which token gets drawn</td></tr>
-              <tr><td><b>Main cost</b></td><td>Compute, and memory for every intermediate result (needed by backprop)</td><td>Memory for a cache of past work (the KV cache, explained below), and the speed of reading it</td></tr>
+              <tr><td><b>Main cost</b></td><td>Compute, and memory for every intermediate result (needed by backprop)</td><td>Reading memory. At small batch sizes, each new token mostly means reading every weight once. At long contexts or with many users at once, the cache of past work (the KV cache, explained below) becomes the biggest thing to store and read</td></tr>
             </tbody>
           </table>
         </div>
@@ -53,7 +58,7 @@ export default function InferenceLesson() {
         <WhyExists
           problem="The generation loop from Build GPT feeds the whole sequence through the model for every new token."
           naive="Accept it. To produce token 1,001, run all 1,000 previous tokens through every layer again."
-          fails="Those 1,000 tokens have not changed, and neither has anything computed from them. Work per token grows with the length, so total work grows with the square of the length."
+          fails="Those 1,000 tokens have not changed, and neither has anything computed from them. The work for one new token grows with the length. So over a whole answer, the projections and MLPs add up to work that grows with the square of the length, and attention (every token against every token, redone each step) with the cube."
           idea="Keep the intermediate results that later tokens need (each old token’s key and value vectors) and compute only the new token."
           tradeoff="Speed is bought with memory. The cache grows with every token, and that memory is what limits context length and how many users one GPU can serve."
         />
@@ -61,7 +66,8 @@ export default function InferenceLesson() {
 
       <MentalModel>
         <h3>Half A: choosing a token</h3>
-        <p>After <a href="#/lesson/softmax">softmax</a>, the scores are a probability for every token. <G t="sampling">Sampling</G> means rolling a die with those probabilities painted on its faces. “mat” at 40% wins four rolls in ten, not every roll. That single roll is why the same prompt gives different answers.</p>
+        <p>After <a href="#/lesson/softmax">softmax</a>, the scores are a probability for every token. <G t="sampling">Sampling</G> means rolling a die with those probabilities painted on its faces. “mat” at 40% wins four rolls in ten, not every roll.</p>
+        <p>That single roll is why the same prompt gives different answers. Nothing in Riya’s demo broke, and the model did not change its mind. Its probabilities were identical both times; the die landed differently.</p>
         <p>Three knobs reshape the die before it is rolled:</p>
         <Term
           name="Temperature"
@@ -79,8 +85,14 @@ export default function InferenceLesson() {
         <p>And a bad token is not just one bad word: it is appended to the input, and every later prediction is conditioned on it. This is also why high temperatures fall apart: flattening the distribution hands that tail a large share of the die.</p>
 
         <h3>Half B: not repeating yourself</h3>
+        <p>After the demo, Riya asks Kabir why each line came out slower than the last. He scrolls to her <code>generate()</code> loop. “For every new character, you make the model re-read the whole conversation from the top. Would you re-read an entire WhatsApp chat before typing each word?”</p>
         <p>Recall what attention does for the newest token: its <span className="q">query</span> is compared with the <span className="k">key</span> of every earlier token, and the matching <span className="v">values</span> are blended. So to produce the next token, the model needs the keys and values of <em>all</em> earlier tokens, in every layer.</p>
         <p>Now the insight, and it comes straight from the <a href="#/lesson/masks-and-heads">causal mask</a>. Token 5 can only look at tokens 1 to 5. So nothing about token 5, in any layer, depends on tokens 6, 7, 8… When token 9 arrives, token 5’s key and value are <b>exactly what they were before</b>. Recomputing them gives the same numbers, every single step.</p>
+        <Callout kind="warn" label="The fine print: valid while T ≤ context_len">
+          <p>That guarantee assumes the past never changes. In <code>tiny_gpt.py</code> it holds only while the whole sequence fits in the window. Positions there are a learned table of 64 rows, and <code>generate()</code> crops the input to the last 64 tokens.</p>
+          <p>Up to 64 tokens, nothing moves and the cache is exact. At token 65 the window slides. Every kept token shifts one slot to the left and gets a different position vector. The oldest token also vanishes from everyone’s view, so in deeper layers every token would now be computed from a different set of tokens. Recompute, and <b>every cached key and value comes out different</b>: the whole cache is stale.</p>
+          <p>So a cache for this model must stop at the window, or be rebuilt after each slide. Production models are built so this never happens. The cache grows up to a fixed maximum context. Models that do use a sliding window were trained with that window inside attention itself, so each cached key and value is exactly what the model expects.</p>
+        </Callout>
         <Callout kind="dev">
           A pure function called again and again with the same arguments: you know this one. It is <b>memoisation</b>. Store each token’s <span className="k">k</span> and <span className="v">v</span> the first time, per layer, and read them back afterwards. That store is the <G t="kv-cache">KV cache</G>.
         </Callout>
@@ -236,6 +248,9 @@ assert a == b, "cache changed the output -- that's a bug!"
   cache size at T=123: 123.0 KB for this toy.
 `}</Code>
         <p>The speedup is not a constant. It <em>grows</em> with length, because the naive loop’s waste grows with length. At 120 tokens it is 6×. At 4,000 tokens the naive loop is unusable.</p>
+        <RepoRunner path="phase3-transformers/kv_cache_demo.py" title="Run kv_cache_demo.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
@@ -251,6 +266,7 @@ assert a == b, "cache changed the output -- that's a bug!"
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="inference-code-kv-cache" />
         <CodeExercise id="inference-code-topp" />
         <Exercise
           id="inference-temperature-calc"
@@ -351,13 +367,13 @@ def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
     return idx
 `}</Code><p>Masking the <em>logits</em> with −∞ is the same trick as the causal mask: softmax gives those entries probability 0 and the rest automatically sum to 1. With 65 characters, try <code>top_k=5</code> at temperature 1.0: fewer stray capitals and odd symbols in the middle of words.</p></>}
         >
-          <p><code>GPT.generate</code> in <code>tiny_gpt.py</code> has temperature but no top-k. Add a <code>top_k</code> argument. Then generate with <code>top_k=5</code> and with <code>top_k=None</code> and compare the text. Stretch goal (from the repo notes): retrofit a KV cache into <code>generate</code> and time it at 500 tokens.</p>
+          <p><code>GPT.generate</code> in <code>tiny_gpt.py</code> has temperature but no top-k. Add a <code>top_k</code> argument. Then generate with <code>top_k=5</code> and with <code>top_k=None</code> and compare the text. Stretch goal (from the repo notes): retrofit a KV cache into <code>generate</code> and time it. Mind the fine print: with <code>context_len = 64</code> and the sliding crop, a cache is only valid for the first 64 tokens. To time it at 500 tokens, build the model with <code>context_len = 512</code> (random, untrained weights are fine for timing), generate 500 tokens with and without the cache, and assert both give the same tokens.</p>
         </Exercise>
 
         <ExplainBack
           id="inference-explain"
-          prompt="A teammate asks: “Why can the KV cache store keys and values forever without them going stale? And why don’t we cache queries too?” Answer using what you know about the causal mask."
-          modelAnswer={<p>Because of the causal mask, a token only ever looks at itself and earlier tokens. So everything computed for a token, in every layer, depends only on the tokens up to that point. Appending new tokens cannot change it. Its key and value vectors are therefore final the moment they are computed, which makes them safe to cache: recomputing would give identical numbers. Queries are different because of how they are used. A token’s query is used once, at the moment that token looks back at the others. No later token ever reads an earlier token’s query, only its key (to match against) and its value (to take content from). Caching queries would store something nobody asks for again.</p>}
+          prompt="A teammate asks: “Why can the KV cache keep old keys and values without them going stale, and when does that stop being true? And why don’t we cache queries too?” Answer using what you know about the causal mask."
+          modelAnswer={<p>Because of the causal mask, a token only ever looks at itself and earlier tokens. So everything computed for a token, in every layer, depends only on the tokens up to that point. Appending new tokens cannot change it. Its key and value vectors are therefore final the moment they are computed, which makes them safe to cache: recomputing would give identical numbers. That holds as long as every token keeps its position and its view of the past. In tiny_gpt.py that means up to context_len (64) tokens: once the crop starts sliding, positions shift, the oldest token drops out, and every cached entry is stale. Queries are different because of how they are used. A token’s query is used once, at the moment that token looks back at the others. No later token ever reads an earlier token’s query, only its key (to match against) and its value (to take content from). Caching queries would store something nobody asks for again.</p>}
         />
       </Exercises>
 
@@ -377,9 +393,9 @@ def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
           },
           {
             q: 'Why is it safe to reuse the keys and values of old tokens?',
-            options: ['They are approximately right, and the error is small', 'It is only safe for short sequences', 'Because keys and values are not learned', 'Because of the causal mask, nothing computed for an old token depends on later tokens, so recomputing would give identical numbers'],
+            options: ['They are approximately right, and the error is small', 'It is only safe at temperature 0', 'Because keys and values are not learned', 'Because of the causal mask, nothing computed for an old token depends on later tokens, so recomputing would give identical numbers'],
             answer: 3,
-            explain: 'The cache is exact, not an approximation. The demo asserts that naive and cached generation produce identical output.',
+            explain: 'The cache is exact, not an approximation, as long as the past itself does not change (in tiny_gpt.py: while the sequence fits in the 64-token window). The demo asserts that naive and cached generation produce identical output.',
           },
           {
             q: 'You paste a 20,000-token document and ask for a one-word answer. Where does most of the time go?',
@@ -401,7 +417,7 @@ def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
           <>The network’s job ends at the <b>logits</b>. Picking a token is a policy applied <b>outside</b> the model: ÷ temperature → softmax → top-k / top-p → renormalise → roll the die.</>,
           <><b>Temperature</b> scales the gaps between logits. T → 0 is greedy (deterministic, loops easily). T &gt; 1 feeds the junk tail. <b>Top-k / top-p</b> cut the tail to exactly zero.</>,
           <>The same prompt gives different answers because a <b>random draw</b> happens at every token, and each draw is fed back in.</>,
-          <><b>KV cache</b> = memoisation. The causal mask means old tokens’ <span className="k">keys</span> and <span className="v">values</span> never change, so compute q, k, v for one new token, append k and v, attend over the cache. Output is identical to the naive loop.</>,
+          <><b>KV cache</b> = memoisation. The causal mask means old tokens’ <span className="k">keys</span> and <span className="v">values</span> never change (as long as the window is not sliding), so compute q, k, v for one new token, append k and v, attend over the cache. Output is identical to the naive loop.</>,
           <><b>Prefill</b> (whole prompt, parallel, the wait) then <b>decode</b> (one token per step, the stream). Speed is bought with memory: <span className="mono">2 × layers × kv_heads × head_dim × tokens × bytes</span>, per conversation.</>,
         ]}
       />
@@ -409,7 +425,7 @@ def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
       <RealLLM>
         <Flow horizontal steps={[{ label: 'prompt tokens' }, { label: 'prefill', sub: 'fills the KV cache' }, { label: 'logits' }, { label: 'sampling policy', sub: 'T, top-k, top-p' }, { label: 'one token', sub: 'append, decode again' }]} active={3} />
         <ToyVsReal
-          toy={<ul><li>11 hand-picked logits, a toy word table</li><li>A 2-layer random-weight Transformer in NumPy</li><li>Cache of a few kilobytes</li><li>One sequence at a time, prefill token by token</li></ul>}
+          toy={<ul><li>11 hand-picked logits, a toy word table</li><li>A 2-layer random-weight Transformer in NumPy</li><li>A cache of 123 KB at 123 tokens</li><li>One sequence at a time, prefill token by token</li></ul>}
           real={<ul><li>50,000 to 200,000 logits per step, from the trained network</li><li>Dozens of layers, fused GPU kernels</li><li>Gigabytes of cache per long conversation, carefully paged in GPU memory</li><li>Many users batched together; prompts prefilled in parallel</li></ul>}
         />
         <Callout kind="established">The parameters you see in an LLM API are this lesson. <code>temperature</code>, <code>top_p</code>, <code>top_k</code>: reshaping the die. <code>max_tokens</code>: the hard budget. <code>stop</code> sequences and the end-of-sequence token: the stop conditions. “Prompt caching” on a pricing page is a KV cache kept <em>between</em> requests that share the same beginning, so the shared part is not prefilled again.</Callout>
@@ -419,6 +435,7 @@ def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
         <DeepDive title="Is temperature 0 really deterministic?">
           <p>In our code, yes: argmax of the same numbers is the same token. In hosted services, often not quite. GPU arithmetic can give very slightly different logits depending on how requests are batched together, and when two tokens are nearly tied, a difference in the last decimal place flips the choice. After one flipped token, the rest of the answer differs. If you need reproducibility, do not rely on temperature 0 alone.</p>
         </DeepDive>
+        <p>Riya adds a cache to her demo that evening, with the regression test first. Next week the team repeats the demo: same model, same answers, and the text streams at a steady pace. Dev asks for the same prompt twice again, and this time he knows why the answers differ.</p>
       </RealLLM>
 
       <BeforeMovingOn

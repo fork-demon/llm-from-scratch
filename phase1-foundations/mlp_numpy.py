@@ -3,7 +3,7 @@ Module 03 -- A complete neural network + backpropagation in NumPy.
 
 What happens when you run this file:
   1. Generates a 3-class spiral dataset (impossible for linear models).
-  2. Trains a LINEAR classifier  -> watch it plateau (~45%).
+  2. Trains a LINEAR classifier  -> watch it plateau (~54%).
   3. Trains a 2-hidden-layer MLP -> watch it succeed (~99%).
   4. Gradient-checks the backprop against numerical gradients.
 

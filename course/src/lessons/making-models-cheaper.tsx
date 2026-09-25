@@ -1,3 +1,5 @@
+import { RepoRunner } from '../components/RepoRunner'
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -9,9 +11,10 @@ export default function MakingModelsCheaperLesson() {
   return (
     <Lesson id="making-models-cheaper">
       <Why>
-        <p className="lede">Your server is packed as tightly as scheduling can pack it, and it is still not enough. What is left to change?</p>
-        <p>In <a href="#/lesson/inference-systems">the last lesson</a> every technique worked on the same quantity: how many sequences share one pass. Continuous batching kept the slots full, paged allocation of the <G t="kv-cache">KV cache</G> fitted more sequences into the same memory. All of it took the model as given.</p>
-        <p>Now change the model instead. Three things are still on the table.</p>
+        <p className="lede">The meeting room is too cold, as usual. The finance lead has one slide up, with one number circled in red: the monthly GPU quote for the support bot.</p>
+        <p>“Can we halve it?” she asks. Riya has already packed the batch as tightly as scheduling allows. Continuous batching keeps the slots full. Paged allocation of the <G t="kv-cache">KV cache</G> fits more conversations into the same memory.</p>
+        <p>Kabir leans over and whispers, “All of that took the model as given. Now change the model.”</p>
+        <p>So what is left to change? Three things are still on the table.</p>
         <div className="grid-3">
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>Store each weight in fewer bytes</h4>
@@ -33,60 +36,111 @@ export default function MakingModelsCheaperLesson() {
 
       <Problem>
         <p>Two reminders, so this lesson stands on its own.</p>
-        <p><b>Decode is memory-bound.</b> To produce one token the GPU reads every weight once, and the arithmetic for that token takes roughly 1% of the time the read takes. For one stream, tokens per second is at most <span className="mono">bandwidth ÷ weight bytes</span>. <b>Prefill is the opposite</b>: a whole prompt goes through in one pass, so there is far more arithmetic per byte read, and the arithmetic units are the limit. Both are worked out in <a href="#/lesson/inference-systems">Serving many users at once</a>.</p>
+        <p><b>Decode is memory-bound.</b> To produce one token the GPU reads every weight once. The arithmetic for that token takes roughly 1% of the time the read takes. For one stream, tokens per second is at most <span className="mono">bandwidth ÷ weight bytes</span>.</p>
+        <p><b>Prefill is the opposite.</b> A whole prompt goes through in one pass, so there is far more arithmetic per byte read, and the arithmetic units are the limit. Both are worked out in <a href="#/lesson/inference-systems">Serving many users at once</a>.</p>
         <WhyExists
           problem="A 16-bit weight costs 2 bytes, and every one of them crosses the memory link for every single token."
           naive="Buy a GPU with more bandwidth."
-          fails="Bandwidth roughly doubled over several hardware generations, while useful models grew faster than that. And you cannot buy your way past a model that does not fit in the memory you have."
-          idea="Store each weight as a small integer with a shared scaling factor, and expand it back to a float inside the matrix multiply."
-          tradeoff="A small integer cannot represent the weight exactly. The rounding error changes the model’s output, by an amount that depends on how many weights share each scaling factor."
+          fails="Bandwidth did grow: about 2 TB/s on an A100 to about 8 TB/s on a B200, four times in two generations. But 16-bit arithmetic grew about seven times over the same span, and models grew faster than either. And no bandwidth helps a model that does not fit in the memory you have."
+          idea="Store each weight in fewer bits, as a small integer or a tiny float, with a shared scaling factor, and expand it back inside the matrix multiply."
+          tradeoff="A 4-bit or 8-bit number cannot represent the weight exactly. The rounding error changes the model’s output, by an amount that depends on how many weights share each scaling factor."
         />
         <WhyExists
           problem="Decode produces exactly one token per pass, however idle the arithmetic units are."
           naive="Make the model smaller so the pass is faster."
           fails="A smaller model is a different, worse model. You wanted this model’s answers."
-          idea="Let a small fast model guess the next few tokens, and have the big model check all the guesses in one pass, which costs it almost nothing extra."
+          idea="Let something cheap guess the next few tokens, a small model or a light extra head on the big one, and have the big model check all the guesses in one pass, which costs it almost nothing extra."
           tradeoff="The guesses are often wrong, and the small model’s own time is spent either way. It helps least exactly when the server is busiest."
         />
       </Problem>
 
       <MentalModel title="Fewer bytes, more tokens per pass, more GPUs">
         <h3>1. Quantization: fewer bytes per weight</h3>
+        <p>Every weight today is a 16-bit number: 2 bytes. The first idea is to store it in 8 bits or 4 bits instead, and live with a little rounding.</p>
         <Term
           name="Quantization"
-          plain={<>Store each weight as a small integer plus a shared scale, instead of a 16-bit float. int8 halves the bytes, int4 quarters them.</>}
+          plain={<>Store each weight in fewer bits plus a shared scale, instead of a 16-bit float. The small number can be an integer (int8, int4) or a tiny float (FP8, FP4). 8 bits halves the bytes, 4 bits quarters them.</>}
           example={<>Eight weights with largest magnitude 0.035. Scale = 0.035 ÷ 7 = 0.005. The weight 0.021 is stored as round(0.021 ÷ 0.005) = 4 and read back as 4 × 0.005 = 0.020.</>}
-          formal={<>Symmetric absmax quantization: scale = max|w| ÷ (2<sup>bits−1</sup> − 1), q = round(w ÷ scale), ŵ = q × scale. “Weight-only” means activations stay in 16-bit and weights are unpacked on the fly inside the matrix multiply.</>}
+          formal={<>Symmetric absmax integer quantization: scale = max|w| ÷ (2<sup>bits−1</sup> − 1), q = round(w ÷ scale), ŵ = q × scale. “Weight-only” means activations stay in 16-bit and weights are unpacked on the fly inside the matrix multiply.</>}
         />
-        <p><b>int8</b> and <b>int4</b> mean 8-bit and 4-bit integers: 256 and 16 possible values per weight, where a 16-bit float has tens of thousands. <b>Weight-only</b> means only the stored weights shrink. Activations, the vectors flowing between layers, stay in 16-bit, and each weight is expanded back to a float inside the matrix multiply.</p>
-        <p>Because decode is limited by bytes moved, that is one of the few techniques that makes serving <b>smaller and faster at once</b>. Four times fewer bytes is up to four times more tokens per second for one stream, and the freed memory holds more KV cache.</p>
+        <p><b>int8</b> and <b>int4</b> mean 8-bit and 4-bit integers: 256 and 16 possible values per weight. A 16-bit float has tens of thousands.</p>
+        <p><b>Weight-only</b> means only the stored weights shrink. Activations, the vectors flowing between layers, stay in 16-bit, and each weight is expanded back inside the matrix multiply.</p>
+        <p>Decode is limited by bytes moved, so this is one of the few techniques that makes serving <b>smaller and faster at once</b>. Four times fewer bytes is up to four times more tokens per second for one stream, and the freed memory holds more KV cache.</p>
         <p>The danger is <b>outliers</b>. One scale has to stretch far enough to reach the largest value in its group. A single weight 25 times larger than the rest stretches the grid until every ordinary weight rounds to zero.</p>
-        <p>The fix is more scales, so that each one covers fewer weights. This is called the <b>granularity</b> of the quantization: one scale per tensor is the coarsest, then one per row (per output channel), then one per group of 32 to 128 weights. Each scale costs 16 bits of its own, so group-wise int4 really costs about 4.1 to 4.5 bits per weight.</p>
+        <p>The fix is more scales, so that each one covers fewer weights. This is the <b>granularity</b> of the quantization: one scale per tensor is the coarsest, then one per row (per output channel), then one per group of 32 to 128 weights.</p>
+        <p>Scales are not free. Each one costs 16 bits of its own, so group-wise int4 really costs about 4.1 to 4.5 bits per weight.</p>
         <Callout kind="dev">
-          This is lossy compression applied to a lookup table you have to read in full, on every request, forever. The usual compression trade-off is size against decompression time. Here decompression is almost free, because the arithmetic units were idle anyway, so the trade is size against accuracy alone.
+          This is lossy compression applied to a lookup table you have to read in full, on every request, forever. The usual trade-off is size against decompression time. Here decompression is almost free, because the arithmetic units were idle anyway. So the trade is size against accuracy alone.
         </Callout>
-        <p>Real methods improve on plain rounding. You will meet these names on model cards, so here is one line each.</p>
+        <p>Real integer methods improve on plain rounding. You will meet these names on model cards, so here is one line each.</p>
         <ul>
           <li><b>LLM.int8()</b> (Dettmers et al., NeurIPS 2022) keeps the few outlier activation dimensions in 16-bit and quantizes the rest.</li>
           <li><b>GPTQ</b> (Frantar et al., ICLR 2023) rounds the weights one at a time and nudges the not-yet-rounded ones to make up for each rounding error.</li>
           <li><b>AWQ</b> (Lin et al., MLSys 2024) rescales the roughly 1% of weight channels that meet large activations, so they survive the grid.</li>
           <li><b>NF4</b> (QLoRA, Dettmers et al., NeurIPS 2023) spaces its 16 levels closer together in the middle, where bell-shaped weights actually sit.</li>
         </ul>
-        <p>The <b>KV cache</b> can be quantized too, which raises the number of sequences that fit. vLLM offers an 8-bit float cache, and research such as KIVI (ICML 2024) goes as low as 2 bits.</p>
+
+        <h3>Low-precision floats: FP8 and FP4</h3>
+        <p>Integers are not the only small numbers. In data centres today the main route is <b>tiny floating-point formats</b>, because recent GPUs do their arithmetic on them directly.</p>
+        <p>A float spends some of its bits on an <b>exponent</b> (how big) and the rest on a <b>mantissa</b> (how precise). With only 8 or 4 bits, you choose the split.</p>
+        <Term
+          name="FP8 (E4M3 and E5M2)"
+          plain={<>An 8-bit float. E4M3 has 4 exponent bits and 3 mantissa bits: more precision, largest value 448. E5M2 has 5 and 2: less precision, but reaches 57,344.</>}
+          example={<>Weights and activations usually use E4M3. Gradients in training, which swing across a wide range, have often used E5M2.</>}
+          formal={<>Supported natively by NVIDIA Hopper (H100, H200) and later GPUs and by AMD’s MI300 series and later. Each tensor, or each block of a tensor, carries a higher-precision scale so that its values land inside the format’s range.</>}
+        />
+        <p>FP8 is now a standard way to serve large open models: the weights halve, and the matrix multiplies themselves run in 8 bits. It is used in training too. DeepSeek-V3 (December 2024) trained most of its matrix multiplies in FP8 E4M3, with one scale per small tile of activations and per 128 × 128 block of weights. It was one of the first openly documented training runs at that scale to do so.</p>
+        <Term
+          name="Microscaling FP4 (MXFP4, NVFP4)"
+          plain={<>A 4-bit float (1 sign bit, 2 exponent, 1 mantissa) can only be 0, 0.5, 1, 1.5, 2, 3, 4 or 6, positive or negative. So every small block of weights gets its own scale.</>}
+          example={<>MXFP4: blocks of 32 values share one 8-bit power-of-two scale, so 4 + 8 ÷ 32 = 4.25 bits per weight. NVFP4: blocks of 16 share an FP8 scale, plus one scale for the whole tensor, so about 4.5 bits.</>}
+          formal={<>MXFP4 is defined in the Open Compute Project’s Microscaling (MX) specification (2023). NVFP4 is NVIDIA’s variant. Blackwell GPUs (B200, B300) compute on FP4 in hardware.</>}
+        />
+        <p>Here is the block-scale idea on a block of 4 weights (real MXFP4 blocks hold 32): <span className="mono">[0.30, −0.12, 0.05, 0.71]</span>.</p>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>step</th><th>arithmetic</th><th>result</th></tr></thead>
+            <tbody>
+              <tr><td>1. Largest value’s exponent</td><td className="mono">0.71 lies between 2⁻¹ and 2⁰</td><td className="mono"><b>−1</b></td></tr>
+              <tr><td>2. Shared scale</td><td className="mono">2<sup>−1 − 2</sup> (FP4’s largest, 6, is 1.5 × 2²)</td><td className="mono"><b>0.125</b></td></tr>
+              <tr><td>3. Divide by the scale</td><td className="mono">[2.4, −0.96, 0.4, 5.68]</td><td className="mono">off the grid</td></tr>
+              <tr><td>4. Round to the FP4 grid</td><td className="mono">nearest of 0, 0.5, 1, 1.5, 2, 3, 4, 6</td><td className="mono"><b>[2, −1, 0.5, 6]</b></td></tr>
+              <tr><td>5. Read back (× 0.125)</td><td className="mono">[0.25, −0.125, 0.0625, 0.75]</td><td className="mono">errors 0.05, 0.005, 0.0125, 0.04</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Stored: four 4-bit codes and one 8-bit exponent. Notice the grid. Its levels sit close together near zero and far apart near the top, so small weights keep their detail and the largest ones round more coarsely. That suits bell-shaped weights, the same reason NF4 spaces its levels that way.</p>
+        <Callout kind="established">
+          OpenAI’s open-weight gpt-oss models (August 2025) shipped their mixture-of-experts weights in MXFP4, which is how the 120B-parameter model fits on a single 80 GB GPU. Blackwell’s tensor cores run FP4 matrix multiplies natively, at a higher peak rate than FP8.
+        </Callout>
+        <p>The <b>KV cache</b> can be stored in low precision too, which raises the number of sequences that fit. vLLM offers an FP8 cache, and research such as KIVI (ICML 2024) goes as low as 2 bits.</p>
         <Callout kind="model">
-          A widely reported regularity, not a law: 8-bit weights are usually close to lossless, and 4-bit weights cost a small but measurable amount of quality that many applications accept. It varies with the model, its size, the method and above all the task: long reasoning chains and code tend to be more sensitive than short chat. Do not trust a leaderboard for this. Run your own <a href="#/lesson/evals">evals</a> on the quantized model before you ship it.
+          A widely reported regularity, not a law: 8-bit weights, integer or FP8, are usually close to lossless, and 4-bit weights cost a small but measurable amount of quality that many applications accept. It varies with the model, its size, the method and above all the task: long reasoning chains and code tend to be more sensitive than short chat. Do not trust a leaderboard for this. Run your own <a href="#/lesson/evals">evals</a> on the quantized model before you ship it.
         </Callout>
 
         <h3>2. Speculative decoding: spend the idle arithmetic</h3>
         <p>If the arithmetic units are idle during decode, give them something useful. The big model can score 5 positions in one pass in nearly the time it scores 1, exactly like a tiny prefill. It only needs to know which 5 tokens to score.</p>
+        <Callout kind="analogy">
+          Amma, when Riya explains this on the phone: “Like a student who writes out the whole sum and brings it to me. I tick five lines in the time it takes to check one.” At the first wrong line she corrects it and crosses out everything below. Where it stops: Amma’s ticking is yes or no. The real check is a probability rule, and it guarantees the final text is distributed exactly as if the big model had written it alone.
+        </Callout>
         <Term
           name="Speculative decoding"
           plain={<>A small, fast draft model guesses the next few tokens. The big target model checks all the guesses in one pass. Guesses are kept or replaced by a rule that makes the final text distributed exactly as if the big model had written every token itself.</>}
           example={<>The draft proposes “sat on the mat”. The target accepts “sat”, “on”, “the”, rejects “mat” and replaces it with “sofa”. Four tokens for one pass of the big model.</>}
           formal={<>Accept a proposed token x with probability min(1, p(x) ÷ q(x)), where p is the target’s probability and q the draft’s. On the first rejection, draw a replacement from max(0, p − q) rescaled to sum to 1, and discard the later guesses. Leviathan et al. (ICML 2023) and Chen et al. (2023) both prove the output distribution equals the target’s.</>}
         />
-        <p>The <b>draft model</b> is a second, much smaller model: often a few hundred million parameters against the target’s tens of billions, sometimes an extra prediction head bolted onto the target itself. The <b>target model</b> is the one whose answers you actually want.</p>
-        <p>It is a latency technique that only works <em>because</em> decode is memory-bound. When it does not help: if the draft is often wrong (little is accepted, and the draft’s own time is wasted), or if the server is already running large batches (the arithmetic is no longer idle, so verifying extra positions is no longer free).</p>
+        <p>The <b>target model</b> is the one whose answers you actually want. The <b>drafter</b> is whatever makes the guesses, and there are three common kinds.</p>
+        <ul>
+          <li><b>A separate small model</b>, a few hundred million parameters against the target’s tens of billions. This is the original recipe, and the one our demo uses.</li>
+          <li><b>A draft head</b> on the target itself: one light extra layer that reads the target’s own hidden vectors and guesses ahead. EAGLE-3 (Li et al., 2025) is the best-known version, and heads of this kind are now a common choice in production engines.</li>
+          <li><b>Multi-token prediction heads</b> trained with the model. DeepSeek-V3 was trained to predict one extra token at each position, and at serving time that head drafts. Its report says the extra token was accepted 85% to 90% of the time.</li>
+        </ul>
+        <p>The acceptance rule below is the same for all three. Only where the guesses come from changes.</p>
+        <p>It is a latency technique that only works <em>because</em> decode is memory-bound. It does not help in two cases:</p>
+        <ul>
+          <li>the drafter is often wrong: little is accepted, and its own time is wasted;</li>
+          <li>the server already runs large batches: the arithmetic is no longer idle, so verifying extra positions is no longer free.</li>
+        </ul>
         <Callout kind="dev">
           Branch prediction, with a guarantee. A processor guesses the next instructions and throws the work away when it guessed wrong. Here the check is not just “was it right?” but a rule chosen so that the final text has exactly the distribution the big model would have produced on its own. A wrong guess costs time, never correctness.
         </Callout>
@@ -226,6 +280,9 @@ out.append(draw(P[ctx], rng))                # all accepted: one bonus token
   draft alone                      0.5768   <- a different distribution
 `}</Code>
         <p>That middle row is the whole point. The speculative sampler is no further from the target than the target is from itself at this sample size, so the acceptance rule introduces no bias that this test can see.</p>
+        <RepoRunner path="phase6-engineering/quantize_demo.py" title="Run quantize_demo.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
@@ -241,6 +298,7 @@ out.append(draw(P[ctx], rng))                # all accepted: one bonus token
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="making-models-cheaper-code-int8" />
         <Exercise
           id="making-models-cheaper-outlier"
           type="predict"
@@ -396,10 +454,10 @@ for x in proposals:
 
       <Remember
         items={[
-          <><b>Quantization stores each weight as a small integer plus a shared scale.</b> Weight-only int8 and int4 shrink memory and speed up decode, because decode is limited by the bytes read.</>,
+          <><b>Quantization stores each weight in fewer bits plus a shared scale</b>: a small integer (int8, int4) or a tiny float (FP8, and FP4 formats such as MXFP4 with one scale per block of 32). Fewer bytes shrink memory and speed up decode, because decode is limited by the bytes read.</>,
           <><b>Outliers are what breaks it.</b> One scale must reach the largest value in its group, so a single huge weight can round its neighbours to zero. More scales, per row or per group of 32 to 128, contain the damage, at about 4.1 to 4.5 bits per weight.</>,
           <>The gain is <b>large for one stream and modest for a full server</b>, because a big batch is dominated by KV cache reads that quantizing the weights leaves untouched. Quantize the cache too if you need more.</>,
-          <><b>Speculative decoding</b> has a small draft model guess and the target check the guesses in one pass. The accept-or-replace rule keeps the target’s distribution <em>exactly</em>. It buys latency only while the arithmetic units are idle, so it fades at large batch sizes.</>,
+          <><b>Speculative decoding</b> has something cheap guess (a small model, an EAGLE-style head, a multi-token-prediction head) and the target check the guesses in one pass. The accept-or-replace rule keeps the target’s distribution <em>exactly</em>. It buys latency only while the arithmetic units are idle, so it fades at large batch sizes.</>,
           <>When the model does not fit: <b>tensor parallelism</b> splits every matrix and cuts latency at the cost of two all-reduces per layer, <b>pipeline parallelism</b> splits by layers and needs bubbles filled, <b>data parallelism</b> is replicas behind a load balancer.</>,
         ]}
       />
@@ -407,21 +465,21 @@ for x in proposals:
       <RealLLM>
         <ToyVsReal
           toy={<ul><li>Round-to-nearest quantization of one random matrix</li><li>Error measured on one layer’s output, not on any task</li><li>Speculative decoding between two 6-token Markov chains</li><li>Parallelism described, not run: one process, one machine</li></ul>}
-          real={<ul><li>GPTQ, AWQ, FP8 and similar, with kernels that compute directly on packed weights</li><li>Quality measured with task evals on the quantized model before it ships</li><li>Draft models, extra prediction heads or n-gram lookups as the proposer, verified in batches</li><li>Tensor parallel inside a server over fast links, replicas across servers</li></ul>}
+          real={<ul><li>FP8 and FP4 (MXFP4, NVFP4) run natively by the hardware, plus GPTQ, AWQ and similar integer methods</li><li>Quality measured with task evals on the quantized model before it ships</li><li>EAGLE-style draft heads, native multi-token-prediction heads, draft models or n-gram lookups as the proposer, verified in batches</li><li>Tensor parallel inside a server over fast links, replicas across servers</li></ul>}
         />
         <p>Where you will meet these in practice:</p>
         <div className="table-scroll">
           <table className="plain">
             <tbody>
-              <tr><td><b>Model cards</b></td><td>A name like “GPTQ int4, group 128” or “AWQ 4-bit” tells you the method and the granularity, which is most of what you need to guess the quality cost.</td></tr>
+              <tr><td><b>Model cards</b></td><td>A name like “FP8”, “MXFP4”, “GPTQ int4, group 128” or “AWQ 4-bit” tells you the format, the method and the granularity, which is most of what you need to guess the quality cost.</td></tr>
               <tr><td><b>llama.cpp and GGUF</b></td><td>Integer quantization from 1.5 to 8 bits with named schemes such as Q4_K_M. This is what makes a 7B model run on a laptop.</td></tr>
-              <tr><td><b>vLLM and TensorRT-LLM</b></td><td>Both serve quantized weights, both offer a quantized KV cache, and both support speculative decoding with a draft model or prediction heads.</td></tr>
+              <tr><td><b>vLLM, SGLang and TensorRT-LLM</b></td><td>All serve FP8 and 4-bit weights, offer a low-precision KV cache, and support speculative decoding with draft models, EAGLE-style heads or a model’s own multi-token-prediction head.</td></tr>
               <tr><td><b>Tensor parallel size</b></td><td>A launch flag on every serving engine. Setting it to the number of GPUs in one server is the usual first answer to “the model does not fit”.</td></tr>
             </tbody>
           </table>
         </div>
         <Callout kind="established">
-          The mechanisms here are published and open: LLM.int8() (NeurIPS 2022), GPTQ (ICLR 2023), AWQ (MLSys 2024), NF4 and QLoRA (NeurIPS 2023), speculative decoding with its exactness proof (Leviathan et al., ICML 2023; Chen et al., 2023), Megatron-LM tensor parallelism (Shoeybi et al., 2019) and GPipe (Huang et al., 2019). The exactness of the acceptance rule is a proved theorem, not a measured tendency, and <code>speculative_demo.py</code> checks it empirically as well.
+          The mechanisms here are published and open: LLM.int8() (NeurIPS 2022), the OCP Microscaling formats (2023), FP8 training in the DeepSeek-V3 report (2024), EAGLE-3 (2025), GPTQ (ICLR 2023), AWQ (MLSys 2024), NF4 and QLoRA (NeurIPS 2023), speculative decoding with its exactness proof (Leviathan et al., ICML 2023; Chen et al., 2023), Megatron-LM tensor parallelism (Shoeybi et al., 2019) and GPipe (Huang et al., 2019). The exactness of the acceptance rule is a proved theorem, not a measured tendency, and <code>speculative_demo.py</code> checks it empirically as well.
         </Callout>
         <Callout kind="model">
           Our quantization figures come from round-to-nearest on one random matrix. They show the shape of the effect, which is what they are for: how granularity fights outliers. They do not predict what a real model loses on a real task at 4 bits. Only your own evals do that.
@@ -429,6 +487,7 @@ for x in proposals:
         <Callout kind="research">
           How much quality 4-bit and lower precision really costs on hard tasks, how far KV caches can be compressed, how to train draft models that match a target closely, and how to make speculation pay at large batch sizes are all active areas. How closed providers serve their models is not published: treat any specific claim about it as a guess.
         </Callout>
+        <p>Riya takes a plan back to finance: FP8 weights and an FP8 cache, a draft head for the quiet hours, and a full eval run before either ships. The red circle gets smaller. Not half, but smaller, and she can explain every step of why.</p>
       </RealLLM>
     </Lesson>
   )

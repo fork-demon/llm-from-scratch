@@ -1,3 +1,5 @@
+import { RepoRunner } from '../components/RepoRunner'
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -10,8 +12,11 @@ export default function EvalsLesson() {
   return (
     <Lesson id="evals">
       <Why>
-        <p className="lede">You have a working RAG bot from <a href="#/lesson/rag">lesson 9.1</a>. A teammate proposes a change: chunk the documents one sentence at a time. Smaller chunks, sharper matches.</p>
-        <p>You try the four demo questions. All four still answer correctly. The change looks free. Do you ship it?</p>
+        <p className="lede">Friday demo. Riya types four questions into the support bot. Four clean answers, each with a citation. The CEO claps. Someone says “ship it”. Dev is already drafting the launch post.</p>
+        <p>Kabir waits until the room empties. “Nice demo. How many tickets did you test it on?”</p>
+        <p>“Four.”</p>
+        <p>“We have two hundred real tickets from last month. Before we run those, let me show you what four questions can hide.” He opens the toy RAG bot from <a href="#/lesson/rag">lesson 9.1</a> and the harness that ships with the repo.</p>
+        <p>A teammate proposes a change: chunk the documents one sentence at a time. Smaller chunks, sharper matches. You try the four demo questions. All four still answer correctly. The change looks free. Do you ship it?</p>
         <div className="grid-2">
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>What the demo showed</h4>
@@ -22,7 +27,8 @@ export default function EvalsLesson() {
             <p>16 right before, 14 after. Ask for the wifi password, which is in no document, and the new version no longer refuses. It answers, with a citation: “The onboarding buddy is assigned by the team lead.”</p>
           </div>
         </div>
-        <p>Nothing crashed. No test went red. The system got quietly worse at the one behaviour that protects you from confident nonsense. And here is the uncomfortable second half: <b>16 versus 14 out of 24 is not enough evidence that it got worse at all.</b> Both halves are this lesson.</p>
+        <p>Nothing crashed. No test went red. The system got quietly worse at the one behaviour that protects you from confident nonsense.</p>
+        <p>And here is the uncomfortable second half: <b>16 versus 14 out of 24 is not enough evidence that it got worse at all.</b> Both halves are this lesson.</p>
         <Callout kind="idea">
           An <b>eval</b> is a repeatable measurement of whether your LLM system does its job: a fixed set of inputs, a rule for marking outputs, and a number that comes with an honest statement of its uncertainty. It is how you replace “it looked fine when I tried it” with evidence.
         </Callout>
@@ -37,7 +43,7 @@ export default function EvalsLesson() {
           tradeoff="Building and labelling the set is real work, scorers are themselves imperfect, and a small set gives a number that is mostly noise. An eval you trust too much is worse than none."
         />
         <Callout kind="dev">
-          Think of evals as the regression test suite for a component with no compiler and no spec. The analogy holds for the workflow: run in CI, block the merge, add a case for every bug. It breaks in three places.
+          Riya’s first instinct is the right one: “So it’s a regression suite.” For the workflow, yes: run in CI, block the merge, add a case for every bug. The analogy breaks in three places.
           <br /><br />
           <b>1. No exact assertions.</b> The right answer can be phrased a thousand ways, so <code>assertEquals</code> is the wrong tool and the scorer becomes a design problem of its own. <b>2. The result is a rate, not green or red.</b> Nobody ships at 100%. You ship at 87% and must decide whether 85% next week is a regression or noise. <b>3. The system may be non-deterministic.</b> With sampling <G t="temperature">temperature</G> above 0, the same input can pass now and fail on the next run. A flaky test is a bug in the test. A flaky eval item is a property of the system you are measuring.
         </Callout>
@@ -67,7 +73,10 @@ export default function EvalsLesson() {
             </tbody>
           </table>
         </div>
-        <p>Two rules protect the dataset’s value. <b>Keep a held-out part.</b> If you tune the threshold until the score on these 24 items peaks, you have fitted the system to these 24 items, exactly like a model that memorises its training set. It is the <G t="validation-loss">validation loss</G> idea again: keep some items you never look at while tuning, and check them at the end. <b>Watch for leakage.</b> If an eval question (or its answer) also sits in the few-shot examples of your prompt, in your fine-tuning data, or in the model’s pretraining data, a high score measures memory, not ability.</p>
+        <p>Two rules protect the dataset’s value.</p>
+        <p><b>Keep a held-out part.</b> If you tune the threshold until the score on these 24 items peaks, you have fitted the system to these 24 items, exactly like a model that memorises its training set. It is the <G t="validation-loss">validation loss</G> idea again: keep some items you never look at while tuning, and check them at the end.</p>
+        <Callout kind="analogy">Amma, on the phone: “When I set the board exam paper, I never used my own class test questions. Otherwise I am only checking who attended my class.” Where it stops: a teacher can write a fresh paper every year. Your golden set has to be refreshed from real traffic, and nobody hands you new questions for free.</Callout>
+        <p><b>Watch for leakage.</b> If an eval question (or its answer) also sits in the few-shot examples of your prompt, in your fine-tuning data, or in the model’s pretraining data, a high score measures memory, not ability.</p>
 
         <h3>2. The task calls the system like a user would</h3>
         <p>The eval does not reach inside. It sends the question in, and records everything that comes back: the answer, the retrieved chunks, the citation. Recording the intermediate results is what makes step 3 useful.</p>
@@ -155,9 +164,13 @@ export default function EvalsLesson() {
           </table>
         </div>
         <p className="muted" style={{ fontSize: 14.5 }}>The last column is <b>Cohen’s kappa</b>: agreement with the human after subtracting the agreement two careless raters would reach by luck alone. 1 is perfect, 0 is coin-flipping. The deep dive below works it out.</p>
-        <p><b>Same system, same answers, and the score runs from 17% to 67% depending on the scorer.</b> The rubric judge is closest to the human, and still disagrees on one item: asked “does the oncall rotation change every friday”, the system quotes “The oncall rotation changes every Monday at 10am”. A person accepts that. The reference says “no, every Monday”, the word “no” is missing, and the judge fails it. The system was right and the eval was wrong. Reading your failures will regularly end with fixing the eval.</p>
+        <p><b>Same system, same answers, and the score runs from 17% to 67% depending on the scorer.</b></p>
+        <p>The rubric judge is closest to the human, and still disagrees on one item. Asked “does the oncall rotation change every friday”, the system quotes “The oncall rotation changes every Monday at 10am”. A person accepts that.</p>
+        <p>The reference says “no, every Monday”, the word “no” is missing, and the judge fails it. The system was right and the eval was wrong. Reading your failures will regularly end with fixing the eval.</p>
         <p>Now put an interval on the rubric score. The <b>bootstrap</b> is the lazy way to get one: draw 24 marks at random from your 24 marks, with repeats allowed, average them, and do that ten thousand times. The middle 95% of those averages is your interval. Here it runs from <b>45.8% to 83.3%</b> around a score of 66.7%.</p>
-        <p>And the regression check from the opening story. A scores 66.7%, B scores 58.3%. Two items pass only under A and none only under B. The <b>sign test</b> asks whether a two-to-nothing split is surprising for a fair coin, and the answer is no: p = 0.50. <b>Verdict: cannot tell.</b> Two coin flips landing the same way happen half the time.</p>
+        <p>And the regression check from the opening story. A scores 66.7%, B scores 58.3%. Two items pass only under A and none only under B.</p>
+        <p>The <b>sign test</b> asks whether a two-to-nothing split is surprising for a fair coin, and the answer is no: p = 0.50. <b>Verdict: cannot tell.</b> Two coin flips landing the same way happen half the time.</p>
+        <p>Riya does one more line of arithmetic, for the 200 real tickets waiting for her: at 80%, the interval is still ± 5.5 points. Better than ± 16. Still not a single number.</p>
         <Callout kind="dev">This is the same discipline as latency work. You would not compare two builds on one request each, and you would not report a p99 from 20 samples. A pass rate is a statistic. Give it the treatment you give every other statistic on your dashboards.</Callout>
       </Numbers>
 
@@ -280,6 +293,9 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
   verdict: A is better
 `}</Code>
         <Callout kind="dev">In CI this becomes a gate with two thresholds, not one. A hard floor per category (“unanswerable must stay at or above 90%”), because an average can hide a collapse in the category that matters. And a paired test against the main branch, so that a merge is blocked by a statistically real regression and not by three items of noise. Cache the baseline outputs so that the gate costs one run, not two.</Callout>
+        <RepoRunner path="phase6-engineering/eval_harness.py" title="Run eval_harness.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
@@ -299,6 +315,7 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="evals-code-bootstrap" />
         <Exercise
           id="evals-calc-interval"
           type="calculate"
@@ -456,22 +473,43 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
           real={<ul><li>Hundreds to thousands of items, sampled from production logs and refreshed</li><li>Sampling noise: several runs per item, and results averaged</li><li>LLM judges with rubrics, validated against human labels on a sample</li><li>Several annotators, with their agreement measured before anyone trusts the labels</li></ul>}
         />
         <h3>Offline evals and online signals</h3>
-        <p>An offline eval answers “did this change break what we already know about?” before users see it. It cannot answer “is this what users need?”, because its questions are yesterday’s. Production systems pair it with online signals: A/B tests on a business metric, thumbs up and down, how often users rephrase or abandon, how often guardrails fire (refusals, blocked outputs, fallbacks to a human). Those signals are noisy and slow, and they are the only ones that measure the real distribution. The loop closes when a production failure becomes a new golden item.</p>
+        <p>An offline eval answers “did this change break what we already know about?” before users see it. It cannot answer “is this what users need?”, because its questions are yesterday’s.</p>
+        <p>Production systems pair it with online signals: A/B tests on a business metric, thumbs up and down, how often users rephrase or abandon, how often guardrails fire (refusals, blocked outputs, fallbacks to a human). Those signals are noisy and slow, and they are the only ones that measure the real distribution.</p>
+        <p>The loop closes when a production failure becomes a new golden item.</p>
 
-        <h3>What public benchmarks measure</h3>
+        <h3>What public benchmarks measure, and why they keep dying</h3>
+        <p>Dev sends a screenshot of a leaderboard. “This model scores 92% on MMLU. Just use that one, na?” Public benchmarks are someone else’s golden set. Everything above applies to them, plus two problems that only show up at internet scale.</p>
         <div className="table-scroll">
           <table className="plain">
             <thead><tr><th>Style</th><th>Example</th><th>What is measured</th><th>Scorer</th></tr></thead>
             <tbody>
-              <tr><td><b>Multiple choice</b></td><td>MMLU: 15,908 four-option questions across 57 subjects (Hendrycks et al., 2020)</td><td>Whether the model picks the right letter on exam-style knowledge questions</td><td>Exact match on a letter. Cheap and objective, and sensitive to prompt format.</td></tr>
-              <tr><td><b>Execution-based</b></td><td>HumanEval: 164 hand-written programming problems with unit tests. SWE-bench: 2,294 real GitHub issues from 12 Python repositories. A patch must make failing tests pass without breaking passing ones. SWE-bench Verified is a 500-item human-validated subset.</td><td>Whether generated code actually works</td><td>Running tests. The strongest kind of scorer. HumanEval is reported as pass@k.</td></tr>
+              <tr><td><b>Multiple choice</b></td><td>MMLU: 15,908 four-option questions across 57 subjects (Hendrycks et al., 2020)</td><td>Whether the model picks the right letter on exam-style knowledge questions</td><td>Exact match on a letter. Cheap and objective, and sensitive to prompt format. <b>Saturated:</b> frontier models score around 90%, close to the ceiling set by its own mislabelled questions, so it no longer separates them.</td></tr>
+              <tr><td><b>Execution-based</b></td><td>HumanEval: 164 hand-written programming problems with unit tests. SWE-bench: 2,294 real GitHub issues from 12 Python repositories. A patch must make failing tests pass without breaking passing ones. SWE-bench Verified is a 500-item human-validated subset.</td><td>Whether generated code actually works</td><td>Running tests. The strongest kind of scorer. HumanEval is reported as pass@k. <b>HumanEval is saturated</b> (top models above 90% pass@1), and SWE-bench Verified is getting close, with contamination concerns because the repositories are public.</td></tr>
               <tr><td><b>Pairwise human preference</b></td><td>Chatbot Arena (LMArena): people chat with two anonymous models and vote for the better reply</td><td>Which model people prefer on whatever they chose to ask</td><td>Crowd votes, aggregated into ratings with a Bradley-Terry model (the family Elo ratings belong to)</td></tr>
             </tbody>
           </table>
         </div>
+        <p><b>Saturation.</b> When every strong model scores near the top, the remaining gaps are smaller than the benchmark’s noise, and the rest is label errors. The benchmark stops telling models apart. It is your ± 11 points again, at the scale of a whole field.</p>
+        <p><b>Contamination.</b> Test questions sit on the web, and the web is training data. A high score may be memory, not ability: the few-shot leak from the exercise above, at internet scale.</p>
+        <p>So the field keeps building harder, fresher sets. The ones cited for frontier models in 2026:</p>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>Benchmark</th><th>What it tries to measure</th><th>How it fights saturation or contamination</th></tr></thead>
+            <tbody>
+              <tr><td><b>GPQA-Diamond</b></td><td>198 graduate-level biology, physics and chemistry questions</td><td>Written by domain experts to be “Google-proof”: skilled non-experts with web access score poorly. Frontier models now score above the PhD-level domain experts tested on it, so it too is nearing its ceiling.</td></tr>
+              <tr><td><b>Humanity’s Last Exam</b></td><td>About 2,500 expert-written questions across many fields (2025)</td><td>Questions were kept only if frontier models of the time failed them. At its release in January 2025 the models tested all scored under 10%; scores have risen quickly since.</td></tr>
+              <tr><td><b>SWE-bench Pro</b></td><td>Longer, multi-file software tasks (Scale AI, 2025)</td><td>Includes repositories under copyleft licences and a private held-out set, to keep the tasks out of training data.</td></tr>
+              <tr><td><b>Terminal-Bench</b></td><td>Tasks done in a real command-line environment: build, configure, debug</td><td>Scored by running checks on the final state of the machine, not by reading the answer.</td></tr>
+              <tr><td><b>τ-bench</b> (tau-bench)</td><td>An agent helping a simulated customer, with tools and a policy to follow (retail, airline)</td><td>Reports pass^k: the chance that <em>all</em> k repeated tries succeed. It measures reliability, the opposite question from pass@k.</td></tr>
+              <tr><td><b>METR time horizon</b></td><td>The length of task, measured in how long it takes a skilled human, that a model finishes with 50% success</td><td>Not a fixed pass rate but a scale in minutes and hours, so it keeps growing instead of hitting 100%. METR measured it doubling roughly every seven months over 2019 to 2025.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Expect this table to age. Every one of these will saturate or leak in its turn. The lesson is not the names. It is the two questions to ask of any score: <em>is there room left at the top?</em> and <em>could the model have seen these questions?</em></p>
         <Callout kind="established">A leaderboard number rarely predicts your task, for three reasons. It measures a different task on a different distribution: exam questions are not your support tickets. Differences near the top are often smaller than the benchmark’s own noise. And public test sets leak: benchmark questions are on the web, the web is training data. One controlled check, GSM1k (Zhang et al., 2024), wrote fresh look-alikes of a popular grade-school maths benchmark and found accuracy drops of up to 8% for some model families, while many frontier models showed little sign of overfitting. Contamination is real, uneven, and hard to rule out from the outside.</Callout>
         <Callout kind="research">How to evaluate open-ended generation and multi-step agents is unsettled. LLM judges are widely used and their biases are still being mapped. Benchmarks saturate or leak within a year or two and are replaced. For agents, final-answer accuracy misses how the agent got there, which is why the <a href="#/lesson/production-agents">last lesson of this part</a> adds trajectory checks. Treat every eval method here as a tool with known error, not as ground truth.</Callout>
         <Callout kind="dev">The practical order of operations: use public benchmarks to shortlist two or three models. Build your own golden set from your own traffic, starting with 50 items this week and not 5,000 next quarter. Read the failures by hand before automating anything. Add the scorer that would have caught what you read. Put it in CI with a paired test. Most teams that skip evals do not lack tooling. They lack the afternoon spent writing down what “good” means.</Callout>
+        <p>That evening Riya exports the 200 tickets, one row each, and starts writing what “good” means for every one. Kabir leaves a single sticky note on her monitor: “Don’t memorise it. Build it.”</p>
       </RealLLM>
     </Lesson>
   )

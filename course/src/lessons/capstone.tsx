@@ -25,13 +25,25 @@ export default function CapstoneLesson() {
   return (
     <Lesson id="capstone">
       <Why title="Can you wire every piece together yourself?">
-        <p className="lede">So far, every program in the repository ran alone. The tokenizer never met the GPT. The GPT never met the retriever. The agent used a scripted stand-in instead of a model.</p>
-        <p>In this capstone you connect them. Your tokenizer feeds your Transformer. You train it, then improve how it generates. You put retrieved text into its prompt. Finally you hand it to an agent loop as a tool.</p>
+        <p className="lede">Launch day. At 10 a.m. the Paisa Pal support bot goes live for every customer. By 10:20 the team WhatsApp group is all green ticks and one cake photo from Dev, who is not even on the team.</p>
+        <p>The bot answers from the policy PDFs, checks transaction status with a tool, stays inside its budgets, and passed 200 real tickets in the eval. Riya knows each of those pieces from a lesson.</p>
+        <p>That evening she stays back anyway. Kabir stops at her desk with his bag on his shoulder. “Happy?” “Almost,” she says. “I want to wire every piece together myself. Small. Once.” He smiles. “Don’t memorise it. Build it.”</p>
+        <p>So far, every program in the repository ran alone. The tokenizer never met the GPT. The GPT never met the retriever. The agent used a scripted stand-in instead of a model.</p>
+        <p>In this capstone you connect them:</p>
+        <ul>
+          <li>your tokenizer feeds your Transformer;</li>
+          <li>you train it, then improve how it generates;</li>
+          <li>you put retrieved text into its prompt;</li>
+          <li>finally you hand it to an agent loop as a tool.</li>
+        </ul>
         <Flow horizontal steps={MILESTONES.map((m) => ({ label: m.title }))} />
         <Callout kind="warn" label="Honest expectations">
-          The result will be a model with under a million parameters, trained for minutes on one small text file. It will write Shakespeare-flavoured gibberish. It will <b>not</b> answer questions, even with perfect retrieved context in its prompt, because it was never trained to. That is fine. The point is not the output. The point is that <b>every piece of the system is yours</b>, and that you will know exactly which piece a real LLM makes bigger.
+          The result will be a model with under a million parameters, trained for minutes on one small text file. It will write Shakespeare-flavoured gibberish. It will <b>not</b> answer questions, even with perfect retrieved context in its prompt, because it was never trained to.
+          <br /><br />
+          That is fine. The point is not the output. The point is that <b>every piece of the system is yours</b>, and that you will know exactly which piece a real LLM makes bigger.
         </Callout>
-        <p>Plan for about four hours, spread over several sittings. Each milestone has the same five parts: the goal, the idea in a few sentences, the task, a small test you write, and a validation checklist.</p>
+        <p>Plan for about four hours, spread over several sittings. Riya’s took three evenings and a Sunday morning.</p>
+        <p>Each milestone has the same five parts: the goal, the idea in a few sentences, the task, a small test you write, and a validation checklist.</p>
       </Why>
 
       <section className="section" id="setup">
@@ -159,6 +171,7 @@ def test_logits_shape_and_causality():
       </Milestone>
 
       <Milestone id="training" goal="a trained model whose validation loss fell, and a saved weights file.">
+        <p>If you have watched a tiny GPT train in the browser version of this course, this is the same loop, now in your own files.</p>
         <p><G t="pretraining">Training</G> is one loop: take a batch of text, ask the model for next-token probabilities at every position, measure how surprised it was by the real next token (<G t="cross-entropy">cross-entropy</G> loss), and nudge every parameter slightly downhill. A held-out validation split tells you whether it is learning patterns or memorising. See <a href="#/lesson/training-gpt">Training GPT</a>.</p>
         <Exercise
           id="capstone-m3-train"
@@ -391,6 +404,8 @@ def test_unknown_tool_does_not_crash():
         <Callout kind="established">
           None of the six interfaces changes at scale. A production stack still has a tokenizer in front, a sampler behind, retrieval that edits the prompt, and a loop that executes tool calls. When you next read the documentation of an LLM API or an agent framework, you should be able to map every parameter onto something you wrote here.
         </Callout>
+        <p>What the launch-day bot has that your six pieces do not is mostly <em>training</em>, not new plumbing. A big model can teach a small one (<a href="#/lesson/distillation">Small models from big ones</a>). Post-training teaches it what it should refuse (<a href="#/lesson/alignment-safety">Alignment and safety</a>). An image encoder lets it read a payment screenshot (<a href="#/lesson/multimodal">Models that see and hear</a>). And none of it is fully readable from the inside yet (<a href="#/lesson/interpretability">Looking inside the model</a>).</p>
+        <p>Late on Sunday, Riya’s tiny GPT, called as a tool by her own agent loop, writes four lines of nonsense verse. She reads them aloud to an empty flat and laughs. Every character of it went through code she wrote.</p>
         <p>One thing left: can you rebuild the whole picture <a href="#/lesson/from-memory">from memory</a>?</p>
       </RealLLM>
     </Lesson>

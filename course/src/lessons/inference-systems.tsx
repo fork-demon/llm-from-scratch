@@ -1,3 +1,4 @@
+import { RepoRunner } from '../components/RepoRunner'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -11,7 +12,9 @@ export default function InferenceSystemsLesson() {
   return (
     <Lesson id="inference-systems">
       <Why>
-        <p className="lede">You can run a model for one user. Now a thousand users arrive at once, and two facts about the hardware decide everything.</p>
+        <p className="lede">Three weeks before Diwali, the marketing team at Paisa Pal announces a cashback sale. The support bot will be on the home screen. Someone in the meeting says, “Expect ten times the usual chats.”</p>
+        <p>Riya has run the model for one user many times. It streams nicely on her screen. Now she pictures a thousand people opening the chat in the same minute, all asking where their cashback went.</p>
+        <p>Dev, on the sofa that evening: “Just buy a faster GPU, na?” Kabir, the next morning, draws two boxes on the whiteboard and a thin pipe between them. “Faster at what?” he asks. Two facts about that picture decide everything.</p>
         <div className="grid-2">
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>A GPU serving one user is mostly idle</h4>
@@ -22,7 +25,8 @@ export default function InferenceSystemsLesson() {
             <p>The same read of the weights can serve every sequence in the batch. In this lesson’s simulator a step for 32 users takes 12.5 ms instead of 10.1 ms, and produces 32 tokens instead of 1.</p>
           </div>
         </div>
-        <p>So the engineering question is not “how fast is the model?”. It is “how many sequences can share each pass, and what does each user pay for the sharing?”. That is a scheduling and memory-management problem, and you already know most of the ideas: queues, tail latency, bin packing, paging.</p>
+        <p>So the real question is not “how fast is the model?”. It is “how many conversations can share each pass, and what does each user pay for the sharing?”.</p>
+        <p>That is a scheduling and memory problem. As a backend developer you already know most of the ideas: queues, tail latency, bin packing, paging.</p>
         <Callout kind="idea">
           LLM serving has one central trade-off: <b>throughput against latency</b>. Bigger batches make every token cheaper and every user slower. What limits the batch is not slots, it is the memory the <G t="kv-cache">KV caches</G> need. Almost every serving technique either packs the batch better or shrinks the bytes.
         </Callout>
@@ -30,8 +34,13 @@ export default function InferenceSystemsLesson() {
       </Why>
 
       <Problem>
-        <p>From <a href="#/lesson/inference">Inference</a> you know that one request runs in two phases. <b>Prefill</b> pushes the whole prompt through the model in one parallel pass and fills the KV cache. <b>Decode</b> then produces one token per pass, one after another. You also know the cache formula: <span className="mono">2 × layers × kv_heads × head_dim × tokens × bytes</span>, per conversation.</p>
-        <p>That was one request. A server has many, arriving at random, with wildly different lengths.</p>
+        <p>From <a href="#/lesson/inference">Inference</a> you know that one request runs in two phases.</p>
+        <ul>
+          <li><b>Prefill</b> pushes the whole prompt through the model in one parallel pass and fills the KV cache.</li>
+          <li><b>Decode</b> then produces one token per pass, one after another.</li>
+        </ul>
+        <p>You also know the cache formula, per conversation: <span className="mono">2 × layers × kv_heads × head_dim × tokens × bytes</span>.</p>
+        <p>That was one request. On sale day the server has many, arriving at random, with wildly different lengths. “Where is my cashback?” gets a two-line answer. “Explain every charge on my statement” gets a page.</p>
         <WhyExists
           problem="Many requests arrive at random times. Each wants a fast first token and a steady stream after it."
           naive="Serve them one at a time, in order. It is simple and each user gets the full GPU."
@@ -50,20 +59,23 @@ export default function InferenceSystemsLesson() {
 
       <MentalModel title="One bottleneck, four consequences">
         <h3>1. Two numbers: bandwidth for decode, arithmetic for prefill</h3>
-        <p>A GPU has a large memory that holds the weights, and arithmetic units that do the matrix multiplies. Between them is a link with a fixed speed: the <b>memory bandwidth</b>. On current data-centre GPUs it is on the order of 2 to 5 TB per second.</p>
-        <p>In a decode step, every weight is needed once, so all of them cross that link. For one sequence the arithmetic is tiny: one token’s vector times each matrix. The step takes as long as moving the bytes.</p>
+        <p>These are Kabir’s two boxes. A GPU has a large memory that holds the weights, and arithmetic units that do the matrix multiplies.</p>
+        <p>Between them is the thin pipe: a link with a fixed speed, the <b>memory bandwidth</b>. On data-centre GPUs it runs from about 2 TB per second (an A100, 2020) to about 8 TB per second on the newest parts, such as NVIDIA’s B200 and B300 and AMD’s MI355X.</p>
+        <p>In a decode step every weight is needed once, so all of them cross that pipe. For one sequence the arithmetic is tiny: one token’s vector times each matrix. So the step takes as long as moving the bytes.</p>
         <DecodeIsMemoryBound />
         <p>That gives the most useful back-of-envelope in serving. For <em>one</em> stream:</p>
         <p className="mono" style={{ fontSize: 15 }}>tokens per second ≤ memory bandwidth ÷ bytes of weights = 2 TB/s ÷ 14 GB ≈ 143</p>
-        <p>It is an upper bound. It ignores the KV cache reads, kernel overheads and sampling, and it assumes the whole model sits on one GPU. Real single-stream numbers are lower. But it explains the order of magnitude, and it tells you what helps: more bandwidth or fewer bytes. A faster arithmetic unit does nothing.</p>
-        <p><b>Prefill is the opposite.</b> A 1,000-token prompt goes through in one pass: the weights are still read once, but now there is 1,000 times more arithmetic per byte read. Prefill is limited by arithmetic. That is why the two phases get separate metrics.</p>
+        <p>On an 8 TB/s part the same ceiling is about 571. Four times the bandwidth, four times the tokens.</p>
+        <p>It is an upper bound. It ignores the KV cache reads, kernel overheads and sampling, and it assumes the whole model sits on one GPU. Real single-stream numbers are lower.</p>
+        <p>But it explains the order of magnitude, and it tells you what helps: more bandwidth, or fewer bytes. A faster arithmetic unit does nothing. That is the answer to Dev’s “faster GPU”: faster at moving bytes, yes; faster at arithmetic, no.</p>
+        <p><b>Prefill is the opposite.</b> A 1,000-token prompt goes through in one pass. The weights are still read once, but now there is 1,000 times more arithmetic per byte read. So prefill is limited by arithmetic. That is why the two phases get separate metrics.</p>
         <Callout kind="dev">
           You have met this in a storage-bound service. When every request costs one disk seek and a microsecond of CPU, a faster CPU changes nothing. The fix is to serve many requests per seek.
           <br /><br />
           Performance engineers have two names for this picture. <b>Arithmetic intensity</b> is the ratio of work done to bytes moved: how much arithmetic you get per byte you had to fetch. A <b>roofline</b> is the chart of the two ceilings, one set by memory bandwidth and one by the arithmetic units, with your workload sitting under whichever is lower. Decode with a small batch sits far under the memory roof. Batching walks it toward the compute roof.
         </Callout>
         <Callout kind="established">
-          The figures come from NVIDIA’s published specifications: an A100 80GB has 1,935 to 2,039 GB/s of memory bandwidth depending on the variant and a peak of 312 TFLOP/s in 16-bit, an H100 SXM 3.35 TB/s, an H200 4.8 TB/s. The arithmetic for one token is about 2 FLOPs per parameter (Kaplan et al., 2020, counting non-embedding parameters and ignoring the attention-over-context term). At a usable 150 TFLOP/s, 14 GFLOP takes 0.09 ms. The read takes 7 ms.
+          The figures come from NVIDIA’s published specifications: an A100 80GB has 1,935 to 2,039 GB/s of memory bandwidth depending on the variant and a peak of 312 TFLOP/s in 16-bit, an H100 SXM 3.35 TB/s, an H200 4.8 TB/s, and a B200 or B300 about 8 TB/s. AMD lists its MI355X at 8 TB/s too. The arithmetic for one token is about 2 FLOPs per parameter (Kaplan et al., 2020, counting non-embedding parameters and ignoring the attention-over-context term). At a usable 150 TFLOP/s, 14 GFLOP takes 0.09 ms. The read takes 7 ms.
         </Callout>
 
         <h3>2. The metrics you must keep apart</h3>
@@ -128,7 +140,13 @@ export default function InferenceSystemsLesson() {
       </TryIt>
 
       <Numbers title="Capacity planning, by hand">
-        <p>You are asked: how many users can one GPU serve, and what does a million tokens cost? Here is the whole estimate. Every input is an assumption you should replace with your own.</p>
+        <p>Finance asks Riya two questions before the sale: how many users can one GPU serve, and what does a million tokens cost? Here is the answer first, then how she got it.</p>
+        <div className="grid-3">
+          <div className="card"><p className="muted" style={{ margin: 0 }}>fits in memory</p><p style={{ fontSize: 22, margin: '4px 0' }}><b>328</b> conversations</p></div>
+          <div className="card"><p className="muted" style={{ margin: 0 }}>ceiling</p><p style={{ fontSize: 22, margin: '4px 0' }}><b>6.9</b> requests/s</p><p className="muted" style={{ margin: 0 }}>0.27 dollars per million output tokens</p></div>
+          <div className="card"><p className="muted" style={{ margin: 0 }}>with a 50 ms per-token promise</p><p style={{ fontSize: 22, margin: '4px 0' }}><b>5.9</b> requests/s</p><p className="muted" style={{ margin: 0 }}>only 88 conversations running</p></div>
+        </div>
+        <p>Every input below is an assumption. Replace each one with your own.</p>
         <div className="table-scroll">
           <table className="plain">
             <thead><tr><th>given</th><th>value</th></tr></thead>
@@ -140,6 +158,8 @@ export default function InferenceSystemsLesson() {
             </tbody>
           </table>
         </div>
+        <h3>Part 1: how many conversations fit?</h3>
+        <p>One subtraction and one division.</p>
         <div className="table-scroll">
           <table className="plain">
             <thead><tr><th>step</th><th>arithmetic</th><th>result</th></tr></thead>
@@ -149,6 +169,15 @@ export default function InferenceSystemsLesson() {
               <tr><td>3. KV cache per token</td><td className="mono">2 × 32 × 8 × 128 × 2 bytes</td><td className="mono"><b>131,072 bytes</b></td></tr>
               <tr><td>4. KV cache per sequence, at its longest</td><td className="mono">1,300 tokens × 131,072</td><td className="mono"><b>170 MB</b></td></tr>
               <tr><td>5. Sequences that fit</td><td className="mono">56 GB ÷ 170.4 MB</td><td className="mono"><b>328</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3>Part 2: how fast, and how much?</h3>
+        <p>Now run a decode step with all 328 on board, and add the prefills.</p>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>step</th><th>arithmetic</th><th>result</th></tr></thead>
+            <tbody>
               <tr><td>6. One decode step at that batch: bytes</td><td className="mono">(16 GB + 328 × 1,150 × 131,072) ÷ 2 TB/s</td><td className="mono">8.0 + 24.7 = <b>32.7 ms</b></td></tr>
               <tr><td>… and arithmetic</td><td className="mono">328 × 2 × 8 × 10⁹ FLOP ÷ 150 TFLOP/s</td><td className="mono"><b>35.0 ms</b></td></tr>
               <tr><td>… so the step takes</td><td className="mono">max(32.7, 35.0) + 3 ms overhead</td><td className="mono"><b>38.0 ms</b></td></tr>
@@ -165,16 +194,18 @@ export default function InferenceSystemsLesson() {
           <li><b>This batch sits right at the corner.</b> The two limits nearly meet, 32.7 ms against 35.0 ms. Neither the memory link nor the arithmetic units are idle, which is exactly where the roofline says you want to be.</li>
           <li><b>Prefill is most of the bill.</b> In step 8, three quarters of the GPU time per request goes on reading the prompt. And one stream alone would get at most 2 TB/s ÷ 16 GB = 125 tokens per second, so batching bought about 17 times the throughput.</li>
         </ul>
-        <Callout kind="warn">
-          This is a ceiling from a napkin. It ignores the latency objective, kernel efficiency at this batch shape and everything else a benchmark would reveal. Use it to see which resource binds and to sanity-check a vendor’s numbers, then measure your own workload before you order hardware.
-        </Callout>
-        <DeepDive title="Now add the latency objective: goodput with Little’s law">
-          <p>At the ceiling, decode steps only get the GPU 24% of the time (34.7 of every 144.4 ms), because prefills keep interrupting. So each user sees a token every 38.0 ÷ 0.24 = <b>158 ms</b>, not every 38 ms. If your objective is 50 ms per token, the ceiling is useless.</p>
-          <p>So find the load that does meet it. Let λ be requests per second. Prefill takes a fraction 0.1097 × λ of the GPU.</p>
+        <h3>Part 3: the promise to users</h3>
+        <p>There is a catch in that ceiling. Prefills keep interrupting, so decode steps only get the GPU 24% of the time (34.7 of every 144.4 ms). Each user sees a token every 38.0 ÷ 0.24 = <b>158 ms</b>, not every 38 ms.</p>
+        <p>If Paisa Pal promises 50 ms per token, the ceiling is useless. The load that keeps the promise is <b>5.9 requests per second with 88 conversations in flight</b>. The promise costs about 15% of the capacity, and the memory that could hold 328 conversations now holds 88.</p>
+        <p>Chunked prefill, or separate GPU pools for prefill and decode, exist to win that gap back. The algebra is below if you want it.</p>
+        <DeepDive title="How 5.9 comes out: goodput with Little’s law">
+          <p>Find the load that meets a 50 ms objective. Let λ be requests per second. Prefill takes a fraction 0.1097 × λ of the GPU.</p>
           <p>Little’s law says that the number of things in a system equals the arrival rate times how long each one stays. Here that gives the number of sequences in decode: L = λ × 300 × 0.050 s = 15 λ. At that batch the step is memory-bound, so it takes 3 + 8.0 + 0.0754 × 15 λ ms.</p>
           <p>Set step ÷ (1 − 0.1097 λ) = 50 ms and solve. The answer is <b>λ = 5.9 requests per second with 88 sequences in flight</b>, a 17.7 ms step, 1,769 tokens per second and 0.31 dollars per million.</p>
-          <p>So the SLO costs about 15% of the capacity here, and the memory could hold 328 sequences but the objective only lets you run 88. Chunked prefill, or separate GPU pools for prefill and decode, exist to win that gap back.</p>
         </DeepDive>
+        <Callout kind="warn">
+          All of this is a napkin estimate. It ignores kernel efficiency at this batch shape and everything else a benchmark would reveal. Use it to see which resource binds and to sanity-check a vendor’s numbers, then measure your own workload before you order hardware.
+        </Callout>
       </Numbers>
 
       <TheMath>
@@ -265,6 +296,9 @@ while waiting and len(running) + len(admitted) < max_batch:
   paged         64          38.0    59    1512      3356         2%            0
 `}</Code>
         <p>Same memory, twice the sequences in flight. The vLLM paper measured even more waste than our 57% in the systems of its day: 62% to 80% of KV memory held no token state.</p>
+        <RepoRunner path="phase6-engineering/batching_sim.py" title="Run batching_sim.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
@@ -460,6 +494,7 @@ while waiting and len(running) + len(admitted) < max_batch:
         <Callout kind="research">
           How to split prefill and decode across machines, how to schedule for goodput rather than throughput, and how far KV caches can be compressed or evicted without hurting long-context quality are all active areas. How closed providers serve their models is not published: treat any specific claim about it as a guess.
         </Callout>
+        <p>Riya’s plan for the sale fits on one slide: a serving engine with continuous batching and paged caches, a load test of real chat transcripts, and a p99 alarm on time per token. Kabir reads it and nods. Then finance sees the GPU quote.</p>
         <p>Every technique here filled the batch. The other half of serving is making each sequence cost fewer bytes, which is <a href="#/lesson/making-models-cheaper">the next lesson</a>: quantization, speculative decoding, and what to do when the model does not fit on one GPU at all.</p>
       </RealLLM>
     </Lesson>

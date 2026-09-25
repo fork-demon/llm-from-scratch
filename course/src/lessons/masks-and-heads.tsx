@@ -1,3 +1,4 @@
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -9,9 +10,12 @@ export default function MasksAndHeadsLesson() {
   return (
     <Lesson id="masks-and-heads">
       <Why>
-        <p className="lede">Imagine a quiz where the answer to every question is printed right next to it.</p>
-        <p>You would score 100%. You would also learn nothing, and you would fail the moment someone handed you a quiz without the answers.</p>
-        <p>The attention you built in <a href="#/lesson/attention">the last lesson</a> has exactly this problem. We train a language model by asking it to <a href="#/lesson/next-token">predict the next token</a>. But attention lets every token look at <em>every</em> token, including the next one. The answer is printed right there.</p>
+        <p className="lede">Monday morning. Kabir leaves a printed sheet on Riya’s desk. “Quick quiz. Ten questions.”</p>
+        <p>She turns it over. Under every question, in small grey type, is the answer. She finishes in forty seconds. Ten out of ten.</p>
+        <p>Kabir comes back with his coffee. “What did you learn?”</p>
+        <p>She thinks about it. “Nothing.”</p>
+        <p>“Right. And in a real exam, with no answers printed, you’d fail.” He taps her screen, where Friday’s attention code is still open. “That is what your model is doing.”</p>
+        <p>He is right. We train a language model by asking it to <a href="#/lesson/next-token">predict the next token</a>. But the attention from <a href="#/lesson/attention">the last lesson</a> lets every token look at <em>every</em> token, including the next one. The answer is printed right there.</p>
         <p>This lesson adds the two things that turn “attention” into the attention used inside GPT:</p>
         <div className="grid-2">
           <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>A. The causal mask</h4><p>Stop tokens from looking at their own future. One line of code.</p></div>
@@ -32,8 +36,9 @@ export default function MasksAndHeadsLesson() {
             </tbody>
           </table>
         </div>
-        <p>With plain attention, the row for “cat” can put weight on “sat”. But “sat” is what “cat” is being asked to predict. <G t="gradient-descent">Gradient descent</G> is relentless: if copying the answer lowers the <G t="loss">loss</G>, the model learns to copy.</p>
-        <p>There is a second reason. When the model <em>generates</em> text, the next token does not exist yet. There is nothing to peek at. A model trained with peeking would be practising a task it never gets to perform.</p>
+        <p>With plain attention, the row for “cat” can put weight on “sat”. But “sat” is what “cat” is being asked to predict.</p>
+        <p><G t="gradient-descent">Gradient descent</G> is relentless. If copying the answer lowers the <G t="loss">loss</G>, the model learns to copy.</p>
+        <p>There is a second reason. When the model <em>generates</em> text, the next token does not exist yet. There is nothing to peek at. A model trained with peeking would be practising for an exam it never gets to sit.</p>
         <WhyExists
           problem="During training, position t must predict token t+1, but attention lets position t look straight at token t+1."
           naive="Feed the model one prefix at a time: first “the”, then “the cat”, then “the cat sat”… Each run only contains the past, so nothing can leak."
@@ -51,12 +56,14 @@ export default function MasksAndHeadsLesson() {
           <li>What is this sentence about in general? (a bit of everything)</li>
         </ul>
         <p>If “it” spends 80% of its weight on “animal”, only 20% is left for everything else. One budget, several needs. They dilute each other.</p>
+        <p>Riya recognises this from hiring. One interviewer cannot judge coding, communication and design in the same hour. That is why Paisa Pal uses a panel.</p>
       </Problem>
 
       <MentalModel>
         <h3>A. The mask</h3>
-        <p>Picture the score table from the last lesson: one row and one column for each of the T tokens in the sequence. The row is who is looking. The column is who is looked at. Every cell <em>to the right of the diagonal</em> is a token looking at something that comes after it.</p>
-        <p>The mask crosses out that whole triangle. What remains is a staircase: the first token sees only itself, the second sees two tokens, and so on.</p>
+        <p>Kabir draws the score table from the last lesson on the whiteboard: one row and one column for each of the T tokens in the sequence. The row is who is looking. The column is who is looked at.</p>
+        <p>Every cell <em>to the right of the diagonal</em> is a token looking at something that comes after it. Kabir hatches that whole triangle out with his marker.</p>
+        <p>What remains is a staircase. The first token sees only itself, the second sees two tokens, and so on.</p>
         <Term
           name="Causal mask"
           plain={<>A rule inside attention: a token may look at itself and at earlier tokens, never at later ones. “Causal” because information only flows from past to future.</>}
@@ -64,13 +71,18 @@ export default function MasksAndHeadsLesson() {
           formal={<>Before softmax, set score(i, j) = −∞ wherever j &gt; i.</>}
         />
         <Callout kind="analogy">
-          It is like an exam where you cover the rest of the page with a sheet of paper and slide it down one line at a time. Every line is a fresh question answered with only what is above it.
+          It is like an exam hall where you must cover the rest of the page with a sheet of paper and slide it down one line at a time. Every line is a fresh question, answered with only what is above it.
           <br /><br />
           Where the analogy stops: the model does not slide anything. All lines are answered <em>simultaneously</em>, each with its own view of the page. That simultaneity is the whole point.
         </Callout>
 
         <h3>B. The heads</h3>
-        <p>If one search is not enough, run several. Give each token a few <em>small</em> attention mechanisms that work side by side, each with its own idea of what is relevant. Each one is called a <b>head</b>.</p>
+        <p>If one search is not enough, run several. Give each token a few <em>small</em> attention mechanisms that work side by side. Each has its own idea of what is relevant. Each one is called a <b>head</b>.</p>
+        <Callout kind="analogy">
+          Think of an interview panel. One interviewer listens for coding, one for communication, one for system design. Each takes their own notes on the same candidate. At the end, the notes are put together into one decision.
+          <br /><br />
+          Where the analogy stops: nobody tells a head what to listen for. Each head’s focus is learned, because it lowered the loss. In a trained model most heads do not have a clean, nameable job like “communication”.
+        </Callout>
         <Term
           name="Multi-head attention"
           plain={<>Several small attention operations run in parallel on the same tokens. Each head has its own query, key and value projections, so each can look for something different. Their results are joined together at the end.</>}
@@ -145,7 +157,8 @@ export default function MasksAndHeadsLesson() {
           MultiHead(x) = Concat( head<sub>1</sub>, …, head<sub>h</sub> ) W<sub>O</sub>
         </Equation>
         <DeepDive title="Is it really the same cost as one big head?">
-          <p><b>Parameters: identical.</b> W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> are still D×D each, whatever h is. Slicing the result into heads is a reshape. Multi-head adds one matrix, W<sub>O</sub> (D×D).</p>
+          <p><b>Parameters: identical.</b> W<sub>Q</sub>, W<sub>K</sub>, W<sub>V</sub> are still D×D each, whatever h is. Slicing the result into heads is a reshape.</p>
+          <p>What about W<sub>O</sub>? The small <code>attention()</code> function of the last lesson left it out to stay short. But a real GPT attention layer ends with this D×D output projection whether it has one head or twelve (<code>tiny_gpt.py</code> calls it <code>proj</code>). So a GPT attention layer has 4 × D² weights, plus biases, for any h. What changes with several heads is the <em>job</em> of W<sub>O</sub>: it is now also the place where the heads’ separate findings get mixed.</p>
           <p><b>Multiplications for the scores: identical.</b> One head: T×T dot products of length D. With h heads: h × T×T dot products of length D/h. Both are T²·D multiplications.</p>
           <p><b>Not identical:</b> there are now h tables of T×T weights instead of one, so the memory for those tables grows with h. That is one reason long contexts are expensive, and one motivation for <G t="flash-attention">FlashAttention</G>, which avoids storing the tables.</p>
         </DeepDive>
@@ -219,6 +232,19 @@ def multi_head_attention(x, Wq, Wk, Wv, Wo, n_heads, causal=True):
     out = out.transpose(1, 0, 2).reshape(T, D)           # (T, D)
     return out @ Wo, weights
 `}</Code>
+        <h3>C. One more axis: a batch of sequences</h3>
+        <p>So far <code>x</code> is one sequence, shape <code>(T, D)</code>. Training code feeds many sequences at once, to keep the GPU busy. That adds a batch axis in front: <code>(B, T, D)</code>, meaning B sequences, each of T tokens, each token D numbers.</p>
+        <Code title="the same attention, on B sequences at once">{`
+x.shape                                   # (B, T, D)
+Q = x @ Wq                                # (B, T, D)  Wq is (D, D): same weights for every sequence
+K = x @ Wk                                # (B, T, D)
+scores = Q @ K.transpose(0, 2, 1)         # (B, T, T)  one score table per sequence
+mask = np.triu(np.ones((T, T), dtype=bool), k=1)   # (T, T)
+scores = np.where(mask, -1e9, scores)     # (T, T) mask applied to all B tables
+`}</Code>
+        <p>Two lines there mix shapes that do not match: <code>(B, T, D) @ (D, D)</code>, and a <code>(T, T)</code> mask against <code>(B, T, T)</code> scores. NumPy allows this through a rule called <b>broadcasting</b>.</p>
+        <p>The rule: line the two shapes up from the right. Where one array is missing an axis, or has size 1 there, NumPy reuses it along that axis. So the one <code>(T, T)</code> mask is reused for every sequence in the batch, and nothing is copied in memory.</p>
+        <p>You will see exactly this in <code>tiny_gpt.py</code>. Its attention works on <code>(B, T, D)</code>, splits into heads as <code>(B, H, T, hd)</code>, and stores the mask as <code>(1, 1, T, T)</code> so that it broadcasts over both the batch and the heads.</p>
         <Callout kind="dev">Most bugs in Transformer code are shape bugs. Get into the habit of this file: write the shape as a comment at the end of every line. If you cannot write the comment, you do not yet understand the line.</Callout>
       </CodeIt>
 
@@ -234,6 +260,7 @@ def multi_head_attention(x, Wq, Wk, Wv, Wo, n_heads, causal=True):
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="masks-and-heads-code-multihead" />
         <Exercise
           id="masks-and-heads-calc-mask"
           type="calculate"
@@ -365,8 +392,9 @@ out = weights @ V
           toy={<ul><li>6 tokens, random scores, a hand-built “cheating” head</li><li>4 heads with hand-written patterns and friendly names</li><li>D = 4, heads of width 1 to 4</li><li>The mask is rebuilt on every call</li></ul>}
           real={<ul><li>The identical mask, on sequences of thousands of tokens or more</li><li>GPT-2 small: 12 heads × 12 layers = 144 learned heads, none with a name</li><li>Head width is typically 64 to 128; a 70B-class model has 64 query heads per layer</li><li>The mask is precomputed once (<code>tiny_gpt.py</code>) or never materialised at all (fused kernels)</li></ul>}
         />
-        <Callout kind="established">This masked, multi-head attention is what “decoder-only Transformer” means. GPT-2 and Llama do this by published design, and as far as is publicly known so do the closed chat models: they all generate text under a causal mask. In <code>tiny_gpt.py</code> you will find today’s function again, line for line, as <code>CausalSelfAttention</code>.</Callout>
+        <Callout kind="established">This masked, multi-head attention is what “decoder-only Transformer” means. GPT-2 and Llama do this by published design, and as far as is publicly known so do the closed chat models: they all generate text under a causal mask. In <code>tiny_gpt.py</code> you will find today’s function again, line for line (with the batch axis added), as <code>CausalSelfAttention</code>.</Callout>
         <Callout kind="note">One modern change: many current models let several query heads <em>share</em> one set of keys and values (<G t="gqa">grouped-query attention</G>) to save memory during generation. The idea of several parallel heads is unchanged. More in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>.</Callout>
+        <p>Riya reruns her Friday model with the mask switched on. Its training loss is worse now. Kabir looks at it and nods. “Good. Now it’s sitting the real exam.”</p>
       </RealLLM>
     </Lesson>
   )

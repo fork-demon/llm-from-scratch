@@ -40,7 +40,7 @@ Claims are labelled **Established**, **Simplified mental model** or **Active res
 
 ## How long does it take?
 
-About 14 hours of lessons, plus a capstone project that takes as long as you want to give it.
+About 16 hours of lessons, plus a capstone project that takes as long as you want to give it.
 Progress, quiz scores and completed exercises are stored in your browser. There is no sign-up and no backend.
 
 ## Curriculum map
@@ -59,14 +59,18 @@ Text → Tokenization → Embeddings → Neural network → Attention → Transf
 | 4. How text becomes numbers | Tokenization · Embeddings | train a BPE tokenizer, explore an embedding space | `phase2-language/bpe_tokenizer.py`, `tiny_word2vec.py` |
 | 5. Your first language model | Predicting the next token · Why simple models break | bigram generator, context explosion | `phase2-language/bigram_lm.py` |
 | 6. Attention and the Transformer | Attention · Causal masks and multiple heads · The Transformer block | step-by-step Q/K/V playground, mask lab, clickable block | `phase3-transformers/attention_numpy.py` |
-| 7. Build, train and run a GPT | Build GPT · Training GPT · Inference: sampling and the KV cache | token tracer, parameter counter, live training, sampling and KV-cache labs | `phase3-transformers/tiny_gpt.py`, `kv_cache_demo.py` |
-| 8. From GPT to modern LLMs | Why LLMs know things · Modern architecture · From raw text to assistant · Reasoning models | knowledge-in-weights lab, RoPE, GQA calculator, test-time compute simulator | |
+| 7. Build, train and run a GPT | Build GPT · Training GPT · Inference: sampling and the KV cache | token tracer, **a real GPT you train in your browser**, **a trained GPT you can look inside** (attention heads, logit lens), parameter counter, sampling and KV-cache labs | `phase3-transformers/tiny_gpt.py`, `kv_cache_demo.py` |
+| 8. From GPT to modern LLMs | Why LLMs know things · Modern architecture · From raw text to assistant · Small models from big ones · Alignment and safety · Models that see and hear · Looking inside the model · Reasoning models | knowledge-in-weights lab, RoPE, GQA calculator, distillation lab, reward-hacking lab, image-patch lab, superposition lab, test-time compute simulator | |
 | 9. Building with LLMs | RAG · Fine-tuning · Agents | mini-RAG system, LoRA and forgetting labs, tool-calling agent stepper | `phase4-modern-llms/*.py`, `phase5-agents/mini_agent.py` |
 | 10. From understanding to engineering | Evals · Inference systems · The PyTorch and Hugging Face bridge · How to read an LLM paper · Context engineering and production agents | eval lab with confidence intervals and A/B tests, batching and paged-KV simulators, quantization lab, config reader, guided reading of “Attention Is All You Need”, context-budget lab and trace viewer | `phase6-engineering/*.py` |
 | 11. Capstone | Build your own mini LLM system · Explain it from memory | milestone tracker, timed memory challenge | everything above |
 
-Also in the app: **coding exercises that run in your browser** (write `softmax`, `attention` or a BPE merge
-yourself and have hidden tests check it, powered by Pyodide, no install), a spaced **review queue** for questions
+The lessons follow one story: Riya, a backend developer at a Bengaluru fintech, learns how LLMs work from the
+bottom up, with help from her mentor Kabir, her mother Amma and her sceptical flatmate Dev (see `course/STORY.md`).
+
+Also in the app: **25 coding exercises that run in your browser** (write `softmax`, attention, a backprop step, a GPT
+forward pass or a KV cache yourself and have hidden tests check it, powered by Pyodide, no install), a **"Run this file"**
+button that runs 14 of the repository's NumPy scripts in the browser, a spaced **review queue** for questions
 you got wrong, **skip-ahead diagnostics** at the start of a part, progress **export and import**, a searchable **glossary** (definition, intuition, example, where it is taught), a clickable
 **concept map**, lesson search (press `/`), dark and light themes, keyboard navigation and a mobile layout.
 

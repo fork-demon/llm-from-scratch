@@ -1,3 +1,4 @@
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Bars, Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -8,7 +9,11 @@ export default function NextTokenLesson() {
   return (
     <Lesson id="next-token">
       <Why>
-        <p className="lede">Finish this sentence:</p>
+        <p className="lede">It is Saturday. Riya has exported two years of old Paisa Pal support tickets and written forty lines of Python. For each character, her program counts which character tends to come next. Then it writes, one character at a time.</p>
+        <p>She presses Run. The screen fills with: “refund not recived pls chek amont debted twise acount”.</p>
+        <p>Dev reads it from the sofa and laughs. “That is exactly what our tickets look like.”</p>
+        <p>He is right, and that is what bothers her. It means nothing, yet it <em>sounds</em> like a ticket. Forty lines of counting got that far. How?</p>
+        <p>Start with the question her program answers. Finish this sentence:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>The cat sat on the <span className="acc"><b>___</b></span></div>
         <p>You did not think of one word. You thought of several, with different strengths. Something like this:</p>
         <Bars items={[{ label: 'mat', value: 0.41 }, { label: 'floor', value: 0.17 }, { label: 'chair', value: 0.09 }, { label: 'sofa', value: 0.08 }, { label: 'roof', value: 0.03 }, { label: 'everything else', value: 0.22, dim: true }]} max={1} />
@@ -21,7 +26,7 @@ export default function NextTokenLesson() {
       </Why>
 
       <Problem title="The problem: how does guessing one token become writing?">
-        <p>Two things are puzzling about that definition.</p>
+        <p>Dev has a view on this. “ChatGPT is just autocomplete, na? So it can’t really write anything.” Half of that is right. Two things are puzzling about the definition.</p>
         <div className="grid-2">
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>It only predicts one token</h4>
@@ -43,11 +48,12 @@ export default function NextTokenLesson() {
       </Problem>
 
       <MentalModel title="A mental model: count what comes next, then keep pressing">
-        <p>Forget neural networks for a moment. How would <em>you</em> guess the next character after “q” in English? You would say “u”, because that is what you have always seen. A guess about what comes next can be built from nothing more than <b>counting what came next before</b>.</p>
+        <p>Forget neural networks for a moment. How would <em>you</em> guess the next character after “q” in English? You would say “u”, because that is what you have always seen.</p>
+        <p>That is the whole trick of Riya’s program. A guess about what comes next can be built from nothing more than <b>counting what came next before</b>.</p>
         <Callout kind="analogy">
-          Think of your phone keyboard’s suggestion bar, pressed again and again. Each press is reasonable given what is on screen, and nobody decided in advance where the sentence would end up.
+          Think of your phone keyboard’s suggestion bar, pressed again and again. Each press is reasonable given what is on screen. Nobody decided in advance where the sentence would end up.
           <br /><br />
-          Where the analogy stops: your keyboard looks at a word or two. An LLM bases each prediction on everything in its <G t="context-window">context window</G> (all the text it can see) through billions of learned weights, which is why its text stays on topic for pages. The loop is the same; the predictor inside it is incomparably better.
+          Where the analogy stops: your keyboard looks at a word or two. An LLM bases each prediction on everything in its <G t="context-window">context window</G> (all the text it can see), through billions of learned weights. That is why its text stays on topic for pages. The loop is the same. The predictor inside it is far better.
         </Callout>
         <h3>Where do the examples come from? From the text itself</h3>
         <p>Take any text. Slide it one position to the left. Every position is now a labelled example: input = this token, correct answer = the token that actually came next.</p>
@@ -63,7 +69,7 @@ export default function NextTokenLesson() {
       </MentalModel>
 
       <TryIt title="Experience it first">
-        <p>The model below has read a short text about a fox, a dog and some fishermen (about 1,500 characters). For every character, it has counted what came next. Pick “q”. Then pick “t”. Then press <b>Roll once</b> ten times, slowly, and watch what happens on each press.</p>
+        <p>Riya’s tickets are private, so the model below uses a short public text instead: a fox, a dog and some fishermen (about 1,500 characters). The method is hers. For every character, it has counted what came next. Pick “q”. Then pick “t”. Then press <b>Roll once</b> ten times, slowly, and watch what happens on each press.</p>
         <BigramPlayground />
         <p>What you just saw, in plain words:</p>
         <ol>
@@ -115,9 +121,15 @@ export default function NextTokenLesson() {
             </tbody>
           </table>
         </div>
-        <p>Average that over all 1,478 predictions in the text and you get <b>1.7518</b>. Now raise e to that number: e<sup>1.7518</sup> = <b>5.76</b>. That second number has a name, the <b>perplexity</b>, and it is the friendlier one to read. It says: on average, the model is as unsure as someone choosing among about 6 equally likely characters.</p>
-        <p>What would a model with no clue score? It would be choosing among all 27 characters, so its perplexity is 27 and its cross-entropy is ln 27 = 3.30. Ours is at 6 choices instead of 27. It has learned something.</p>
-        <p className="muted">Two conventions to know. The logarithm here is the natural one (ln), and a loss measured that way is said to be in “nats”. That word is only a unit, like metres: it tells you which logarithm was used. Some papers use log₂ instead and report “bits”, and then perplexity is 2<sup>loss</sup>. The perplexity comes out the same either way. Second convention: perplexity is always counted <em>per token</em>. So two models can only be compared on it if they cut the text into the same tokens.</p>
+        <p>Average that over all 1,478 predictions in the text and you get <b>1.7518</b>. That is the loss.</p>
+        <p>Now raise e to that number: e<sup>1.7518</sup> = <b>5.76</b>. This second number is the <b>perplexity</b>, and it is the one people usually report, because it is easier to feel. It says: on average, the model is as unsure as someone choosing among about 6 equally likely characters.</p>
+        <Callout kind="idea">perplexity = e<sup>loss</sup>. When a paper or a leaderboard quotes “perplexity 5.76”, this is the calculation behind it.</Callout>
+        <p>What would a model with no clue score? It would be choosing among all 27 characters. Its perplexity is 27 and its cross-entropy is ln 27 = 3.30. Ours is at 6 choices instead of 27. It has learned something.</p>
+        <p>Two conventions, so other people’s numbers do not confuse you:</p>
+        <ul>
+          <li><b>Nats or bits.</b> We use the natural logarithm (ln), so the loss is in “nats”. Some papers use log₂ and report “bits”; then perplexity is 2<sup>loss</sup>. The unit changes the loss, but the perplexity comes out the same.</li>
+          <li><b>Per token.</b> Perplexity is counted per token. Two models can only be compared on it if they cut the text into the same tokens.</li>
+        </ul>
       </Numbers>
 
       <TheMath>
@@ -202,7 +214,9 @@ MODEL B: neural bigram -- watch it CONVERGE TO MODEL A's loss
   ...
   final cross-entropy 1.7602 vs count-table 1.7518
 `}</Code>
-        <p>It starts at 3.31, which is ln 27 = 3.30: pure guessing. Scored on the whole text at the end, it reaches 1.7602, a hair above the count table’s 1.7518. It cannot do meaningfully better: the lowest score any one-character model can reach on this text is 1.7480, which is the count table without smoothing. (The losses printed during training are each measured on one random mini-batch of 256 characters, so they wobble, and one may dip slightly under 1.7518 by luck.)</p>
+        <p>It starts at 3.31, which is ln 27 = 3.30: pure guessing.</p>
+        <p>Scored on the whole text at the end, it reaches 1.7602, a hair above the count table’s 1.7518. It cannot do meaningfully better. The lowest score any one-character model can reach on this text is 1.7480, which is the count table without smoothing.</p>
+        <p className="muted">(The losses printed during training are each measured on one random mini-batch of 256 characters. So they wobble, and one may dip slightly under 1.7518 by luck.)</p>
         <Callout kind="idea">
           Gradient descent <b>rediscovered the counting statistics</b>, without being told to count. For one character of context, the count table is (up to the tiny smoothing) the best possible answer, and training found its way to (almost) the same table. So “training” is a way of <em>finding these statistics</em>. It earns its keep in exactly the situations where you cannot build the table. The next lesson shows that this is nearly always.
         </Callout>
@@ -223,6 +237,7 @@ MODEL B: neural bigram -- watch it CONVERGE TO MODEL A's loss
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="next-token-code-bigram" />
         <Exercise
           id="next-token-calc-q"
           type="calculate"
@@ -348,6 +363,7 @@ MODEL B: neural bigram -- watch it CONVERGE TO MODEL A's loss
         <Callout kind="established">The objective you just implemented, next-token cross-entropy on shifted text, is the <G t="pretraining">pretraining</G> objective of GPT-style models. The generation loop you clicked through is how they produce output. Chat behaviour is added later by further training, which we cover in <a href="#/lesson/training-pipeline">From raw text to assistant</a>, but it does not replace this loop.</Callout>
         <Callout kind="dev">This explains several things you see as an API user. Output <b>streams</b> token by token because it is produced token by token. The same prompt can give <b>different answers</b> because each token is a random draw. And output tokens cost more than input tokens partly because each one needs its own pass through the model.</Callout>
         <Callout kind="model">“It just predicts the next token” is accurate about the <em>interface</em> and misleading about the <em>difficulty</em>. To predict the next token of a physics derivation well, a model must capture a great deal about physics. How much of that deserves the word “understanding” is debated. What is certain: all of it is learned in service of this one objective.</Callout>
+        <p>So Dev was half right. It is autocomplete, run in a loop. Riya’s ticket gibberish and a chatbot’s fluent reply come from the same loop. What differs is how much of the text each prediction can see. That is what she tries to fix next.</p>
       </RealLLM>
     </Lesson>
   )

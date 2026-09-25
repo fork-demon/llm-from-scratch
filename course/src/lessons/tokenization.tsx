@@ -1,3 +1,4 @@
+import { RepoRunner } from '../components/RepoRunner'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -12,18 +13,23 @@ export default function TokenizationLesson() {
   return (
     <Lesson id="tokenization">
       <Why>
-        <p className="lede">Computers cannot multiply the word “cat”.</p>
+        <p className="lede">First of the month. Finance forwards Riya the chatbot vendor’s invoice with one line: “Why is this so high?”</p>
+        <p>The bill is not counted in messages, or words. It is counted in <em>tokens</em>. Riya sorts the usage by customer language and frowns. Replies in Kannada and Hindi use many more tokens than English replies that say the same thing. The engineers’ test runs, full of JSON and code, are expensive too.</p>
+        <p>She asks Kabir what a token actually is. He thinks for a second. “It’s the answer to a simpler question. How do you multiply the word ‘cat’?”</p>
+        <p>You can’t. Computers cannot multiply words.</p>
         <p>Everything you have built so far eats numbers: <a href="#/lesson/vectors">dot products</a>, <a href="#/lesson/matrices">matrix multiplies</a>, <a href="#/lesson/neurons">neurons</a>. Text is not numbers. So before a language model can do anything at all, something has to turn your prompt into numbers.</p>
         <p>It happens in three small hops:</p>
         <TextToVector focus="token" id={4217} idNote="(number made up)" vector="[0.2, −1.3, …]" />
-        <p>This lesson is about the first two hops. They sound like plumbing. They are not. The way text is cut into pieces decides what the model can <em>see</em>. It also decides what your API bill is, and why a model that writes sonnets can miscount the letters in “strawberry”.</p>
+        <p>This lesson is about the first two hops. They sound like plumbing. They are not.</p>
+        <p>The way text is cut into pieces decides what the model can <em>see</em>. It also decides what Paisa Pal’s bill is, and why a model that writes sonnets can miscount the letters in “strawberry”.</p>
         <Callout kind="idea">
           A model never sees letters or words. It sees a list of integers. The component that produces those integers is the <b>tokenizer</b>, and it is built <em>before</em> the neural network is trained, by a surprisingly simple algorithm.
         </Callout>
       </Why>
 
       <Problem title="The problem: what should one integer stand for?">
-        <p>You have to choose the pieces. There are two obvious choices, and both fail.</p>
+        <p>Dev, reading the invoice over her shoulder, is sure. “Tokens are just words, yaar. They made up a fancy name so they can charge more.”</p>
+        <p>He is half right: someone does have to choose what the pieces are. There are two obvious choices, and both fail.</p>
         <div className="grid-2">
           <div className="card">
             <h4 style={{ fontSize: 17, marginBottom: 6 }}>One integer per word?</h4>
@@ -59,13 +65,14 @@ export default function TokenizationLesson() {
           name="Token, vocabulary, token ID"
           plain={<>A <b>token</b> is one piece of text from a fixed list. The list is the <b>vocabulary</b>. A token’s position in the list is its <b>token ID</b>, and that integer is all the model receives.</>}
           example={<>Vocabulary: 0 = “a”, 1 = “t”, 2 = “at”, 3 = “c”. The text “cat” becomes the IDs [3, 2].</>}
-          formal={<>A tokenizer is a pair of functions: encode: text → list of IDs, and decode: list of IDs → text, with decode(encode(x)) = x.</>}
+          formal={<>A tokenizer is a pair of functions: encode: text → list of IDs, and decode: list of IDs → text. For the toy in this lesson, decode(encode(x)) = x always. Real tokenizers aim for that too, with a couple of exceptions you will meet below.</>}
         />
         <p>But who decides which strings deserve their own ID? Nobody. An algorithm finds them by counting.</p>
       </Problem>
 
       <MentalModel title="An algorithm you could have invented">
-        <p>Suppose you start with single characters and want longer pieces. Which two characters would you glue together first? The pair that occurs most often, because that saves the most. Then do it again. That is the whole algorithm. It is called <G t="bpe">byte pair encoding</G>, or BPE.</p>
+        <p>Kabir puts it to Riya as a puzzle. Suppose you start with single characters and want longer pieces. Which two characters would you glue together first?</p>
+        <p>The pair that occurs most often, because that saves the most. Then do it again. That is the whole algorithm. It is called <G t="bpe">byte pair encoding</G>, or BPE.</p>
         <ol>
           <li>Start the vocabulary with every single character in your training text.</li>
           <li>Count every pair of neighbouring tokens. Find the most frequent pair.</li>
@@ -74,9 +81,9 @@ export default function TokenizationLesson() {
         </ol>
         <p>What is “learned” is nothing more than the ordered list of glue rules, the <b>merge list</b>. To tokenize new text, split it into characters and replay the rules in the same order. To turn IDs back into text, concatenate the strings they stand for.</p>
         <Callout kind="analogy">
-          BPE is <b>dictionary compression</b>, like the idea behind zip files: patterns that occur often get a short code, rare things are spelled out the long way.
+          BPE is <b>dictionary compression</b>, like the idea behind zip files. Patterns that occur often get a short code. Rare things are spelled out the long way. Think of how a WhatsApp group shortens what it says most: “gm”, “ok”, “tmrw”. Nobody shortens a word they rarely type.
           <br /><br />
-          Where the analogy stops: a compressor wants the smallest file and can build a new dictionary for every file. A tokenizer’s dictionary is built once and then frozen, because the model will learn one vector per entry. And the goal is not the smallest output, it is pieces that are useful units for a model to learn from.
+          Where the analogy stops: a compressor wants the smallest file and can build a new dictionary for every file. A tokenizer’s dictionary is built once and then frozen, because the model will learn one vector per entry. And the goal is not the smallest output. It is pieces that are useful units for a model to learn from.
         </Callout>
         <Callout kind="dev">Notice that there is no neural network here, no gradient, no loss. Tokenizer training is a counting loop you could write in an afternoon. It runs once, before model training starts, and its result is a plain data file.</Callout>
       </MentalModel>
@@ -167,7 +174,14 @@ def encode(self, text):
 def decode(self, ids):
     return "".join(self.vocab[i] for i in ids)
 `}</Code>
-        <p>Decoding cannot fail: every ID knows the string it stands for. So <code>decode(encode(x)) == x</code> is an <code>assert</code> in the file, not a hope.</p>
+        <p>In this toy, decoding cannot fail: every ID stands for a whole string of characters. So <code>decode(encode(x)) == x</code> is an <code>assert</code> in the file, not a hope.</p>
+        <Callout kind="warn" label="Careful: real tokenizers bend this rule">
+          Two things break the perfect round trip in production tokenizers.
+          <br /><br />
+          <b>Clean-up before splitting.</b> Some tokenizers (for example those built with the SentencePiece library) first tidy the text: they may turn look-alike Unicode characters into one standard form, or treat spaces in a special way. Decode the IDs and you get the tidied text, which can differ slightly from what was typed.
+          <br /><br />
+          <b>Half a character.</b> Byte-level tokenizers start from the 256 possible byte values instead of characters (more on this at the end of the lesson). One Kannada letter is 3 bytes in UTF-8. A single token can hold only part of a character. Decode that token on its own, as a streaming chat window does token by token, and you get a broken symbol (�) until the rest of the bytes arrive.
+        </Callout>
         <p>Running the file prints the merges it learns. The first ones:</p>
         <Code lang="output" title="python phase2-language/bpe_tokenizer.py">{`
   merge   1: ' ' + 't' -> ' t'  (seen 75x)
@@ -180,13 +194,25 @@ def decode(self, ids):
   unseen word 'foxes' -> ['fox', 'e', 's']
 `}</Code>
         <p>The playground above runs a line-for-line port of this file, so it shows the same merges and the same counts.</p>
+
+        <h3>Special tokens: the words nobody types</h3>
+        <p>In <a href="#/lesson/prompt-to-answer">lesson 0.1</a> the model stopped answering when it picked an invisible <span className="mono">&lt;end&gt;</span> token. Where does that come from? Not from BPE.</p>
+        <p>Every real vocabulary reserves a few extra IDs by hand. These <b>special tokens</b> never come out of ordinary text. They are markers.</p>
+        <ul>
+          <li><b>End of text.</b> GPT-2 has exactly one: <span className="mono">&lt;|endoftext|&gt;</span>, ID 50,256, placed between documents during training. The model learns that after it, a new unrelated text begins. When it predicts that token while answering, the answer is over.</li>
+          <li><b>Chat roles.</b> Chat models add markers for who is speaking. Llama 3, for example, wraps each message like <span className="mono">&lt;|start_header_id|&gt;user&lt;|end_header_id|&gt; … &lt;|eot_id|&gt;</span>. The bubbles you see in a chat app reach the model as one long token sequence, with these markers in between.</li>
+        </ul>
+        <p>Because they matter so much, tokenizer libraries do not turn a <em>typed</em> “&lt;|endoftext|&gt;” into the special ID unless you ask them to. (OpenAI’s tiktoken raises an error by default.) Otherwise a customer could type a role marker and pretend to be the system. We come back to that kind of trick in <a href="#/lesson/alignment-safety">Alignment and safety</a>.</p>
+        <RepoRunner path="phase2-language/bpe_tokenizer.py" title="Run bpe_tokenizer.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
         <p>Back to the playground. Predict first, then check.</p>
         <ul>
           <li><b>A typo.</b> Type “teh quikc borwn fox”. How many tokens, compared with the correct spelling? Typos push text off the frequent paths, so they cost more tokens and look unfamiliar to the model.</li>
-          <li><b>Another language, or code.</b> Try “der schnelle Fuchs” or <code>getTokenById(x)</code>. Capital letters and brackets were never in the training text, so they have <em>no ID at all</em>. Read the explanation that appears: this is why real tokenizers start from bytes.</li>
+          <li><b>Another language, or code.</b> Try “der schnelle Fuchs”, “ನಮಸ್ಕಾರ” or <code>getTokenById(x)</code>. Capital letters and brackets were never in the training text, so they have <em>no ID at all</em>. Read the explanation that appears: this is why real tokenizers start from bytes.</li>
           <li><b>Change the training text.</b> Paste a few lines of Python or Java into the training box and run to the target. Now which strings become single tokens? A tokenizer is a fingerprint of the text it was trained on.</li>
           <li><b>Turn the vocabulary dial.</b> Compare characters per token for the sample sentence at a vocabulary of 30, 50 and 80. Bigger vocabulary, shorter sequences, but more rows for the model to learn in the next lesson.</li>
           <li><b>A leading space.</b> Compare “the fox” with “ the fox”. The first “the” is <Tok>t</Tok><Tok>he</Tok>, the second is inside the single token <Tok> the </Tok>. To a tokenizer, a word at the start of a text and the same word after a space are different strings.</li>
@@ -264,9 +290,9 @@ def encode(self, text):
             'A cheap fix: in train(), reserve ids 0 to 255 for the 256 possible bytes, and work on text.encode("utf-8") (a sequence of integers 0..255) instead of characters. Every possible input is then made of known ids.',
             'decode then has to join bytes, not strings: b"".join(self.vocab[i] for i in ids).decode("utf-8", errors="replace"), with self.vocab holding bytes objects.',
           ]}
-          solution={<><p>Replace “characters” with “bytes” everywhere: <code>ids = list(text.encode("utf-8"))</code>, a base vocabulary of <code>{'{'}i: bytes([i]) for i in range(256){'}'}</code>, merges that concatenate <code>bytes</code>, and a decode that joins bytes and then decodes UTF-8.</p><p>Nothing can be unknown any more, because every string in every language is a sequence of bytes. The price: a character outside your training data, such as “é” or an emoji, costs 2 to 4 tokens. That is the “byte-level BPE” of GPT-2 and its successors. (“Byte fallback”, a term you will also meet, is a close cousin used by SentencePiece tokenizers such as Llama 2’s: keep character-based pieces, and drop down to raw bytes only for characters that have no piece.) Either way, this is why the same sentence costs more tokens in languages that were rare in the tokenizer’s training text.</p></>}
+          solution={<><p>Replace “characters” with “bytes” everywhere: <code>ids = list(text.encode("utf-8"))</code>, a base vocabulary of <code>{'{'}i: bytes([i]) for i in range(256){'}'}</code>, merges that concatenate <code>bytes</code>, and a decode that joins bytes and then decodes UTF-8.</p><p>Nothing can be unknown any more, because every string in every language is a sequence of bytes. That is the “byte-level BPE” of GPT-2 and its successors.</p><p>The price: a character that never earned a merge costs one token per byte. “é” is 2 bytes, a Kannada letter is 3, an emoji is 4.</p><p>Some other tokenizers use bytes only as a backup, for characters they have no piece for. The effect is the same. Nothing is unknown, and text in a language that was rare in the tokenizer’s training text comes out in many small pieces. That is Riya’s invoice, explained.</p></>}
         >
-          <p>Open <code>phase2-language/bpe_tokenizer.py</code> and run it. Then make <code>encode</code> crash with a character that is not in the training text. Finally, fix it the way GPT-2 did: <b>start from bytes instead of characters</b> (byte-level BPE). Before you start: how many base tokens will you need so that no input can ever be unknown?</p>
+          <p>Riya wants her toy tokenizer to survive a Kannada customer. Open <code>phase2-language/bpe_tokenizer.py</code> and run it. Then make <code>encode</code> crash with a character that is not in the training text. Finally, fix it the way GPT-2 did: <b>start from bytes instead of characters</b> (byte-level BPE). Before you start: how many base tokens will you need so that no input can ever be unknown?</p>
         </Exercise>
 
         <ExplainBack
@@ -288,7 +314,7 @@ def encode(self, text):
             q: 'After BPE training, what exactly has been “learned”?',
             options: ['A neural network that predicts word boundaries', 'The grammar of the language', 'An ordered list of merge rules (plus the vocabulary it produces)', 'One vector per token'],
             answer: 2,
-            explain: 'No gradients, no network. Just counting, and a list of which pair was glued at each step. The vectors come in the next lesson.',
+            explain: 'No gradients, no network. Only counting, and a list of which pair was glued at each step. The vectors come in the next lesson.',
           },
           {
             q: 'Your tokenizer was trained mostly on English. You send it a paragraph in a language it rarely saw. What happens?',
@@ -339,6 +365,7 @@ def encode(self, text):
         <DeepDive title="Are there alternatives to BPE?">
           <p>Yes. WordPiece (used by BERT) and the Unigram method (available in the SentencePiece library) choose pieces by slightly different criteria, but produce the same kind of result: a fixed subword vocabulary. There is also active research on models that read raw bytes and skip the tokenizer entirely. As of today, nearly every production LLM still uses a subword tokenizer, mostly byte-level BPE.</p>
         </DeepDive>
+        <p>Riya replies to finance with one paragraph: the bill counts tokens, tokens follow the tokenizer’s training text, and that text was mostly English. The Kannada replies are not longer messages. They are cut into smaller pieces. Now each token needs a meaning, and that is the next lesson.</p>
       </RealLLM>
     </Lesson>
   )

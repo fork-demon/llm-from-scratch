@@ -15,20 +15,24 @@ export default function ReadingPapersLesson() {
   return (
     <Lesson id="reading-papers">
       <Why>
-        <p className="lede">In June 2017 eight researchers working at Google posted a 15-page paper called <a href={PAPER} target="_blank" rel="noreferrer">“Attention Is All You Need”</a>. Every model in this course descends from it.</p>
-        <p>Most developers never open it. The first page has an abstract full of BLEU scores. Page 4 has this:</p>
+        <p className="lede">Friday evening, the train to Mysuru. Riya has a window seat, a paper cup of tea, and a printout Kabir left on her desk with one sticky note: “Your turn.”</p>
+        <p>It is <a href={PAPER} target="_blank" rel="noreferrer">“Attention Is All You Need”</a>, the 15-page paper eight researchers working at Google posted in June 2017. Every model in this course descends from it.</p>
+        <p>Most developers never open it. Riya almost closes it too: the first page is an abstract full of BLEU scores. Somewhere past Mandya she reaches page 4 and stops at this line:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 21 }}>
           head<sub>i</sub> = Attention(QW<sub>i</sub><sup>Q</sup>, KW<sub>i</sub><sup>K</sup>, VW<sub>i</sub><sup>V</sup>)
         </div>
-        <p>You wrote that line. It is <code>q, k, v = self.qkv(x).split(D, dim=2)</code> followed by the attention you built in <a href="#/lesson/attention">Part 6</a>. The paper says it in a different language.</p>
+        <p>She wrote that line. So did you. It is <code>q, k, v = self.qkv(x).split(D, dim=2)</code> followed by the attention you built in <a href="#/lesson/attention">Part 6</a>. The paper only says it in a different language.</p>
         <Callout kind="idea">
-          Papers are hard for two reasons that have nothing to do with intelligence: the <b>notation</b> is unfamiliar, and the <b>format</b> hides the important parts. Both can be learned in an afternoon. This lesson gives you a method, a decoder for the notation, and then walks you through the founding paper of the field, section by section.
+          Papers are hard for two reasons that have nothing to do with intelligence. The <b>notation</b> is unfamiliar, and the <b>format</b> hides the important parts. Both can be learned in an afternoon.
+          <br /><br />
+          This lesson gives you a method, a decoder for the notation, and then walks you through the founding paper of the field, section by section.
         </Callout>
         <p>By the end you will have read it. You will also have met the one mechanism in it that you have not built: cross-attention.</p>
       </Why>
 
       <Problem>
         <p>A paper is not a tutorial. It is an argument addressed to expert reviewers: here is a claim, here is the evidence, here is why earlier work falls short. Teaching you is not its job.</p>
+        <p>Dev, who once “read” a paper by reading its tweet, puts it well without meaning to: “Nobody reads these start to finish, na?” He is closer to right than he knows. The trick is to not read them start to finish on purpose.</p>
         <WhyExists
           problem="New ideas in this field appear as papers first, often years before a good explanation exists. An applied engineer has to be able to read them."
           naive="Start at the first word and read to the last, understanding each sentence before moving on."
@@ -363,7 +367,8 @@ lrate(16000)   # 0.000349   half the peak: 4x the steps, 1/sqrt(4)
             </tbody>
           </table>
         </div>
-        <p className="muted" style={{ fontSize: 15 }}>The order is by dependency, not by date: the GPT line first, then how size and data trade off, then how a base model becomes an assistant, then the engineering papers behind the models you can download, then systems built around a model, and reasoning models last.</p>
+        <p className="muted" style={{ fontSize: 15 }}>The order is by dependency, not by date: the GPT line first, then how size and data trade off, then how a base model becomes an assistant, then the engineering papers behind the models you can download (DeepSeek-V3 pulls several of them together), then systems built around a model, then a look inside a trained model, and reasoning models last.</p>
+        <p>By the time the train pulls into Mysuru, Riya has done a first pass, most of a second, and one small third: she counted the parameters herself. Amma, at the station, asks what she was reading. “A 2017 paper,” Riya says. “I understood it.” The last part surprises Riya more than it surprises Amma.</p>
       </RealLLM>
     </Lesson>
   )

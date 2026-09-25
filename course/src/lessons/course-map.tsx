@@ -56,10 +56,14 @@ export default function CourseMapLesson() {
   return (
     <Lesson id="course-map">
       <Why title="Where is all of this going?">
-        <p className="lede">You have seen the machine from the outside: a loop that picks one token at a time, around a function with billions of learned numbers.</p>
-        <p>The rest of the course opens that machine, one part at a time, until nothing in it is a black box. Then it builds the things people put <em>around</em> the machine: retrieval, fine-tuning and agents.</p>
-        <p>That is {LESSONS.length} lessons in {PARTS.length} parts, roughly {totalHours} hours including a hands-on capstone.</p>
-        <p>This lesson is the map. It takes a few minutes, and it will save you from the most common way people get lost in this subject.</p>
+        <p className="lede">Wednesday, 4 p.m. Kabir books the small meeting room, uncaps a marker and draws for twenty minutes without saying much.</p>
+        <p>A box for text. An arrow to tokens. Then numbers, a network, something he labels “attention”, a stack of blocks, a loop for training, a loop for generating. Off to the right, three more boxes: RAG, fine-tuning, agents.</p>
+        <p>He steps back. “That is the whole thing. Every box is a question. We answer them in order.”</p>
+        <p>Riya takes a photo of the whiteboard on her phone. She will look at that photo many times in the coming weeks.</p>
+        <p>You have seen the machine from the outside: a loop that picks one token at a time, around a function with billions of learned numbers. Kabir’s whiteboard is the map for opening it up.</p>
+        <p>The course opens that machine one part at a time, until nothing in it is a black box. Then it builds the things people put <em>around</em> the machine: retrieval, fine-tuning and agents.</p>
+        <p>That is {LESSONS.length} lessons in {PARTS.length} parts, roughly {totalHours} hours, including a hands-on capstone.</p>
+        <p>This lesson is Kabir’s whiteboard, made clickable. It takes a few minutes, and it will save you from the most common way people get lost in this subject.</p>
         <Callout kind="idea">
           Every lesson answers one question that the previous lesson left open. If you always know <b>which question you are currently answering</b>, you cannot get lost.
         </Callout>
@@ -76,17 +80,32 @@ export default function CourseMapLesson() {
       </Problem>
 
       <MentalModel title="One picture, three layers">
-        <p>The boxes in the map below fall into three layers, plus a final engineering box that builds on all of them. Keep these three in your head and the rest is detail.</p>
+        <p>Riya squints at her photo. “It is a lot of boxes.” Kabir draws three big brackets over them. “Three layers. Keep these in your head and the rest is detail.”</p>
+        <p>The boxes in the map below fall into those three layers, plus a final engineering box that builds on all of them.</p>
         <div className="grid-3">
           <div className="card"><span className="chip acc">1 · into numbers</span><p style={{ marginTop: 8 }}>Text → Tokenization → Representations. Getting language into a form arithmetic can work on.</p></div>
           <div className="card"><span className="chip acc">2 · the model</span><p style={{ marginTop: 8 }}>Neural network → Attention → Transformer → Training → Inference → LLM. The function, how it gets its numbers, and how it is run.</p></div>
           <div className="card"><span className="chip acc">3 · around the model</span><p style={{ marginTop: 8 }}>RAG → Fine-tuning → Agents. What you, as a developer, build on top.</p></div>
         </div>
         <Callout kind="dev">
-          Read it like a system diagram. Layer 1 is the serialisation format. Layer 2 is the service: its implementation, its build process (training) and its runtime (inference). Layer 3 is application code that calls the service. Most developers only ever work in layer 3. After this course you will do so knowing what is underneath.
+          Read it like a system diagram. Layer 1 is the serialisation format. Layer 2 is the service: its implementation, its build process (training) and its runtime (inference). Layer 3 is application code that calls the service.
+          <br /><br />
+          Most developers only ever work in layer 3. After this course you will do so knowing what is underneath.
         </Callout>
+        <h3>The corner of the whiteboard: what real models add</h3>
+        <p>In one corner Kabir has squeezed in a list with the heading “after you build one”. That corner is Part 8, <em>From GPT to Modern LLMs</em>. It takes the tiny GPT you built and asks what the real, large models do differently.</p>
+        <ul>
+          <li><a href="#/lesson/why-llms-know">Why LLMs know things</a>, <a href="#/lesson/modern-architecture">Modern LLM architecture</a> and <a href="#/lesson/training-pipeline">From raw text to assistant</a>: where knowledge lives, what changed inside the block, and how a text predictor becomes an assistant.</li>
+          <li><a href="#/lesson/distillation">Small models from big ones</a>: how a small model learns from a much larger one.</li>
+          <li><a href="#/lesson/alignment-safety">Alignment and safety</a>: how you teach a model what it should not do, and how you check that it learned.</li>
+          <li><a href="#/lesson/multimodal">Models that see and hear</a>: how a model that only reads tokens looks at a photo.</li>
+          <li><a href="#/lesson/interpretability">Looking inside the model</a>: what we can and cannot read from the numbers.</li>
+          <li><a href="#/lesson/reasoning-models">Reasoning models</a>: what changes when a model is allowed to think before answering.</li>
+        </ul>
+        <p className="muted">The clickable map below groups lessons by the box they open. A few of these newer Part 8 lessons are not attached to a box yet; the sidebar always has the full list.</p>
         <h3>How each lesson works, and how to use it</h3>
-        <p>Every lesson has the same twelve sections, in the same order. The order is the teaching method: <b>why before how, how before maths, maths before code</b>.</p>
+        <p>Every lesson has the same twelve sections, in the same order.</p>
+        <p>The order is the teaching method: <b>why before how, how before maths, maths before code</b>. Or, as Kabir puts it: “Don’t memorise it. Build it.”</p>
         <div className="table-scroll">
           <table className="plain">
             <thead><tr><th>#</th><th>section</th><th>what it is for</th></tr></thead>
@@ -96,7 +115,7 @@ export default function CourseMapLesson() {
         <p>Conceptual lessons drop the numbers, maths or code sections when there is honestly nothing to put in them. The experiment, the exercises and the recall are never dropped.</p>
         <h3>The tools around the lessons</h3>
         <ul>
-          <li><b>Hints.</b> Exercises never show the answer straight away. Try first. If you are stuck for more than a few minutes, take <em>one</em> hint and try again. The solution button appears after the last hint. A struggle followed by a hint teaches far more than reading the solution cold.</li>
+          <li><b>Hints.</b> Exercises never show the answer straight away. Try first. If you are stuck for more than a few minutes, take <em>one</em> hint and try again. The solution button appears after the last hint. A little struggle followed by a hint teaches far more than reading the solution cold.</li>
           <li><b>“Where are we?”</b> The box at the top of each lesson shows the parts of an LLM as a tree, with the current one marked. Glance at it whenever a lesson feels detached from the goal.</li>
           <li><b>Glossary.</b> Words with a dotted underline, such as <G t="logits">logits</G> (a word you meet properly in <a href="#/lesson/softmax">Softmax</a>), show a one-line reminder on hover and link to the <a href="#/glossary">glossary</a>. Every term is explained in plain words before it is used.</li>
           <li><b>Concept map.</b> <a href="#/map">#/map</a> shows how the ideas depend on each other.</li>
@@ -105,17 +124,21 @@ export default function CourseMapLesson() {
           <li><b>Deep dives.</b> Collapsed boxes with extra rigour. They are never required to continue. Skip them on a first pass without guilt.</li>
         </ul>
         <Callout kind="established">
-          The quizzes and “explain in your own words” boxes are not decoration. Pulling an idea out of memory (retrieval practice) and coming back to it after a gap (spacing) are among the best-supported findings in learning research. That is why each part ends with a “Before moving on” checkpoint that reaches back to earlier parts.
+          The quizzes and “explain in your own words” boxes are not decoration. Pulling an idea out of memory (retrieval practice) and coming back to it after a gap (spacing) are among the best-supported findings in learning research.
+          <br /><br />
+          That is why each part ends with a “Before moving on” checkpoint that reaches back to earlier parts.
         </Callout>
       </MentalModel>
 
       <TryIt title="Click through the map">
         <CourseArchitecture />
+        <p>This is the same map as Kabir’s whiteboard, one box at a time.</p>
         <p>There is a second, finer map at <a href="#/map">Concept map</a> in the sidebar. It shows individual ideas (dot product, softmax, causal mask…) and what depends on what. Use it when you wonder “why did I need that again?”.</p>
       </TryIt>
 
       <CodeIt title="The Python files, and how to run them">
-        <p>This course sits on top of a repository of small, complete Python programs. Each one implements a lesson’s idea from scratch, prints what it is doing, and runs on a laptop CPU. The code shown in lessons is taken from these files, so what you read here is what runs there.</p>
+        <p>Under Kabir’s whiteboard there is a repository of small, complete Python programs. Each one builds a lesson’s idea from scratch, prints what it is doing, and runs on a laptop CPU.</p>
+        <p>The code shown in lessons is taken from these files. What you read here is what runs there.</p>
         <Code title="the repository">{`
 phase1-foundations/   math_primer.py  gradient_descent.py  mlp_numpy.py
 phase2-language/      bpe_tokenizer.py  tiny_word2vec.py  bigram_lm.py
@@ -125,6 +148,7 @@ phase5-agents/        mini_agent.py
 tests/                pytest tests for all of the above
 `}</Code>
         <p>You need Python 3 and NumPy. Nothing else until you reach <a href="#/lesson/build-gpt">Build GPT</a>, where PyTorch comes in.</p>
+        <p>You will not always need a terminal, though. Some lessons have Python exercises that run right in the page. And Part 7 is gaining a tiny GPT that you can train in your browser, plus a visualiser for looking inside the trained model.</p>
         <Code title="setup and first run">{`
 pip install numpy pytest          # enough for Parts 1 to 6
 python phase1-foundations/math_primer.py
@@ -134,7 +158,8 @@ python phase3-transformers/tiny_gpt.py --quick   # 2-minute smoke run
 
 pytest                            # run the repository's tests
 `}</Code>
-        <p>Each lesson that has code lists its file under the title and links to it at the bottom, under “Read the real code”. Exercises of type <em>implement</em> and <em>modify</em> send you into these files. Do them. Reading code teaches you to recognise it; changing code teaches you to write it.</p>
+        <p>Each lesson that has code lists its file under the title, and links to it at the bottom under “Read the real code”.</p>
+        <p>Exercises of type <em>implement</em> and <em>modify</em> send you into these files. Do them. Reading code teaches you to recognise it. Changing code teaches you to write it.</p>
         <Callout kind="dev">
           Why NumPy first and PyTorch later? PyTorch has one famous line, <code>loss.backward()</code>, that works out how to adjust every number in the model. In NumPy you write that part yourself, once, by hand. After that it is never magic: when you call <code>loss.backward()</code> later, you will know exactly what it is doing for you.
         </Callout>
@@ -151,7 +176,7 @@ pytest                            # run the repository's tests
           ]}
           solution={<><p><b>Layer 3, specifically RAG.</b> The handbook is not in the model’s parameters, and it changes often. The cheap, reliable fix is to find the relevant passages at question time and put them into the prompt, so they become part of the “text so far” that the function reads.</p><p>Fine-tuning (changing the numbers) is for changing <em>behaviour</em>: tone, format, a specialised skill. It is a poor way to add facts that change. You will measure this yourself in Part 9.</p></>}
         >
-          <p>Your company wants a chatbot that answers questions about its internal handbook, which is updated weekly. From the map alone: which of the boxes is the natural place to solve this, and why not the others?</p>
+          <p>Paisa Pal wants its chatbot to answer questions about the internal policy handbook, which is updated weekly. From the map alone: which of the boxes is the natural place to solve this, and why not the others?</p>
         </Exercise>
 
         <Exercise
@@ -164,7 +189,7 @@ pytest                            # run the repository's tests
           ]}
           solution={<p>You should see sections printed one after another, each working a small calculation by hand and then checking it with NumPy. If it runs, your setup is done for the first six parts of the course. If <code>python</code> is not found, try <code>python3</code>. If NumPy is missing, the error message says <code>No module named 'numpy'</code>: run the pip command again inside the same environment.</p>}
         >
-          <p>Clone the repository, install NumPy and run <code>phase1-foundations/math_primer.py</code>. You are not expected to follow the output yet. The goal is a working setup before the first lesson that needs it.</p>
+          <p>Riya’s first task from Kabir: get the code running. Clone the repository, install NumPy and run <code>phase1-foundations/math_primer.py</code>. You are not expected to follow the output yet. The goal is a working setup before the first lesson that needs it.</p>
         </Exercise>
 
         <ExplainBack
@@ -217,15 +242,18 @@ pytest                            # run the repository's tests
         <p>Is this map the real thing, or a teaching simplification? Mostly the real thing, at a very different scale.</p>
         <SameShapeBiggerNumbers />
         <ToyVsReal
-          toy={<ul><li>You build every box yourself, in a few hundred lines each</li><li>Models with thousands to a few million parameters</li><li>Trains in minutes on a laptop CPU</li><li>Writes Shakespeare-flavoured gibberish</li></ul>}
+          toy={<ul><li>You build every box yourself, in a few hundred lines each</li><li>Models with thousands to a few million parameters</li><li>Trains in minutes on a laptop CPU (or, for the tiniest GPT, in your browser)</li><li>Writes Shakespeare-flavoured gibberish</li></ul>}
           real={<ul><li>The same boxes, each owned by a specialist team</li><li>Billions to trillions of parameters</li><li>Trains for weeks to months on thousands of GPUs</li><li>Extra stages we only describe: instruction tuning, preference tuning, safety work, serving infrastructure</li></ul>}
         />
         <Callout kind="established">
           The architecture you will build in <a href="#/lesson/build-gpt">Build GPT</a> is the GPT-2 architecture, and today’s open models are recognisable refinements of it. <a href="#/lesson/modern-architecture">Modern LLM architecture</a> goes through the differences one by one, and you will be able to read them as small edits to code you wrote.
         </Callout>
         <DeepDive title="What this course deliberately leaves out">
-          <p>Distributed training across many machines, GPU kernel engineering, data collection and filtering at web scale, images and audio, evaluation methodology, and most of the safety and alignment literature. Each is a field of its own. The course gives you the mechanism that all of them assume you already understand.</p>
+          <p>Distributed training across many machines, GPU kernel engineering, and data collection and filtering at web scale. Each is a field of its own.</p>
+          <p>Some big fields get one lesson each rather than a full treatment: images and audio (<a href="#/lesson/multimodal">Models that see and hear</a>), safety and alignment (<a href="#/lesson/alignment-safety">Alignment and safety</a>), interpretability (<a href="#/lesson/interpretability">Looking inside the model</a>) and evaluation (<a href="#/lesson/evals">Evals</a>). Those lessons give you the mechanism and the honest state of the field, not the whole literature.</p>
+          <p>The course gives you the mechanism that all of these assume you already understand.</p>
         </DeepDive>
+        <p>That night Riya sets the whiteboard photo as her laptop wallpaper. Every box is a question. First comes the small amount of school maths the boxes need, and she already knows whom to call for that: Amma.</p>
       </RealLLM>
 
       <BeforeMovingOn

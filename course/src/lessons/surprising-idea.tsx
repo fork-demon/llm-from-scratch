@@ -8,8 +8,10 @@ export default function SurprisingIdeaLesson() {
   return (
     <Lesson id="surprising-idea">
       <Why title="If nothing is looked up, where is Paris?">
-        <p className="lede">Ask an LLM: “What is the capital of France?” It says Paris. Correctly, instantly, essentially every time.</p>
-        <p>In <a href="#/lesson/prompt-to-answer">the last lesson</a> you saw the machinery: tokens in, probabilities out, pick one, repeat. No stage in that pipeline fetched anything.</p>
+        <p className="lede">It is Amma’s birthday. Riya is on the office shuttle, typing a message to her mother in Mysuru.</p>
+        <p>She types “Happy birthday” and her phone keyboard offers three words above the keys: <b>Amma</b>, <b>to</b>, <b>and</b>. She taps “Amma” and smiles. The phone has learnt her.</p>
+        <p>Then she stops. That little bar of suggestions is doing the same job as the chatbot from yesterday: look at the text so far, guess what comes next. Nobody stored the sentence “Happy birthday Amma” in her phone. It came out of numbers.</p>
+        <p>So the question from <a href="#/lesson/prompt-to-answer">the last lesson</a> comes back, sharper. Ask an LLM “What is the capital of France?” It says Paris, correctly, essentially every time. No stage in the pipeline fetched anything.</p>
         <p>So where was “Paris”? There is no table of capitals inside the model. There is no document about France. You could read every byte of the model file and never find the sentence “Paris is the capital of France”.</p>
         <p>And yet it answers. It also answers this, which nobody in history had written down before you asked:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 20 }}>“Write a limerick about a Kubernetes pod.”</div>
@@ -19,7 +21,7 @@ export default function SurprisingIdeaLesson() {
       </Why>
 
       <Problem title="Every system you have built works differently">
-        <p>As a developer you know three ways to make a computer answer a question. All three are about <em>getting out what somebody put in</em>.</p>
+        <p>As a developer, Riya knows three ways to make a computer answer a question. All three are about <em>getting out what somebody put in</em>.</p>
         <div className="grid-3">
           <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Database</h4><p>Someone stored a row. You fetch that row by its key.</p></div>
           <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Search engine</h4><p>Someone wrote a document. You get a ranked list of documents that match your words.</p></div>
@@ -35,41 +37,49 @@ export default function SurprisingIdeaLesson() {
       </Problem>
 
       <MentalModel title="A function with billions of dials">
-        <p>Here is the entire idea of an LLM, written as a function signature:</p>
+        <p>Riya asks Kabir where Paris is hiding. He writes one line on the whiteboard. “This is the whole model, from the outside.”</p>
         <Code title="the whole model, from the outside">{`
 def model(tokens_so_far: list[int]) -> list[float]:
     """Return one probability per vocabulary entry: how likely is each
     token to come next? Pure function. No database. No network calls."""
 `}</Code>
-        <p>Inside that function there is only arithmetic: multiply, add, repeat. The arithmetic uses a very long list of constants. Those constants are what the model <em>is</em>.</p>
+        <p>Inside that function there is only arithmetic: multiply, add, repeat.</p>
+        <p>The arithmetic uses a very long list of constants. Those constants are what the model <em>is</em>.</p>
         <Term
           name="Parameters (also called weights)"
           plain={<>The adjustable numbers inside the model. Change them and the same input gives different probabilities. A model file is, near enough, this list of numbers and nothing else.</>}
           example={<><code>y = a·x + b</code> has two parameters, <code>a</code> and <code>b</code>. Set them to 2 and 1 and the function maps 3 → 7. A small GPT-2 has 124 million of them. Modern models have billions to trillions.</>}
           formal={<>The learned tensors of the network: embedding tables, attention and feed-forward matrices, normalisation gains. Fitted by <G t="gradient-descent">gradient descent</G> to minimise next-token prediction error on the training text.</>}
         />
-        <p><b>Where do the numbers come from?</b> Nobody types them in. They start random. Then the model is shown a huge amount of text, one position at a time, and asked “what comes next?”.</p>
-        <p>Each time it is wrong, every number is nudged a tiny bit in the direction that would have made the right token more likely. (In practice the nudges for many positions are averaged and applied together.)</p>
+        <p><b>Where do the numbers come from?</b> Nobody types them in. They start random.</p>
+        <p>Then the model is shown a huge amount of text, one position at a time, and asked “what comes next?”. It answers with probabilities, and we look at how much probability it gave to the token that really came next.</p>
+        <p>After every prediction, every number is nudged a tiny bit in the direction that would have made the true next token more likely. Not only when it is wrong: even a good guess (say 60% on the right token) could have been a little better, so it gets a small nudge too. Only a perfect 100% would need none.</p>
+        <p>(In practice the nudges for many positions are averaged and applied together.)</p>
         <p>Trillions of predictions later, the function is good at predicting text. That whole process is <G t="pretraining">training</G>, and Parts 2, 3 and 7 build it from scratch.</p>
         <p>After training, “Paris” is not stored. But the numbers have been shaped so that, when the input is “The capital of France is”, the arithmetic happens to produce a very high probability for “ Paris”.</p>
         <Callout kind="analogy">
-          Think of a pianist who has practised a thousand pieces. There is no sheet music stored in their fingers. Practice adjusted millions of connections, and now the right movement <em>comes out</em> when the context calls for it. They can also improvise something new in the style of what they practised, and they can confidently play a wrong note.
+          Think of a pianist who has practised a thousand pieces. There is no sheet music stored in their fingers.
+          <br /><br />
+          Practice adjusted millions of connections, and now the right movement <em>comes out</em> when the context calls for it. They can also improvise something new in the style of what they practised. And they can confidently play a wrong note.
           <br /><br />
           Where the analogy stops: a pianist understands music, has intentions and hears their mistakes. Do not carry those over. The only part to keep is this: <b>skill held in adjusted numbers, not in stored copies</b>.
         </Callout>
         <Callout kind="dev">
-          You have met “knowledge as parameters” before. A spam filter does not store a list of spam emails: it stores a few thousand weights. A line fitted through data points does not store the points: it stores a slope and an intercept, and can answer for an x it never saw. An LLM is the same idea at an absurd scale: a curve fitted through human text.
+          You have met “knowledge as parameters” before. A spam filter does not store a list of spam emails: it stores a few thousand weights.
+          <br /><br />
+          A line fitted through data points does not store the points. It stores a slope and an intercept, and can answer for an x it never saw. An LLM is the same idea at an enormous scale: a curve fitted through human text.
         </Callout>
       </MentalModel>
 
       <TryIt title="Put the same question to four systems">
         <p>The database, the search engine and the program below are small but real, and they run in your browser. The LLM column is the one we are still building up to. There are six questions. Predict what each system will do before you look.</p>
         <FourSystems />
-        <p>Look at <em>how</em> each one fails. The database returns nothing. The program throws an error. The search engine shows you weak results and lets you judge. The LLM is the only one that can fail <b>without any sign of failure</b>.</p>
+        <p>Look at <em>how</em> each one fails. The database returns nothing. The program throws an error. The search engine shows you weak results and lets you judge.</p>
+        <p>The LLM is the only one that can fail <b>without any sign of failure</b>.</p>
       </TryIt>
 
       <Numbers title="Could it be storing the text anyway?">
-        <p>A fair suspicion: maybe the numbers are just a compressed copy of the internet. Let’s check with public figures for one open model, Llama 2 7B.</p>
+        <p>Dev has a theory: “The numbers are just a zipped copy of the internet.” It is a fair suspicion. Let’s check it with public figures for one open model, Llama 2 7B.</p>
         <div className="table-scroll">
           <table className="plain">
             <thead><tr><th>quantity</th><th>calculation</th><th>size</th></tr></thead>
@@ -80,8 +90,10 @@ def model(tokens_so_far: list[int]) -> list[float]:
             </tbody>
           </table>
         </div>
-        <p>Lossless text compression manages somewhere between 3 to 1 and 10 to 1. Nothing squeezes text 570 to 1 and gets it back. So the model <em>cannot</em> be holding more than a small fraction of its training text. Mostly it can only be holding the <b>regularities</b> in it: grammar, facts that recur, styles, how code is structured, how arguments go.</p>
-        <p>This cuts both ways. A fact that appeared thousands of times has shaped the numbers strongly. A fact that appeared once has usually left almost no trace, but the model will still produce a fluent continuation when asked about it.</p>
+        <p>Lossless text compression manages somewhere between 3 to 1 and 10 to 1. Nothing squeezes text 570 to 1 and gets it back.</p>
+        <p>So the model <em>cannot</em> be holding more than a small fraction of its training text. Mostly it can only be holding the <b>regularities</b> in it: grammar, facts that recur, styles, how code is structured, how arguments go.</p>
+        <p>This cuts both ways. A fact that appeared thousands of times has shaped the numbers strongly.</p>
+        <p>A fact that appeared once has usually left almost no trace. But the model will still produce a fluent continuation when asked about it.</p>
         <DeepDive title="But I have seen a model recite a poem word for word">
           <p>Both things are true. Text that was repeated very often in the training data (famous poems, licences, well-known code snippets) can be reproduced verbatim, and researchers have shown that carefully chosen prompts can extract memorised passages. That is an <b>established</b> finding.</p>
           <p>It does not contradict the arithmetic above. Memorisation covers a small fraction of the data, mostly text that was repeated many times, and the fraction grows with model size. It happens through the same mechanism as everything else: the numbers were nudged so often toward that exact continuation that its probability became nearly 1 at every step. There is still no lookup, and the vast majority of training text is not recoverable.</p>
@@ -108,7 +120,8 @@ def model(tokens_so_far: list[int]) -> list[float]:
             </ul>
           </div>
         </div>
-        <p>A confident false statement from an LLM is called a <G t="hallucination">hallucination</G>. Notice that it is not a bug in the usual sense. Nothing malfunctioned. The model did exactly what it always does.</p>
+        <p>A confident false statement from an LLM is called a <G t="hallucination">hallucination</G>.</p>
+        <p>Notice that it is not a bug in the usual sense. Nothing malfunctioned. The model did exactly what it always does.</p>
         <p>Go back to the four systems and try “type your own” with a capital the program does not know, such as Spain. The program fails loudly. Now imagine an LLM that had seen little about that country: what would it do instead?</p>
         <Callout kind="model">
           “It only produces likely text” is the right first model, and it is where this course starts. Real assistants are further trained to be helpful, to follow instructions and to admit uncertainty more often, which shifts what counts as “likely”. That works partly because models do carry some internal signal of whether a topic is familiar, which research has measured. It reduces made-up answers. It does not remove the cause. <a href="#/lesson/training-pipeline">From raw text to assistant</a> and <a href="#/lesson/why-llms-know">Why LLMs know things</a> pick this up.
@@ -212,7 +225,8 @@ def model(tokens_so_far: list[int]) -> list[float]:
 
       <RealLLM>
         <h3>Why is next-token prediction enough?</h3>
-        <p>This is the question that should be nagging you. Guessing the next word sounds like autocomplete. How does that produce working code, or a correct explanation of why the sky is blue?</p>
+        <p>Dev has an opinion here too. “So it is just autocomplete. Like your phone.”</p>
+        <p>This is the question that should be nagging you. Guessing the next word does sound like autocomplete. How does that produce working code, or a correct explanation of why the sky is blue?</p>
         <p>Consider what it takes to be <em>good</em> at the guessing game on different kinds of text:</p>
         <ul>
           <li>To predict the next token of <span className="mono">23 + 58 = </span> across millions of such lines, memorising fails. Something like addition has to be captured.</li>
@@ -231,6 +245,7 @@ def model(tokens_so_far: list[int]) -> list[float]:
           toy={<ul><li>The last lesson’s hand-written probability table</li><li>Soon: a model with a few thousand parameters that you train yourself on tiny text</li><li>It learns spelling and short-range word patterns</li></ul>}
           real={<ul><li>The same function signature: tokens in, probabilities out</li><li>Billions to trillions of parameters, trained on trillions of tokens</li><li>Captures grammar, facts, styles, code structure and some multi-step reasoning</li></ul>}
         />
+        <p>Riya looks at the “Happy birthday Amma” message still on her screen. Same loop, wildly different scale. She is starting to see why the scale matters.</p>
         <p><b>Where next:</b> you now have the two big ideas: the loop, and the function inside it. <a href="#/lesson/course-map">The next lesson</a> is the map of how we will build both, piece by piece.</p>
       </RealLLM>
     </Lesson>

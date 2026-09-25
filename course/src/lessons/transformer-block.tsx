@@ -1,3 +1,4 @@
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -9,11 +10,14 @@ export default function TransformerBlockLesson() {
   return (
     <Lesson id="transformer-block">
       <Why>
-        <p className="lede">Two headlines:</p>
+        <p className="lede">Tuesday, 10 a.m. The AI team stands around the whiteboard for stand-up. For ten minutes everyone says what they know, and everyone listens for what they need.</p>
+        <p>Then the huddle breaks. Each person walks back to their own desk to think about what they heard.</p>
+        <p>Riya watches and smiles. Her attention code is only the first half of that morning: the meeting. Nobody in her model goes back to their desk yet.</p>
+        <p>There is a smaller problem too. She types two headlines into her toy model:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>
           “Dog bites man.” &nbsp;&nbsp; “Man bites dog.”
         </div>
-        <p>Same three words. Only one of them is news. Yet the attention you have built so far <b>cannot tell them apart</b>: it compares vectors, and it has no idea where in the sentence a vector came from.</p>
+        <p>Same three words. Only one of them is news. Yet the attention you have built so far <b>cannot tell them apart</b>. It compares vectors, and it has no idea where in the sentence a vector came from.</p>
         <p>That is one of four gaps between “attention” and a working model. In this lesson we close all four. Each fix is small. Together they form the <b>Transformer block</b>, the unit that GPT repeats 12, 32 or 80 times.</p>
         <Callout kind="idea">
           Nothing in a block is decoration. For every part we will ask: what goes wrong <em>without</em> it? And you will be able to remove it and watch.
@@ -30,18 +34,23 @@ export default function TransformerBlockLesson() {
           naive="Hope the causal mask is enough: after all, it makes each token see a different set of earlier tokens."
           fails="The mask tells a token which words came before it, but not in what order, or how far away. In the first block, “dog bites” and “bites dog” look identical to a third token."
           idea="Give every slot in the sequence (0, 1, 2, …) its own learned vector, and add it to the token’s embedding before the first block. Now “dog in slot 0” and “dog in slot 2” are different inputs."
-          tradeoff="A learned table has a fixed number of slots, so the model has a hard maximum length: the context window. Modern models use a different scheme (RoPE) partly for this reason."
+          tradeoff="A learned table has a fixed number of slots, so the model has a hard maximum length: the context window. Most modern models use rotary positions (RoPE) instead, which have no table to run out of. But they still work poorly beyond the length they were trained on, unless extended with scaling tricks such as position interpolation or YaRN."
         />
 
-        <h3>2. It only mixes, it never computes</h3>
-        <p>Look at what attention outputs: a <em>weighted average</em> of value vectors. Averaging moves information between tokens. But an average can never produce anything that was not already in the ingredients.</p>
+        <h3>2. It mostly moves information, it barely processes it</h3>
+        <p>Look at what attention outputs: a <em>weighted average</em> of value vectors.</p>
+        <p>Choosing the weights is not a simple step. They come out of a softmax over query-key scores, a nonlinear function that changes with every input. But once the weights are fixed, the mixing itself is linear in V: each output is a weighted sum of value vectors.</p>
+        <p>A weighted sum moves information between tokens. It cannot build new features that bend or combine the gathered values in nonlinear ways.</p>
         <p>Once “it” has gathered information from “animal”, something must <em>process</em> the result. You already own the tool: the <a href="#/lesson/neurons">MLP from the neurons lesson</a>, with its bend in the middle. In a block it is applied to <b>each token separately</b>.</p>
         <Callout kind="model" label="Simplified mental model: communicate, then compute">
-          Attention is the meeting: tokens exchange information. The MLP is going back to your desk: each token thinks alone about what it just heard. One block = one meeting + one desk session.
+          Attention is the stand-up: tokens exchange information. The MLP is going back to your desk: each token thinks alone about what it just heard. One block = one meeting + one desk session.
+          <br /><br />
+          Where the analogy stops: in a real office, people at their desks can still message each other. In a block they cannot. The MLP sees one token’s row and nothing else. And the “meeting” is not a free conversation: each token only listens to itself and earlier tokens, through learned weights.
         </Callout>
 
         <h3>3. Deep stacks garble the signal</h3>
-        <p>One round of “communicate, then compute” is not enough, so we stack many. But recall <a href="#/lesson/backprop">backpropagation</a>: the gradient reaches an early layer only after being multiplied by something at <em>every</em> layer above it. Multiply 24 numbers that are mostly below 1 and almost nothing arrives.</p>
+        <p>Dev, reading over her shoulder, has the answer: “Just stack more of them. Bigger is smarter.” He is half right. One round of “communicate, then compute” is not enough, so we do stack many.</p>
+        <p>But recall <a href="#/lesson/backprop">backpropagation</a>: the gradient reaches an early layer only after being multiplied by something at <em>every</em> layer above it. Multiply 24 numbers that are mostly below 1 and almost nothing arrives.</p>
         <WhyExists
           problem="In a deep stack, each layer overwrites its input. Going forward, the original token information gets garbled. Going backward, the gradient shrinks or blows up on its way to the early layers."
           naive="x = layer(x), over and over. Each layer must reproduce everything worth keeping AND add something new."
@@ -142,9 +151,19 @@ export default function TransformerBlockLesson() {
           LN(x) = (x − μ) / σ · γ + β
         </Equation>
         <DeepDive title="Pre-norm or post-norm? The diagram in the 2017 paper looks different">
-          <p>It is different. The original Transformer paper (2017) normalised <em>after</em> the addition: <span className="mono">x ← LN(x + Attn(x))</span>. That is called <b>post-norm</b>.</p>
-          <p>GPT-2, our <code>tiny_gpt.py</code> and practically all current LLMs normalise <em>before</em> each sub-layer and leave the residual stream itself untouched: <b>pre-norm</b>, as in the equations above. With post-norm the LayerNorm sits <em>on</em> the highway, so the gradient no longer has a clean “+1” path; deep post-norm models are harder to train. They typically need a careful learning-rate warm-up, meaning you start the training steps very small and grow them over the first few thousand steps. You will meet warm-up again in <a href="#/lesson/training-gpt">Training GPT</a>. Pre-norm turned out to be more forgiving, and won.</p>
-          <p>A side effect you saw in the depth lab: in pre-norm the residual stream is never normalised, so it grows slowly with depth. That is why there is one extra LayerNorm after the last block.</p>
+          <p>It is different. Here are the two versions side by side.</p>
+          <ul>
+            <li><b>Post-norm</b> (the original 2017 paper): normalise <em>after</em> the addition. <span className="mono">x ← LN(x + Attn(x))</span></li>
+            <li><b>Pre-norm</b> (GPT-2, our <code>tiny_gpt.py</code>, practically all current LLMs): normalise a copy <em>before</em> the sub-layer, and leave the residual stream itself untouched. <span className="mono">x ← x + Attn(LN(x))</span></li>
+          </ul>
+          <p>Why does that matter? Follow the gradient.</p>
+          <ol>
+            <li>In post-norm, the LayerNorm sits <em>on</em> the highway. Every gradient going down must pass through it.</li>
+            <li>So the clean “+1” path from the residual is gone.</li>
+            <li>That makes deep post-norm models harder to train. They typically need a careful learning-rate warm-up: start with very small training steps and grow them over the first few thousand steps. You will meet warm-up again in <a href="#/lesson/training-gpt">Training GPT</a>.</li>
+            <li>Pre-norm keeps the “+1” path clear. It turned out to be more forgiving, and it won.</li>
+          </ol>
+          <p>One side effect, which you saw in the depth lab. In pre-norm the residual stream itself is never normalised, so it grows slowly with depth. That is why there is one extra LayerNorm after the last block.</p>
         </DeepDive>
         <DeepDive title="Why add the position vector instead of appending it?">
           <p>Appending would work too, but it would make every vector longer. Adding keeps the width at D, and in a space with hundreds of dimensions there is plenty of room: training can place “what the token is” and “where it is” in different directions of the same vector, and the W<sub>Q</sub>/W<sub>K</sub> matrices can learn to read out either.</p>
@@ -218,6 +237,7 @@ self.blocks = nn.Sequential(*[Block(cfg) for _ in range(cfg.n_layer)])
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="transformer-block-code-prenorm" />
         <Exercise
           id="transformer-block-calc-layernorm"
           type="calculate"
@@ -297,7 +317,7 @@ def forward(self, x):
         <ExplainBack
           id="transformer-block-explain"
           prompt="Explain to a colleague why a Transformer block needs a feed-forward network at all. Attention already combines information from all tokens: what is left to do?"
-          modelAnswer={<p>Attention only moves information: its output for a token is a weighted average of value vectors from the tokens it looked at. An average cannot create anything new, and it treats “what was gathered” only through linear projections. The feed-forward network is an MLP with a non-linear bend, applied to each token separately, so it can compute new features from the mixture that attention delivered. A block therefore alternates: communicate between tokens (attention), then compute within each token (MLP). The MLPs also hold about two thirds of a block’s parameters, so most of the model’s capacity sits there.</p>}
+          modelAnswer={<p>Attention mainly moves information: its output for a token is a weighted average of value vectors from the tokens it looked at. The weights are chosen by a nonlinear softmax, but the mixing itself is linear in the values, so it cannot build new nonlinear features out of what was gathered. The feed-forward network is an MLP with a non-linear bend, applied to each token separately, so it can compute new features from the mixture that attention delivered. A block therefore alternates: communicate between tokens (attention), then compute within each token (MLP). The MLPs also hold about two thirds of a block’s parameters, so most of the model’s capacity sits there.</p>}
         />
       </Exercises>
 
@@ -355,6 +375,7 @@ def forward(self, x):
         <Callout kind="established">The structure you explored, pre-norm residual blocks alternating attention and an MLP, is shared by GPT-2, GPT-3, Llama, Mistral and, as far as is publicly documented, the other major LLM families. The differences are in the details of each box, covered in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>.</Callout>
         <Callout kind="established">About two thirds of a block’s parameters are in the MLP (8D² against 4D² for attention). You will count them yourself in the next lesson.</Callout>
         <Callout kind="research">What do the MLPs <em>do</em> with all those parameters? Interpretability studies suggest that MLP layers play a major role in recalling factual associations, and some describe them as key-value memories. This is evidence from specific experiments, not a complete account: knowledge in a trained model appears to be spread over many layers and both kinds of sub-layer. Treat “facts live in the MLP” as a useful hypothesis, not as settled.</Callout>
+        <p>At 7 p.m. the office floor is empty. Riya draws one block on the whiteboard, meeting then desk, and writes “× N” next to it. Tomorrow she stacks them into a GPT of her own.</p>
       </RealLLM>
 
       <BeforeMovingOn

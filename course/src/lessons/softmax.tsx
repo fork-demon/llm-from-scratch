@@ -9,9 +9,13 @@ export default function SoftmaxLesson() {
   return (
     <Lesson id="softmax">
       <Why>
-        <p className="lede">“The cat sat on the ___”. The model has to commit to a next word.</p>
+        <p className="lede">Friday, 12:40 p.m. The team WhatsApp group is deciding lunch.</p>
+        <p>Riya, being Riya, has asked everyone to give each place a score instead of arguing. Biryani gets plenty of love. Dosa does fine. The new salad place gets a firm minus from half the team.</p>
+        <p>Now she wants to turn those scores into shares: what fraction of the team is really leaning where? She divides each total by the grand total, and the salad place ends up with a negative share of the team. Kabir replies with one line: “Exponentiate first.”</p>
+        <p>The model has the same problem at the end of every step. “The cat sat on the ___”: it has to commit to a next word.</p>
         <p>You know from the <a href="#/lesson/matrices">last lesson</a> what its final step looks like: one big matrix multiply that produces <b>one score per word in the vocabulary</b>. Each score is a dot product, so it can be any number: 4.2, 0, −3.7.</p>
-        <p>Raw scores are awkward. You cannot say “the model is 70% sure” from a 4.2. You cannot roll a die with a face of width −3.7. And during training you cannot measure <em>how wrong</em> the model was without knowing how much belief it put on the right answer.</p>
+        <p>Raw scores are awkward. You cannot say “the model is 70% sure” from a 4.2. You cannot roll a die with a face of width −3.7.</p>
+        <p>And during training you cannot measure <em>how wrong</em> the model was without knowing how much belief it put on the right answer.</p>
         <Callout kind="idea">
           The model needs to turn a list of arbitrary scores into <b>probabilities</b>. The function that does it is called <b>softmax</b>.
           <br /><br />
@@ -57,9 +61,10 @@ export default function SoftmaxLesson() {
             <tbody><tr><td style={{ fontFamily: 'var(--sans)' }}>how many times more likely the higher one is</td><td>1×</td><td>2.7×</td><td>7.4×</td><td>20×</td></tr></tbody>
           </table>
         </div>
-        <p>Every extra point of score multiplies the odds by about 2.7. So a slightly better score gives a clearly better probability, and a much better score wins almost everything. That is the “max” in the name. The “soft” is because the losers still keep a little: mathematically, nothing is ever exactly 0.</p>
+        <p>Every extra point of score multiplies the odds by about 2.7. So a slightly better score gives a clearly better probability, and a much better score wins almost everything.</p>
+        <p>That is the “max” in the name. The “soft” is because the losers still keep a little. Mathematically, nothing is ever exactly 0. Even the salad place keeps a sliver of the lunch vote.</p>
         <Callout kind="analogy">
-          Logits work like the Richter scale for earthquakes. One point higher on the scale does not mean “a bit stronger”, it means “stronger by a fixed multiple”. Differences on the scale are ratios in the real quantity.
+          Logits work like the Richter scale for earthquakes. One point higher on the scale does not mean “a bit stronger”. It means “stronger by a fixed multiple”. Differences on the scale are ratios in the real quantity.
           <br /><br />
           Where the analogy stops: softmax has a second step the Richter scale does not. After exponentiating, everything is divided by the total, so raising one score <em>lowers</em> every other probability. The words compete for a fixed budget of 100%.
         </Callout>
@@ -83,7 +88,8 @@ export default function SoftmaxLesson() {
         </ul>
 
         <h3>How wrong was the model? Loss as surprise</h3>
-        <p>Training needs one number that says how bad a prediction was. Here is the idea the whole field uses. Look at the probability the model gave to the word that <em>actually came next</em>, and ask: <b>how surprised should the model be?</b></p>
+        <p>Training needs one number that says how bad a prediction was. Here is the idea the whole field uses.</p>
+        <p>Look at the probability the model gave to the word that <em>actually came next</em>, and ask: <b>how surprised should the model be?</b></p>
         <p>If it said 90% and was right: barely surprised. If it said 1% and that word came: very surprised. We want a small number in the first case, a big one in the second, and exactly 0 for a perfect 100%. Minus the logarithm does that:</p>
         <div className="table-scroll">
           <table className="plain mono" style={{ fontSize: 14 }}>
@@ -97,8 +103,14 @@ export default function SoftmaxLesson() {
           name="Cross-entropy loss"
           plain={<>The model’s surprise at the right answer. Low when it gave the right answer a high probability, huge when it was confidently wrong.</>}
           example={<>The correct next word got probability 0.5: loss = −ln(0.5) = 0.69. It got 0.01: loss = 4.6.</>}
-          formal={<>For one prediction, loss = −ln(p<sub>correct</sub>). Over a dataset, the average of that. This is the number that training pushes down. (The general definition compares two distributions, −Σ q<sub>i</sub> ln p<sub>i</sub>. When the truth q is “100% on the correct token”, only this one term survives. The loss also has a unit, which depends on the logarithm you use: with ln it is measured in <b>nats</b>, and with log₂ it would be in bits. You will see loss numbers quoted in nats throughout this course.)</>}
+          formal={<>For one prediction, loss = −ln(p<sub>correct</sub>). Over a dataset, the average of that. This is the number that training pushes down.</>}
         />
+        <DeepDive title="Where the name comes from, and what unit the loss is in">
+          <p><b>The general formula.</b> Cross-entropy compares two distributions: the truth q and the model’s guess p. It is −Σ<sub>i</sub> q<sub>i</sub> ln p<sub>i</sub>.</p>
+          <p><b>Why it collapses to one term.</b> For next-token prediction the truth is “100% on the token that came, 0% on everything else”. Every term with q<sub>i</sub> = 0 vanishes. Only −ln(p<sub>correct</sub>) is left.</p>
+          <p><b>The unit.</b> With the natural log (ln), the loss is measured in <b>nats</b>. With log₂ it would be in <b>bits</b>, and 1 nat ≈ 1.44 bits. This course quotes losses in nats throughout.</p>
+          <p><b>Perplexity.</b> You will often see e<sup>loss</sup> reported instead of the loss. It is called <G t="perplexity">perplexity</G>, and it reads as “how many equally likely options the model is choosing between”. A loss of ln(1000) ≈ 6.91 is a perplexity of 1000. A loss of −ln(0.6) ≈ 0.51 is a perplexity of about 1.67.</p>
+        </DeepDive>
       </TryIt>
 
       <Numbers>
@@ -117,7 +129,7 @@ export default function SoftmaxLesson() {
         <p>Check the table from earlier, the one where each point of score multiplied the odds by about 2.7. Cat leads dog by 2.1 points, and 66.69 ÷ 8.17 ≈ 8.2, which is e<sup>2.1</sup>. The ratio depends only on the gap.</p>
 
         <h3>Temperature: divide the logits first</h3>
-        <p>Dividing every logit by a number T before softmax shrinks or stretches the gaps:</p>
+        <p>Dev is sure that high temperature makes the model “think more creatively”. Here is what it actually does. Dividing every logit by a number T before softmax shrinks or stretches the gaps:</p>
         <div className="table-scroll">
           <table className="plain">
             <thead><tr><th>temperature</th><th>logits ÷ T</th><th>cat</th><th>dog</th><th>car</th></tr></thead>
@@ -128,11 +140,13 @@ export default function SoftmaxLesson() {
             </tbody>
           </table>
         </div>
-        <p>The order never changes. Only how decisive the distribution is. This is the “temperature” setting you have seen in LLM APIs. (At T = 0.5, car is not truly 0: it is 0.00005.)</p>
+        <p>The order never changes. Only how decisive the distribution is. This is the “temperature” setting you have seen in LLM APIs.</p>
+        <p>(At T = 0.5, car is not truly 0: it is 0.00005.)</p>
 
         <h3>The loss for this prediction</h3>
         <p>If the correct word was “cat”: loss = −ln(0.885) = <b>0.12</b>. The model was nearly right, and is barely penalised.</p>
-        <p>If the correct word was “dog”: loss = −ln(0.108) = <b>2.22</b>. Eighteen times larger. The only number that matters is the probability on the right answer.</p>
+        <p>If the correct word was “dog”: loss = −ln(0.108) = <b>2.22</b>. Eighteen times larger.</p>
+        <p>The only number that matters is the probability on the right answer.</p>
       </Numbers>
 
       <TheMath>
@@ -276,7 +290,7 @@ softmax(np.array([1000.0, 999.0]))
 
         <ExplainBack
           id="softmax-explain"
-          prompt="A colleague asks: “Why does softmax bother with e to the power of things? Why not just divide each score by the total?” Explain, and mention what temperature does."
+          prompt="Riya’s lunch-vote problem, as a colleague puts it: “Why does softmax bother with e to the power of things? Why not just divide each score by the total?” Explain, and mention what temperature does."
           modelAnswer={<p>Scores can be negative or sum to zero, so dividing by the total can give negative “probabilities” or a division by zero. Exponentiating first makes every score positive while keeping the order. It also turns differences between scores into ratios between probabilities: each extra point multiplies the odds by about 2.7, so a better score wins clearly without the others dropping to exactly zero. Because only differences matter, adding a constant to all scores changes nothing. Temperature divides the scores before exponentiating: below 1 it widens the gaps and makes the top choice dominate, above 1 it shrinks the gaps and spreads probability to less likely options.</p>}
         />
       </Exercises>
@@ -338,6 +352,7 @@ softmax(np.array([1000.0, 999.0]))
           <G t="cross-entropy">Cross-entropy</G> on the next token is the training objective of every GPT-style model. Pretraining means: read text, predict each next token, measure −ln(p<sub>correct</sub>), and adjust the weights to make it smaller. How to “adjust the weights” is the subject of the <a href="#/lesson/derivatives">next lesson</a> and of <a href="#/lesson/gradient-descent">Part 2</a>.
         </Callout>
         <Callout kind="model">“The model is 88% sure it is cat” is a convenient way to talk. The 88% is a well-defined number that pretraining shapes to match how often continuations occur in the training text (later fine-tuning can distort that match). Whether it reflects anything like human confidence is a separate, and much harder, question.</Callout>
+        <p>Riya reruns the lunch vote with e<sup>score</sup>. Biryani takes most of the shares, dosa a fair slice, and the salad place a small but honest sliver. Nobody gets a negative share, and the team goes for biryani.</p>
       </RealLLM>
     </Lesson>
   )

@@ -1,0 +1,41 @@
+.TrainedGptExplorer-card { background: var(--paper-2); border-radius: 6px; padding: 10px 14px; margin-top: 0; }
+.TrainedGptExplorer-h { font-size: 17px; margin: 22px 0 6px; }
+.TrainedGptExplorer-label { display: block; font-size: 14px; color: var(--ink-3); margin-bottom: 4px; }
+textarea.input.TrainedGptExplorer-prompt { min-height: 56px; font-family: var(--mono); font-size: 14px; }
+
+.TrainedGptExplorer-output { font-family: var(--mono); font-size: 14px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--paper-2); border-radius: 6px; padding: 10px 12px; margin-top: 12px; min-height: 3.2em; max-height: 280px; overflow-y: auto; }
+.TrainedGptExplorer-prompttext { color: var(--ink-3); }
+.TrainedGptExplorer-gen { font: inherit; background: none; border: 0; padding: 0; margin: 0; color: var(--ink); cursor: pointer; white-space: pre-wrap; border-radius: 2px; }
+.TrainedGptExplorer-gen:hover { background: var(--accent-soft); }
+.TrainedGptExplorer-gen[aria-pressed='true'] { background: var(--accent); color: var(--on-accent); outline: 2px solid var(--accent); }
+.TrainedGptExplorer-gen:focus-visible { outline: 2px solid var(--accent); }
+.TrainedGptExplorer-top5 { margin-top: 8px; max-width: 460px; }
+
+.TrainedGptExplorer-grid { display: grid; gap: 6px; align-items: center; max-width: 520px; }
+.TrainedGptExplorer-axis { font-size: 12px; color: var(--ink-3); text-align: center; font-family: var(--mono); }
+.TrainedGptExplorer-rowlabel { text-align: right; padding-right: 4px; white-space: nowrap; }
+.TrainedGptExplorer-thumb { position: relative; padding: 3px; border: 1px solid var(--rule-strong); border-radius: 6px; background: var(--card); cursor: pointer; min-width: 0; }
+.TrainedGptExplorer-thumb.flagged { border-width: 2px; border-style: dashed; border-color: var(--ink-2); }
+.TrainedGptExplorer-thumb[aria-pressed='true'] { border: 2px solid var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.TrainedGptExplorer-thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.TrainedGptExplorer-canvas { display: block; width: 100%; height: auto; aspect-ratio: 1; image-rendering: pixelated; }
+.TrainedGptExplorer-badge { position: absolute; left: 3px; right: 3px; bottom: 3px; font-size: 10.5px; line-height: 1.3; background: var(--card); color: var(--ink); border-radius: 3px; opacity: 0.92; text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.TrainedGptExplorer-detail { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 16px; margin-top: 14px; align-items: start; }
+@media (max-width: 640px) { .TrainedGptExplorer-detail { grid-template-columns: minmax(0, 1fr); } .TrainedGptExplorer-big { max-width: 260px; } }
+.TrainedGptExplorer-big { border: 1px solid var(--rule-strong); border-radius: 6px; padding: 4px; background: var(--card); }
+.TrainedGptExplorer-detailtext { min-width: 0; }
+
+.TrainedGptExplorer-tokens { display: flex; flex-wrap: wrap; gap: 2px; margin: 6px 0; }
+.TrainedGptExplorer-tok, .TrainedGptExplorer-heat { font-family: var(--mono); font-size: 13px; min-width: 1.5em; padding: 1px 3px; border-radius: 3px; text-align: center; white-space: pre; }
+.TrainedGptExplorer-tok { border: 1px solid var(--rule-strong); background: var(--paper); color: var(--ink); cursor: pointer; }
+.TrainedGptExplorer-tok[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.TrainedGptExplorer-tok:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.TrainedGptExplorer-heat { border: 1px solid transparent; color: var(--ink); }
+
+.TrainedGptExplorer-lens th[scope='row'] { white-space: nowrap; font-weight: 500; }
+.TrainedGptExplorer-lens td { white-space: nowrap; }
+.TrainedGptExplorer-scores td { padding: 2px 4px; }
+.TrainedGptExplorer-score { font-family: var(--mono); font-size: 13px; background: var(--card); border: 1px solid var(--rule-strong); border-radius: 4px; padding: 3px 6px; cursor: pointer; color: var(--ink); white-space: nowrap; }
+.TrainedGptExplorer-score[aria-pressed='true'] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.TrainedGptExplorer-score .hit { font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; color: var(--accent-ink); }

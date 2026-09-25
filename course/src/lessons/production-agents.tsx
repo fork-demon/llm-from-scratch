@@ -1,3 +1,4 @@
+import { RepoRunner } from '../components/RepoRunner'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -10,17 +11,28 @@ export default function ProductionAgentsLesson() {
   return (
     <Lesson id="production-agents">
       <Why>
-        <p className="lede">In <a href="#/lesson/agents">lesson 9.3</a> your agent answered a question in three steps. It read 1,737 characters in total. It cost nothing, it ran on your laptop, and the only user was you.</p>
-        <p>Now give the same loop real work: “find out why checkout is slow”. It reads a log. 600 tokens. It reads it again. And again. Here is what the model is sent on each of eight steps, measured by this lesson’s Python file:</p>
+        <p className="lede">11:04 p.m. Riya is brushing her teeth when her phone lights up. It is the on-call channel: “ops agent spend alert, 40x normal”.</p>
+        <p>The ops agent is the small helper the team built last month. Engineers ask it things like “find out why checkout is slow”, and it reads logs and reports back. On Riya’s laptop it was perfect.</p>
+        <p>She opens the trace in bed, laptop balanced on a pillow. The agent is not broken. It is stuck. It reads a log, 600 tokens. It reads it again. And again.</p>
+        <p>In <a href="#/lesson/agents">lesson 9.3</a> your agent answered a question in three steps and read 1,737 characters in total. Here is what this one sends the model on each of eight steps, measured by this lesson’s Python file:</p>
         <div className="card center mono" style={{ fontSize: 15 }}>126 → 910 → 1,694 → 2,479 → 3,263 → 4,047 → 4,831 → 5,616 tokens</div>
-        <p>The last call is 5,616 tokens. The run as a whole was billed for <b>22,966</b> input tokens, because every call re-sends everything before it. The run produced 168 tokens of output, and no answer.</p>
-        <p>Nothing in the loop is broken. It is doing exactly what you wrote. What is missing is everything a production system wraps <em>around</em> the loop: a budget, a way to keep the context small, tools designed for a caller that guesses, a gate in front of actions that cannot be undone, and a trace so that you can see any of this happening.</p>
+        <p>The last call is 5,616 tokens. The run as a whole was billed for <b>22,966</b> input tokens, because every call re-sends everything before it. It produced 168 tokens of output, and no answer.</p>
+        <p>Nothing in the loop is broken. It is doing exactly what you wrote. What is missing is everything a production system wraps <em>around</em> the loop:</p>
+        <ul>
+          <li>a budget,</li>
+          <li>a way to keep the context small,</li>
+          <li>tools designed for a caller that guesses,</li>
+          <li>a gate in front of actions that cannot be undone,</li>
+          <li>and a trace, so that you can see any of this happening.</li>
+        </ul>
+        <p>Riya had the trace. That is the only reason she can go back to sleep by midnight.</p>
         <Callout kind="idea">
           The model is a fixed function of its context. So the engineering that is left to you has two halves. <b>Context engineering:</b> decide what goes into the window on every turn. <b>Harness engineering:</b> decide what the loop is allowed to do, spend and touch. This lesson is both, and it is what tools like Claude Code and Codex are made of.
         </Callout>
       </Why>
 
       <Problem>
+        <p>Next morning Dev has a fix ready before Riya has finished her coffee: “Use the model with the million-token window. Then it never runs out.” Kabir, walking past, says only, “And who pays for the million tokens, every step?”</p>
         <WhyExists
           problem="An agent that works on a short, friendly task must now handle long tasks, hostile inputs, real side effects and a real bill."
           naive="Keep the loop from lesson 9.3. Buy a model with a bigger context window and append everything: every tool result, every earlier turn, every document that might help."
@@ -134,26 +146,51 @@ export default function ProductionAgentsLesson() {
         </div>
         <p>The prefix is sent 10 times, so 20,000 tokens. The appended steps are re-sent 0 + 1 + 2 + … + 9 = 45 times, so 45,000 more. The window never held more than 11,000 tokens, and you paid for 65,000.</p>
         <p>Run it for 20 steps and the total is 230,000. <b>Twice the steps, three and a half times the bill.</b> Meanwhile the output, the part that is the actual work, is only 2,000 tokens at 10 steps and 4,000 at 20.</p>
-        <p><b>What prompt caching changes.</b> Each call’s input begins with the whole previous call’s input, unchanged. Providers can keep the <G t="kv-cache">KV cache</G> for that prefix and bill the repeated part at a fraction of the price. With example prices of $3 per million input tokens, $15 per million output tokens, cached reads at 10% and cache writes at 125%:</p>
-        <div className="table-scroll">
-          <table className="plain mono" style={{ fontSize: 14 }}>
-            <thead><tr><th>10-step run</th><th>input billed</th><th>of which cache hits</th><th>cost without caching</th><th>cost with caching</th></tr></thead>
-            <tbody><tr><td>65,000 in, 2,000 out</td><td>65,000</td><td>54,000</td><td>$0.225</td><td>$0.087</td></tr></tbody>
-          </table>
-        </div>
-        <p>The bill fell by 61%. The window did not change by one token: call 10 is still 11,000 tokens long, still has to fit, and still dilutes the model’s attention. <b>Caching is a discount, not a compression.</b> And it only works while the prefix is byte-for-byte identical. Rewrite the history, reorder the tools, or put a timestamp in the system prompt, and everything after the change is a cache miss. Cache entries also expire after minutes without use.</p>
-        <p><b>The real run.</b> <code>python phase6-engineering/agent_budget.py</code>, the stuck log-reading agent, 8 steps, tokens estimated as characters ÷ 4:</p>
-        <div className="table-scroll">
-          <table className="plain mono" style={{ fontSize: 13.5 }}>
-            <thead><tr><th>strategy</th><th>input tokens billed</th><th>cache hits</th><th>cost with caching</th><th>cost without</th></tr></thead>
-            <tbody>
-              <tr><td>naive: resend everything</td><td>22,966</td><td>17,345</td><td>$0.0288</td><td>$0.0714</td></tr>
-              <tr><td>truncate tool results to 100 tokens</td><td>5,159</td><td>3,990</td><td>$0.0081</td><td>$0.0180</td></tr>
-              <tr><td>compaction at 3,500 characters</td><td>11,315</td><td>6,435</td><td>$0.0228</td><td>$0.0365</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p>Read the last row twice. Compaction halved the tokens and saved only 21% of the cached bill, because each compaction rewrote the history and threw the cache away: hits fell from 76% of the input to 57%. The cheapest token is the one a tool never returned.</p>
+        <p><b>What prompt caching changes.</b> Each call’s input begins with the whole previous call’s input, unchanged. Providers can keep the <G t="kv-cache">KV cache</G> for that prefix and bill the repeated part at a fraction of the price.</p>
+        <p>Take example prices: $3 per million input tokens, $15 per million output tokens, cached reads at 10% of the input price and cache writes at 125%. In the 10-step run above, 54,000 of the 65,000 input tokens are cache hits.</p>
+        <ul>
+          <li>Without caching the run costs <b>$0.225</b>.</li>
+          <li>With caching it costs <b>$0.087</b>, which is 61% less.</li>
+        </ul>
+        <p>The window did not change by one token. Call 10 is still 11,000 tokens long, still has to fit, and still dilutes the model’s attention. <b>Caching is a discount, not a compression.</b></p>
+        <p>And it only works while the prefix is byte-for-byte identical. Rewrite the history, reorder the tools, or put a timestamp in the system prompt, and everything after the change is a cache miss. Cache entries also expire after minutes without use.</p>
+        <p><b>The real run.</b> This is Riya’s stuck agent, reproduced by <code>python phase6-engineering/agent_budget.py</code>: 8 steps, tokens estimated as characters ÷ 4, the same example prices. Three strategies, each costed with and without caching:</p>
+        <figure style={{ margin: '12px 0' }}>
+          <div className="table-scroll">
+            <svg viewBox="0 0 760 262" style={{ width: '100%', minWidth: 520 }} role="img" aria-label="Cost of the 8-step stuck agent run. Naive: $0.0714 without caching, $0.0288 with caching. Truncating tool results to 100 tokens: $0.0180 without, $0.0081 with. Compaction at 3,500 characters: $0.0365 without, $0.0228 with.">
+              <title>Cost of one stuck agent run under three context strategies, with and without prompt caching</title>
+              <rect x="250" y="8" width="14" height="14" fill="var(--rule-strong)" />
+              <text x="270" y="20" style={{ fontSize: 13, fill: 'var(--ink-3)' }}>without caching</text>
+              <rect x="410" y="8" width="14" height="14" fill="var(--accent)" />
+              <text x="430" y="20" style={{ fontSize: 13, fill: 'var(--ink-3)' }}>with caching</text>
+              {[
+                { label: 'naive: resend everything', sub: '22,966 tokens in', without: 0.0714, withC: 0.0288 },
+                { label: 'truncate tool results', sub: '5,159 tokens in', without: 0.0180, withC: 0.0081 },
+                { label: 'compaction at 3,500 chars', sub: '11,315 tokens in', without: 0.0365, withC: 0.0228 },
+              ].map((r, i) => {
+                const y = 44 + i * 72
+                const w = (v: number) => (v / 0.0714) * 420
+                return (
+                  <g key={r.label}>
+                    <text x="0" y={y + 17} style={{ fontSize: 14, fontWeight: 600, fill: 'var(--ink)' }}>{r.label}</text>
+                    <text x="0" y={y + 35} style={{ fontSize: 12.5, fill: 'var(--ink-3)' }}>{r.sub}</text>
+                    <rect x="250" y={y} width={w(r.without)} height="20" fill="var(--rule-strong)" />
+                    <text x={256 + w(r.without)} y={y + 15} style={{ fontSize: 13, fill: 'var(--ink-3)', fontFamily: 'var(--mono)' }}>${r.without.toFixed(4)}</text>
+                    <rect x="250" y={y + 24} width={w(r.withC)} height="20" fill="var(--accent)" />
+                    <text x={256 + w(r.withC)} y={y + 39} style={{ fontSize: 13, fill: 'var(--ink)', fontFamily: 'var(--mono)' }}>${r.withC.toFixed(4)}</text>
+                  </g>
+                )
+              })}
+              <line x1="250" y1="36" x2="250" y2="254" className="axis" />
+            </svg>
+          </div>
+        </figure>
+        <p>Two things to read off it.</p>
+        <ul>
+          <li><b>Truncating tool results wins, by far.</b> $0.0081 with caching, 72% less than the naive run. The cheapest token is the one a tool never returned.</li>
+          <li><b>Compaction disappoints.</b> It halved the input tokens, 22,966 to 11,315, yet cut the cached bill by only 21%.</li>
+        </ul>
+        <p>Why so little? Each compaction rewrote the history and threw the cache away. In the naive run 76% of the input was cache hits (17,345 tokens). After compaction only 57% was (6,435 tokens).</p>
         <Callout kind="dev">Cost and latency per task are SLO material. Both have long tails, because a run that goes wrong runs long. Track p50 and p99 of tokens, cost and wall time per task type, and alert on the tail. A budget is a circuit breaker: decide in advance what happens when it trips.</Callout>
       </Numbers>
 
@@ -259,6 +296,9 @@ span step kind  name             in cached   out result     ms     cost $  note
      answer : 161
 `}</Code>
         <Callout kind="dev">Each span is a plain dictionary, and <code>--json</code> dumps the run. In production you would emit the same fields as attributes on OpenTelemetry-style spans, with the run id as the trace id, so that agent runs show up in the tracing system you already operate, next to the services the tools call.</Callout>
+        <RepoRunner path="phase6-engineering/agent_budget.py" title="Run agent_budget.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
@@ -464,6 +504,7 @@ span step kind  name             in cached   out result     ms     cost $  note
         <Callout kind="model">That table describes documented behaviour at the time of writing. How any particular product decides when to compact, what its system prompt contains, or how its classifier for risky commands works is mostly not public, and these tools change monthly. Treat the mapping as “the same architecture”, not as a specification of either product.</Callout>
         <Callout kind="established">This explains things you have seen at the keyboard. Why a long session gets vaguer about early decisions (they were compacted away). Why a fresh session with a good instruction file often beats continuing a long one. Why a sub-agent’s exploration does not clutter your main conversation, and why it sometimes returns a report missing the detail you wanted. Why a tool that dumps 5,000 lines makes the rest of the session worse. None of it is mysterious: it is the window.</Callout>
         <Callout kind="research">Several of the numbers people quote here are single-source and will age. Anthropic reported that in their data agents used about 4 times the tokens of chat, and multi-agent systems about 15 times. How well models use very long contexts is improving and is still measurably imperfect. Reliable defences against prompt injection, trustworthy long-horizon memory, and evaluation of multi-step agents are all open problems. The accounting in this lesson, tokens times price, summed over calls, is the part that will not change.</Callout>
+        <p>By Friday the ops agent has a step budget, a 100-token cap on tool results with the rest offloaded to a file, and a p99 cost alert that pages a human before it reaches 40x. Riya writes the post-mortem in five lines. The last one says: “The loop did exactly what we wrote.”</p>
       </RealLLM>
 
       <BeforeMovingOn

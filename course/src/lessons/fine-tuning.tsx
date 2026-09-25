@@ -1,3 +1,4 @@
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -10,10 +11,11 @@ export default function FineTuningLesson() {
   return (
     <Lesson id="fine-tuning">
       <Why>
-        <p className="lede">Your support bot must always answer in your company’s voice, in a fixed JSON format, in two sentences.</p>
-        <p>You can describe all of that in the prompt. It mostly works. But the description is 800 tokens long, you pay for it on every call, and one request in fifty still comes back as a chatty paragraph.</p>
-        <p>You could add documents with <a href="#/lesson/rag">RAG</a>. That does not help: the model is not missing <em>information</em>. It is missing a <em>habit</em>.</p>
-        <p>Habits live in the weights. To change a habit, you change the weights.</p>
+        <p className="lede">The bot now finds the right policy. It still does not sound like Paisa Pal.</p>
+        <p>The brand team’s rule is short: two warm sentences, no “Dear Valued Customer”, and a fixed JSON format so the app can show the reply. Riya reads a sample of the bot’s answers during lunch. One begins “We deeply regret any inconvenience this may have caused” and goes on for a whole paragraph.</p>
+        <p>She has described all of that in the prompt. It mostly works. But the description is now 800 tokens long, Paisa Pal pays for it on every call, and one request in fifty still comes back as a chatty paragraph.</p>
+        <p>Adding documents with <a href="#/lesson/rag">RAG</a> will not help. The model is not missing <em>information</em>. It is missing a <em>habit</em>.</p>
+        <p>Kabir puts it in one line: “Habits live in the weights.” To change a habit, you change the weights.</p>
         <Callout kind="idea">
           Part 9’s question again: <b>what exactly changes?</b> RAG changed the prompt and left the weights alone. Fine-tuning is the mirror image: <b>the weights change, and the prompt can stay short</b>.
         </Callout>
@@ -29,8 +31,9 @@ export default function FineTuningLesson() {
           example={<>2,000 pairs of (customer message → ideal reply in your format). Run the usual training loop for a few passes with a small <G t="learning-rate">learning rate</G>.</>}
           formal={<>Minimise the same next-token <G t="cross-entropy">cross-entropy</G> loss, starting from pretrained <G t="parameters">parameters</G> instead of random ones. With prompt → response pairs this is called supervised fine-tuning (SFT).</>}
         />
-        <p>Nothing new is needed mechanically. Same model, same loss, same <G t="gradient-descent">gradient descent</G>. Three things differ: the <b>data</b> is yours, the <b>starting point</b> is a trained model, and the <b>learning rate</b> is small, because you want to nudge a working system, not rebuild it.</p>
-        <p>That simplicity hides two real problems.</p>
+        <p>Nothing new is needed mechanically. Same model, same loss, same <G t="gradient-descent">gradient descent</G>.</p>
+        <p>Three things differ. The <b>data</b> is yours. The <b>starting point</b> is a trained model. The <b>learning rate</b> is small, because you want to nudge a working system, not rebuild it.</p>
+        <p>Riya is relieved: she already has the training loop from Part 7. Kabir is less relieved. “The loop is the simple part,” he says. That simplicity hides two real problems.</p>
         <WhyExists
           problem="You want to specialise a large pretrained model, perhaps for many different tasks or customers."
           naive="Full fine-tuning: update every weight, and save a complete copy of the model per task."
@@ -42,6 +45,7 @@ export default function FineTuningLesson() {
 
       <MentalModel>
         <h3>First decide whether you should fine-tune at all</h3>
+        <p>Dev has a plan ready. “Fine-tune it on all our product docs. Then it knows everything and we can drop the search.” It sounds efficient. It is the most common mistake in this lesson, and the table shows why.</p>
         <p>Three tools, three different things that change. Reach for them in this order, because each is more expensive than the one before.</p>
         <div className="table-scroll">
           <table className="plain">
@@ -58,19 +62,22 @@ export default function FineTuningLesson() {
         <Callout kind="dev">Rule of thumb: <b>RAG for what the model should know, fine-tuning for how the model should behave.</b> They combine well: a fine-tuned model that reliably follows your format, fed by retrieval for the facts.</Callout>
 
         <h3>The data is the specification</h3>
-        <p>The loss rewards one thing: predicting your examples. So the model imitates <em>everything</em> in them. The format, yes. Also the typos, the inconsistent tone, the agent who always wrote “pls advise”, and any wrong answers.</p>
+        <p>The loss rewards one thing: predicting your examples. So the model imitates <em>everything</em> in them.</p>
+        <p>The format, yes. Also the typos, the inconsistent tone, the agent who always wrote “pls advise”, and any wrong answers.</p>
         <p>That is why a few hundred excellent, consistent examples usually beat many thousands of sloppy ones. With sloppy data you are fitting the model to the slop.</p>
         <Callout kind="established">This is an observed regularity, not a theorem, but it is widely reported: for teaching a style or format to an already capable model, quality and consistency of examples matter far more than count. Teaching genuinely new knowledge or skills needs much more data, and is less reliable.</Callout>
 
         <h3>Why models forget</h3>
         <p>In <a href="#/lesson/why-llms-know">Why LLMs know things</a> you saw that abilities are spread across shared weights. The same weight helps with many things at once.</p>
-        <p>Now look at the loss during fine-tuning. It contains <em>only</em> your new examples. Nothing in it mentions French, or Python, or Shakespeare. Gradient descent moves every weight in whatever direction lowers the new loss, with no regard for what else that weight was doing.</p>
+        <p>Now look at the loss during fine-tuning. It contains <em>only</em> your new examples. Nothing in it mentions French, or Python, or Shakespeare.</p>
+        <p>Gradient descent moves every weight in whatever direction lowers the new loss. It pays no attention to what else that weight was doing.</p>
         <Term
           name="Catastrophic forgetting"
           plain={<>While learning the new task, the model gets measurably worse at things it used to do, because the same weights were overwritten.</>}
           example={<>Fine-tune a Shakespeare model on office English: office loss falls, Shakespeare loss rises.</>}
           formal={<>Minimising L<sub>new</sub>(θ) alone places no constraint on L<sub>old</sub>(θ). It is not a malfunction. It is the absence of any mechanism that could prevent it.</>}
         />
+        <p>Amma has a version of this problem in her kitchen. Her mother’s recipe notebook is forty years old, and she will not write in it. Her own changes go on slips of paper tucked between the pages.</p>
         <Callout kind="analogy">
           Full fine-tuning <b>rewrites pages of the book</b>. LoRA leaves the book untouched and adds <b>sticky notes</b>: small corrections on top. Peel the notes off and the original book is back, exactly.
           <br /><br />
@@ -101,13 +108,15 @@ export default function FineTuningLesson() {
           </table>
         </div>
         <p className="muted" style={{ fontSize: 14.5 }}>One run with the script’s fixed seed, 400 pretraining and 200 fine-tuning steps, on the machine used to write this lesson. Your third decimal may differ.</p>
-        <p>Read it honestly. Full fine-tuning learned the new style best and lost 0.45 on the old one. LoRA trained <b>1.52%</b> of the weights, got about 60% of the improvement on the new style (0.48 of 0.81), and with the adapter attached its Shakespeare loss rose almost as much. The script’s checksum proves the part LoRA really guarantees: the 807,424 base weights did not move, so removing the adapter gives the base model back, byte for byte.</p>
+        <p>Read it honestly. Full fine-tuning learned the new style best and lost 0.45 on the old one.</p>
+        <p>LoRA trained <b>1.52%</b> of the weights and got about 60% of the improvement on the new style (0.48 of 0.81). With the adapter attached, its Shakespeare loss rose almost as much.</p>
+        <p>The script’s checksum proves the part LoRA really guarantees. The 807,424 base weights did not move, so removing the adapter gives the base model back, byte for byte.</p>
         <h3>Why can so few numbers be enough?</h3>
         <LoraTrainer />
       </TryIt>
 
       <Numbers>
-        <p>Take one weight matrix from a 7-billion-parameter-class model: 4096 inputs, 4096 outputs.</p>
+        <p>Finance will ask Riya what this costs, so she counts. Take one weight matrix from a 7-billion-parameter-class model: 4096 inputs, 4096 outputs.</p>
         <div className="table-scroll">
           <table className="plain">
             <tbody>
@@ -144,7 +153,8 @@ export default function FineTuningLesson() {
           example={<>With r = 1, every row of A·B is a multiple of the same single row. With r = 2, every row is a mix of two rows.</>}
           formal={<>rank(AB) ≤ r. A full d × d matrix can have rank up to d.</>}
         />
-        <p><b>Why would a low-rank correction be enough?</b> You are not teaching the model language from scratch. You are nudging a capable system. The empirical finding behind LoRA is that the <em>change</em> needed for such nudges is often close to low-rank, even though W itself is not. The lab above showed both sides: a rank-2 change is captured perfectly at r = 2, and an arbitrary change still has 42% error at r = 2.</p>
+        <p><b>Why would a low-rank correction be enough?</b> You are not teaching the model language from scratch. You are nudging a capable system.</p>
+        <p>The empirical finding behind LoRA is that the <em>change</em> needed for such nudges is often close to low-rank, even though W itself is not. The lab above showed both sides: a rank-2 change is captured perfectly at r = 2, and an arbitrary change still has 42% error at r = 2.</p>
         <p><b>Merge or swap.</b> After training, you can compute W′ = W + A·B·(α/r) once and serve W′: same outputs, zero extra cost per token. Or keep W shared and swap small (A, B) pairs per customer or task.</p>
         <DeepDive title="Why must exactly one of A and B start at zero?">
           <p>The gradient that reaches A is (upstream gradient) × Bᵀ. The gradient that reaches B is Aᵀ × (upstream gradient). If B = 0 and A is random: A gets no gradient on the first step, but B does, so B moves away from zero, and from the next step A learns too.</p>
@@ -217,6 +227,7 @@ opt = torch.optim.AdamW(params, lr=lr)
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="fine-tuning-code-lora" />
         <Exercise
           id="fine-tuning-calc-lora"
           type="calculate"
@@ -319,10 +330,11 @@ self.B = nn.Parameter(torch.zeros(r, base.out_features))
         <Flow horizontal steps={[{ label: 'Plain LLM' }, { label: 'RAG', sub: 'changes the prompt' }, { label: 'This lesson: fine-tuning', sub: 'changes the weights' }, { label: 'Agents', sub: 'changes the code around it' }]} active={2} />
         <ToyVsReal
           toy={<ul><li>A 0.8M-parameter character GPT; a 27×27 bigram in the browser</li><li>Two tiny synthetic corpora standing in for “old skill” and “new task”</li><li>Rank 4 on the attention layers: 12,288 trainable numbers</li><li>Forgetting measured as one loss on one old corpus</li></ul>}
-          real={<ul><li>Billions of parameters; the pretrained weights are usually downloaded, not trained by you</li><li>Prompt → response pairs (SFT), often followed by preference tuning</li><li>LoRA on attention and often feed-forward layers, commonly combined with a quantised (compressed) frozen base so it fits on one GPU</li><li>Forgetting checked with a battery of benchmarks and task-specific regression tests</li></ul>}
+          real={<ul><li>Billions of parameters; the pretrained weights are usually downloaded, not trained by you</li><li>Prompt → response pairs (SFT), often followed by preference tuning such as DPO (see <a href="#/lesson/alignment-safety">Alignment and safety</a>). The ideal replies are often written by a bigger model rather than by people (see <a href="#/lesson/distillation">Small models from big ones</a>)</li><li>LoRA on attention and often feed-forward layers, commonly combined with a quantised (compressed) frozen base so it fits on one GPU</li><li>Forgetting checked with a battery of benchmarks and task-specific regression tests</li></ul>}
         />
-        <Callout kind="established">The assistant you chat with is itself a fine-tuned model: pretraining, then <G t="sft">SFT</G>, then preference tuning, as in <a href="#/lesson/training-pipeline">lesson 8.3</a>. Serving many LoRA adapters over one shared frozen base is standard practice, because swapping a small adapter is far cheaper than loading another full model.</Callout>
-        <Callout kind="research">Why low-rank corrections work as well as they do, when they fall short of full fine-tuning, and how to fine-tune without forgetting are all open questions. Reported results differ by task: LoRA tends to match full fine-tuning on style and instruction-following, and to lag on tasks that need a lot of new knowledge or skill. One careful comparison on code and maths (Biderman et al., 2024, “LoRA Learns Less and Forgets Less”) found that LoRA learned less of the new domain and also forgot less of the old one than full fine-tuning. Our tiny run shows the first half clearly and the second only weakly, so do not generalise from it. Treat any blanket claim in either direction with suspicion.</Callout>
+        <Callout kind="established">The assistant you chat with is itself a fine-tuned model: pretraining, then <G t="sft">SFT</G>, then preference tuning and reinforcement learning, as in <a href="#/lesson/training-pipeline">From raw text to assistant</a>. How those later stages teach a model what it should not do is the subject of <a href="#/lesson/alignment-safety">Alignment and safety</a>. Serving many LoRA adapters over one shared frozen base is standard practice, because swapping a small adapter is far cheaper than loading another full model.</Callout>
+        <Callout kind="research">Why low-rank corrections work as well as they do, when they fall short of full fine-tuning, and how to fine-tune without forgetting are all open questions. Reported results differ by task: LoRA tends to match full fine-tuning on style and instruction-following, and to lag on tasks that need a lot of new knowledge or skill. One careful comparison on code and maths (Biderman et al., 2024, “LoRA Learns Less and Forgets Less”) found that LoRA learned less of the new domain and also forgot less of the old one than full fine-tuning. Our tiny run shows the first half clearly and the second only weakly, so do not generalise from it. A later study (Thinking Machines Lab, 2025, “LoRA Without Regret”) reported that LoRA applied to every layer, including the feed-forward ones, matched full fine-tuning on many post-training datasets, and fell behind mainly when the dataset was large. Treat any blanket claim in either direction with suspicion.</Callout>
+        <p>Two weeks later Riya runs the held-out tickets through the adapter. The replies come back short, warm and in valid JSON. Then, following the script’s habit, she re-tests the old abilities too. Dev asks why she is checking things nobody complained about. “Because the loss never checked them,” she says.</p>
       </RealLLM>
     </Lesson>
   )

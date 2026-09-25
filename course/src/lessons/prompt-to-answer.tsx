@@ -8,10 +8,14 @@ export default function PromptToAnswerLesson() {
   return (
     <Lesson id="prompt-to-answer">
       <Why title="What happens when you press Enter?">
-        <p className="lede">You type this into a chat box and press Enter:</p>
+        <p className="lede">Monday morning at Paisa Pal, a fintech office in Bengaluru. The CEO has one line on the all-hands slide: “Our own ChatGPT for customer support.”</p>
+        <p>By lunch, Riya has been moved to the new AI team. She is a good backend developer. Java, Python, queues, databases. She has never trained a model in her life.</p>
+        <p>To start somewhere, she opens the vendor chatbot the team is trialling and types a test question:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>What is a cat?</div>
-        <p>A second later, words start to appear. “A cat is a small furry animal…” They arrive one piece at a time, like someone typing.</p>
-        <p>What happened in that second? Most developers use these systems every day and could not say. By the end of this course you will be able to draw every step, explain it, and point at the code that does it. You will have written that code yourself.</p>
+        <p>A moment later, words begin to appear. “A cat is a small furry animal…” They arrive one piece at a time, like someone typing.</p>
+        <p>Dev, her flatmate, is reading over her shoulder with his chai. “Easy,” he says. “It looked it up.”</p>
+        <p>Riya is not so sure. She uses these tools every day, and she realises she cannot explain what happened in that one second. Kabir, the team’s ML lead, only smiles. “Good. Then we start at the bottom.”</p>
+        <p>By the end of this course you will be able to draw every step of that second, explain it, and point at the code that does it. You will have written that code yourself.</p>
         <p>This first lesson has no maths and no code. It shows you the whole machine from the outside, once, so that every later lesson has somewhere to sit.</p>
         <Callout kind="idea">
           An LLM answers by doing one small thing over and over: given all the text so far, work out <b>how likely each possible next piece of text is</b>, pick one, add it to the text, and go again.
@@ -19,8 +23,8 @@ export default function PromptToAnswerLesson() {
       </Why>
 
       <Problem title="The wrong picture: “it looks the answer up”">
-        <p>As developers we reach for what we know. Text goes in, a relevant answer comes out: that smells like a database or a search index.</p>
-        <p>It is a natural guess. It is also wrong, and it will mislead you about everything the model does well and everything it does badly.</p>
+        <p>Dev’s guess is the one most of us make. As developers we reach for what we know. Text goes in, a relevant answer comes out. That smells like a database or a search index.</p>
+        <p>It is a natural guess. It is also wrong. And it will mislead you about everything the model does well, and everything it does badly.</p>
         <WhyExists
           problem="We need a working picture of what sits between the prompt and the answer."
           naive="Somewhere there is a giant store of questions and answers. The model finds the closest match and returns it."
@@ -28,7 +32,7 @@ export default function PromptToAnswerLesson() {
           idea="Nothing is looked up. The answer does not exist anywhere until it is produced, one small piece at a time, by a calculation."
           tradeoff="A calculation that can write anything can also write things that are false. There is no stored row to check against."
         />
-        <p>Three observations you can verify yourself in any chat product, and that a lookup cannot explain:</p>
+        <p>Here are three things you can check yourself in any chat product. A lookup cannot explain any of them.</p>
         <ul>
           <li>The answer <b>streams</b> in piece by piece. A lookup would return the whole row at once.</li>
           <li>Longer answers take <b>roughly proportionally longer</b>. Each piece costs about the same amount of work.</li>
@@ -38,10 +42,12 @@ export default function PromptToAnswerLesson() {
       </Problem>
 
       <MentalModel title="A pipeline with a loop at the end">
-        <p>Here is the whole journey, drawn with the actual data at each stage.</p>
+        <p>Kabir picks up a marker. “This is what happened when you pressed Enter.”</p>
+        <p>Here is that whole journey, drawn with the actual data at each stage.</p>
         <p>Some of the words will be new. That is fine. Each one has a plain-English line under it here, and a whole lesson of its own later.</p>
         <LoopDiagram />
-        <p>Follow the numbers 1 to 8, then the dashed arrow. The chosen token “A” is glued onto the text, and the whole trip runs again to choose the token after it. One trip per token, until the answer is finished.</p>
+        <p>Follow the numbers 1 to 8, then the dashed arrow. The chosen token “A” is glued onto the text. Then the whole trip runs again, to choose the token after it.</p>
+        <p>One trip per token, until the answer is finished. That is why Riya saw the words arrive one by one.</p>
         <p>Two pieces of vocabulary are worth fixing now, because the whole course leans on them.</p>
         <Term
           name="Token"
@@ -58,17 +64,22 @@ export default function PromptToAnswerLesson() {
         <Callout kind="analogy">
           Think of your phone keyboard’s next-word suggestions, and imagine tapping a suggestion again and again to write a whole message. The loop is the same: look at the text so far, propose next words, pick one, repeat.
           <br /><br />
-          Where the analogy stops: your keyboard looks at a couple of words and uses simple statistics. An LLM reads the <em>entire</em> text so far and runs it through a calculation with billions of adjustable numbers. The loop is identical. The quality of the prediction is not remotely comparable.
+          Where the analogy stops: your keyboard looks at a couple of words and uses simple statistics. An LLM reads the <em>entire</em> text so far, and runs it through a calculation with billions of adjustable numbers.
+          <br /><br />
+          The loop is the same. The quality of the prediction is not even close.
         </Callout>
         <Callout kind="dev">
-          In code, the whole thing is a <code>while</code> loop around a pure function: <code>probs = model(tokens)</code>, <code>tokens.append(pick(probs))</code>. The model itself has no memory between calls and no loop inside it. All the “conversation” lives in the growing list of tokens you pass back in.
+          In code, the whole thing is a <code>while</code> loop around a pure function: <code>probs = model(tokens)</code>, then <code>tokens.append(pick(probs))</code>.
+          <br /><br />
+          The model has no memory between calls and no loop inside it. All the “conversation” lives in the growing list of tokens you pass back in.
         </Callout>
       </MentalModel>
 
       <TryIt title="Click through the machine, then run the loop">
         <p>First click through the ten stages for the prompt. Then press <b>Generate next token</b> a few times, and click back to “Tokens”, “Embeddings” and “Next-token probabilities” to see how they changed.</p>
         <PipelineExplorer />
-        <p>Notice what you did <em>not</em> see: no search, no stored answers, no sentence waiting to be retrieved. Only numbers flowing forward, one die roll, and a loop.</p>
+        <p>Notice what you did <em>not</em> see. No search. No stored answers. No sentence waiting to be fetched. Only numbers flowing forward, one roll of a die, and a loop.</p>
+        <p>So Dev was wrong, but in a useful way. Nothing was looked up.</p>
       </TryIt>
 
       <BreakIt>
@@ -103,7 +114,7 @@ export default function PromptToAnswerLesson() {
           ]}
           solution={<><p><b>6.</b> Five visible tokens (“ A”, “ cat”, “ is”, “ furry”, “.”) plus the invisible <span className="mono">&lt;end&gt;</span> token. Stopping is itself a prediction, so it costs a run like any other token.</p><p>This is why long answers are slow and why API pricing counts output tokens: every single token costs one full pass through the model.</p></>}
         >
-          <p>With seed 1 (randomness on), the explorer answers “A cat is furry.” How many times did the whole pipeline, including the Transformer, have to run to produce that answer?</p>
+          <p>Riya sets the seed to 1 (randomness on), and the explorer answers “A cat is furry.” How many times did the whole pipeline, including the Transformer, have to run to produce that answer?</p>
         </Exercise>
 
         <Exercise
@@ -137,7 +148,7 @@ export default function PromptToAnswerLesson() {
 
         <ExplainBack
           id="prompt-to-answer-explain"
-          prompt="A colleague says: “ChatGPT is basically a search engine with a nicer interface.” Using what you saw in the explorer, explain in a few sentences what actually happens between the prompt and the answer."
+          prompt="Dev says: “ChatGPT is basically a search engine with a nicer interface.” Using what you saw in the explorer, explain in a few sentences what actually happens between the prompt and the answer."
           modelAnswer={<p>Nothing is searched. The prompt is cut into tokens, the tokens become numbers, and a very large calculation turns those numbers into a probability for every possible next token. One token is picked at random according to those probabilities and appended to the text. Then the whole thing runs again on the longer text, and again, until an end token is picked. The answer never existed anywhere before it was generated, which is why the model can write things nobody has written, why the same question can give different answers, and why it can be fluently wrong.</p>}
         />
       </Exercises>
@@ -207,6 +218,7 @@ export default function PromptToAnswerLesson() {
           <p>It does not. On every turn, the application sends the <em>whole conversation so far</em> as one long text: your first message, the model’s reply, your second message, and so on. The model reads all of it from scratch and predicts what comes next.</p>
           <p>That is also why conversations have a maximum length (the <G t="context-window">context window</G>) and why long chats cost more per message. Later you will meet the <G t="kv-cache">KV cache</G>, a trick that avoids redoing the arithmetic for tokens already seen. It saves work, but it does not change what is computed.</p>
         </DeepDive>
+        <p>That evening Riya tells Dev, “It didn’t look anything up. It wrote the answer, one token at a time.” He is not convinced yet. Fair enough: the course has only started.</p>
         <p><b>Where next:</b> if nothing is stored and looked up, then where does “Paris is the capital of France” live? That is <a href="#/lesson/surprising-idea">the next lesson</a>.</p>
       </RealLLM>
     </Lesson>

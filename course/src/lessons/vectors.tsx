@@ -1,3 +1,4 @@
+import { RepoRunner } from '../components/RepoRunner'
 import { Diagnostic } from '../components/Diagnostic'
 import { DIAGNOSTICS } from '../data/diagnostics'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
@@ -12,9 +13,11 @@ export default function VectorsLesson() {
     <Lesson id="vectors">
       <Why>
         <Diagnostic id="diag-math" part={DIAGNOSTICS["math"].part} questions={DIAGNOSTICS["math"].questions} />
-        <p className="lede">You type “What is a cat?”. Within a millisecond, the word “cat” stops being text.</p>
-        <p>Inside the model it is a list of numbers. So is “kitten”. So is “truck”. So is every sentence in every document a search system might fetch for you.</p>
-        <p>That leaves the model with one question it has to ask millions of times for every word it writes: <b>do these two lists of numbers agree?</b></p>
+        <p className="lede">Friday night in the flat. Dev wants an action film. Riya wants a comedy. They have been scrolling for twenty minutes.</p>
+        <p>Amma is on a video call from Mysuru, propped against the fruit bowl. She has been listening. “Give every type of film a mark from minus one to plus one,” she says. “Each of you. Then compare the marks one by one and add up. Then you will know how much your tastes agree.”</p>
+        <p>Dev laughs. Riya does not, because she has realised something. Her taste in films is now a list of numbers. So is Dev’s. And Kabir said on Wednesday that inside the model, every word is a list of numbers too.</p>
+        <p>You type “What is a cat?”. Within a millisecond, the word “cat” stops being text. It becomes a list of numbers. So does “kitten”. So does “truck”. So does every document a search system might fetch for you.</p>
+        <p>That leaves the model with one question it asks millions of times for every word it writes: <b>do these two lists of numbers agree?</b></p>
         <div className="grid-3">
           <div className="card"><span className="chip acc">attention</span><p style={{ marginTop: 8 }}>“Which earlier words matter for this word?” Each candidate gets an agreement score.</p></div>
           <div className="card"><span className="chip acc">similarity search</span><p style={{ marginTop: 8 }}>“Which stored document matches this question?” Same score, different lists.</p></div>
@@ -27,7 +30,8 @@ export default function VectorsLesson() {
       </Why>
 
       <Problem>
-        <p>In <a href="#/lesson/prompt-to-answer">Part 0</a> you saw that an LLM is a function that turns numbers into numbers. So any “thinking” it does about similarity has to be arithmetic.</p>
+        <p>In <a href="#/lesson/prompt-to-answer">Part 0</a> you saw that an LLM is a function that turns numbers into numbers.</p>
+        <p>So any “thinking” it does about similarity has to be arithmetic. Riya’s first instinct, as a programmer, is an equality check. That does not get far.</p>
         <WhyExists
           problem="Given two lists of numbers, produce a single number that says how much they agree."
           naive={<>Compare them like a programmer would: <code>a == b</code>, or count how many slots are equal.</>}
@@ -45,7 +49,8 @@ export default function VectorsLesson() {
           example={<><code>person = [34, 95000, 172]</code> is age, salary, height. A “3-dimensional vector” just means the list has 3 numbers in it.</>}
           formal={<>An ordered list of n real numbers. “Dimension” is a fancy word for n. A 768-dimensional vector is a list of 768 numbers, nothing more exotic.</>}
         />
-        <p>A list of <em>two</em> numbers has a bonus: you can draw it. <code>[3, 1]</code> means “3 steps right, 1 step up”. Draw an arrow from the origin to that point. Now the list has a <b>direction</b> and a <b>length</b>.</p>
+        <p>A list of <em>two</em> numbers has a bonus: you can draw it. <code>[3, 1]</code> means “3 steps right, 1 step up”.</p>
+        <p>Draw an arrow from the origin to that point. Now the list has a <b>direction</b> and a <b>length</b>.</p>
         <p>That picture is the whole intuition. Two arrows can point the same way, at right angles, or in opposite directions. The dot product is a meter for exactly that.</p>
         <Term
           name="Dot product"
@@ -54,9 +59,11 @@ export default function VectorsLesson() {
           formal={<>Multiply matching slots and add up the products: a · b = a₁b₁ + a₂b₂ + … You will see why that recipe measures agreement in a moment.</>}
         />
         <Callout kind="analogy">
-          Two people rate film genres from −1 (hate) to +1 (love): <code>[action, comedy, romance]</code>. Multiply their ratings genre by genre. Where both love it, the product is positive. Where both hate it, negative × negative is <em>also</em> positive. Where one loves what the other hates, the product is negative. Add the products and you get a taste-agreement score.
+          The film test from Friday night. Riya and Dev each rate genres from −1 (hate) to +1 (love): <code>[action, comedy, romance]</code>. Multiply their ratings genre by genre.
           <br /><br />
-          Where the analogy stops: in a real model nobody assigns the slots a meaning like “comedy”. The numbers are learned, and a single slot usually means nothing a human could name. The arithmetic is identical though.
+          Where both love a genre, the product is positive. Where both hate it, negative × negative is <em>also</em> positive. Where one loves what the other hates, the product is negative. Add the products and you get a taste-agreement score.
+          <br /><br />
+          Where the analogy stops: in a real model nobody gives the slots a meaning like “comedy”. The numbers are learned, and a single slot usually means nothing a human could name. The arithmetic is the same, though.
         </Callout>
       </MentalModel>
 
@@ -112,7 +119,8 @@ export default function VectorsLesson() {
             </tbody>
           </table>
         </div>
-        <p>By raw dot product, B wins. But A is a <em>perfect</em> match in direction. B only won by being long. A long vector should not win just by being long, so we divide the dot product by both lengths. What is left is pure direction. That is <G t="cosine">cosine similarity</G>.</p>
+        <p>By raw dot product, B wins. But A is a <em>perfect</em> match in direction. B only won by being long.</p>
+        <p>A long vector should not win just by being long. So we divide the dot product by both lengths. What is left is pure direction. That is <G t="cosine">cosine similarity</G>.</p>
       </Numbers>
 
       <TheMath>
@@ -145,7 +153,7 @@ export default function VectorsLesson() {
       </TheMath>
 
       <CodeIt>
-        <p>The dot product is a loop you could write in your sleep:</p>
+        <p>For Riya, this is the comfortable part. The dot product is a loop you could write in your sleep:</p>
         <Code title="the long way">{`
 total = 0
 for i in range(len(a)):
@@ -170,6 +178,9 @@ def cosine(x, y):
 `}</Code>
         <p><code>np.sqrt((x**2).sum())</code> is the length: square every slot, add, take the root. Running the file prints cosine(cat, dog) = +0.991 and cosine(cat, truck) = −0.929.</p>
         <Callout kind="dev">A dot product is a <code>zip</code>, a <code>map</code> and a <code>sum</code>: <code>sum(x * y for x, y in zip(a, b))</code>. No branches, no memory allocation, the same instruction repeated. That regularity is what lets hardware run billions of them per second.</Callout>
+        <RepoRunner path="phase1-foundations/math_primer.py" title="Run math_primer.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
@@ -243,7 +254,7 @@ def cosine(x, y):
 
         <ExplainBack
           id="vectors-explain"
-          prompt="A teammate asks: “Why would multiplying two lists slot by slot and adding tell you anything about similarity?” Explain it in plain words, without using the word cosine."
+          prompt="Dev asks: “Why would multiplying two lists slot by slot and adding tell you anything about similarity?” Explain it in plain words, without using the word cosine."
           modelAnswer={<p>Each slot casts a vote. If both lists have the same sign in a slot, their product is positive, a vote for “we agree”. If the signs clash, the product is negative, a vote against. Bigger numbers cast bigger votes, and a zero abstains. Adding the products is counting the votes. Lists that are large in the same places and with the same signs get a big positive total. Lists that are large in opposite ways get a big negative total. Lists whose votes cancel out get roughly zero: knowing one tells you nothing about the other.</p>}
         />
       </Exercises>
@@ -300,7 +311,10 @@ def cosine(x, y):
             <li><b><a href="#/lesson/rag">Retrieval</a>:</b> a <G t="vector-db">vector database</G> ranks documents by dot product, cosine similarity or a closely related distance between the question’s vector and each document’s vector.</li>
           </ul>
         </Callout>
-        <Callout kind="model">“Each slot is a feature like comedy or romance” is a simplification to build intuition. In trained models, meaning is spread across many slots at once. You will look at real learned vectors in <a href="#/lesson/embeddings">Embeddings</a>. Also keep the two meters apart: the dot product is not the cosine. Attention and the output layer use the raw dot product, so there a vector’s length does count, and the model is free to use it. Dividing the lengths out is a choice that similarity search often makes.</Callout>
+        <Callout kind="model">“Each slot is a feature like comedy or romance” is a simplification to build intuition. In trained models, meaning is spread across many slots at once. You will look at real learned vectors in <a href="#/lesson/embeddings">Embeddings</a>.</Callout>
+        <Callout kind="established">Keep the two meters apart: the dot product is not the cosine. Attention and the output layer use the raw dot product, so there a vector’s length does count, and the model is free to use it.</Callout>
+        <p>Dividing the lengths out is a choice. Similarity search often makes it; attention does not.</p>
+        <p>As for Friday night: Riya and Dev’s agreement score came out negative. They watched separate films, on separate laptops, in the same room.</p>
       </RealLLM>
     </Lesson>
   )

@@ -1,3 +1,4 @@
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
 import { Callout, DeepDive, Equation, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -36,11 +37,14 @@ export default function DerivativesLesson() {
   return (
     <Lesson id="derivatives">
       <Why>
-        <p className="lede">A model is a function with billions of adjustable numbers. Training means finding good values for them. How?</p>
-        <p>Picture a mixing desk with a billion knobs and a single meter that shows the <G t="loss">loss</G>: the “surprise” number from the <a href="#/lesson/softmax">last lesson</a>. Lower is better. You are allowed to turn knobs.</p>
-        <p>For every knob you would want to know two things: <b>if I turn you up a hair, does the loss go up or down? And how strongly?</b></p>
+        <p className="lede">Sunday evening. Riya’s phone is propped against the spice rack, Amma is on video call from Mysuru, and the pressure cooker is hissing far too hard.</p>
+        <p>“Turn the flame down,” Amma says. “Not all the way. A little. Now listen.”</p>
+        <p>Riya turns the knob a few degrees. The hiss drops a lot. She turns it a few degrees more. The hiss drops again, but less this time.</p>
+        <p>“See? Nobody needs a formula for a cooker,” Amma says. “You nudge the knob, you listen, you nudge again.”</p>
+        <p>Riya laughs, and then stops laughing. On Friday Kabir wrote one question on the whiteboard: <em>how does a model find its numbers?</em> A model is a function with billions of adjustable numbers, like billions of knobs. Next to them sits one meter: the <G t="loss">loss</G>, the “surprise” number from the <a href="#/lesson/softmax">last lesson</a>. Lower is better.</p>
+        <p>For every knob you would want to know two things. <b>If I turn you up a hair, does the loss go up or down? And how strongly?</b></p>
         <Callout kind="idea">
-          That question has a name: the <b>derivative</b>. It is the only calculus an LLM needs, and you can measure it with three lines of code and no formulas at all.
+          That question has a name: the <b>derivative</b>. It is the only calculus an LLM needs. You can measure it with three lines of code and no formulas at all.
           <br /><br />
           Training a model is then three steps on repeat. Measure this for every knob. Turn every knob a little in its helpful direction. Go again.
         </Callout>
@@ -48,6 +52,8 @@ export default function DerivativesLesson() {
       </Why>
 
       <Problem>
+        <p>Dev wanders into the kitchen, drawn by the smell. Riya explains the knobs. “Computers are fast, na,” he says. “Just try random settings and keep whichever one is best.”</p>
+        <p>It is a fair first idea. Here is why it falls apart.</p>
         <WhyExists
           problem="A billion knobs, one loss meter. Find settings that make the loss small."
           naive="Try random changes to the knobs. Keep a change if the loss went down, undo it if not."
@@ -58,10 +64,11 @@ export default function DerivativesLesson() {
       </Problem>
 
       <MentalModel>
+        <p>Back to the cooker. Say you turn the flame knob up by 1 degree and the hiss gets 2 units louder. The sensitivity of the hiss to the knob is 2. That one number tells you two things: the <b>direction</b> (louder, not quieter) and the <b>strength</b> (twice your nudge).</p>
         <Callout kind="analogy">
-          A shower tap. You turn the handle by 1 degree and the water gets 2 degrees hotter. The sensitivity of temperature to the handle is 2. That one number tells you the <b>direction</b> (hotter, not colder) and the <b>strength</b> (twice your nudge).
+          A derivative is that cooker knob, measured with numbers instead of ears: nudge, listen, compare.
           <br /><br />
-          Where the analogy stops: a tap has roughly the same sensitivity wherever the handle is. Most functions do not. Their sensitivity depends on where you currently stand, so it must be measured again after every move.
+          Where the analogy stops: Riya noticed that the second nudge did less than the first. That is the normal case. A function’s sensitivity depends on where you currently stand, so it must be measured again after every move. And a real derivative is a number you compute, not a sound you judge.
         </Callout>
         <Term
           name="Derivative"
@@ -77,11 +84,12 @@ export default function DerivativesLesson() {
           name="Gradient"
           plain={<>One derivative per knob, collected in a list. For each knob: “if I turn you up a hair, does the error go up or down, and how fast?”</>}
           example={<>f(a, b) = a × b at a = 3, b = 4. Nudge a: the output moves 4 times as much. Nudge b: 3 times as much. Gradient = [4, 3].</>}
-          formal={<>The vector of partial derivatives ∇f = [∂f/∂a, ∂f/∂b, …]. The curly ∂ just means “nudging this one input, holding the others fixed”.</>}
+          formal={<>The vector of partial derivatives ∇f = [∂f/∂a, ∂f/∂b, …]. The curly ∂ means “nudging this one input, holding the others fixed”.</>}
         />
 
         <h3>Nudges through a pipeline: the chain rule</h3>
         <p>A neural network is a pipeline: layer feeds layer feeds layer. So how does a nudge at the start arrive at the end?</p>
+        <p>Kabir’s whiteboard answer, the next morning, is two arrows and one word: <em>multiply</em>.</p>
         <Callout kind="analogy">
           Change money twice. Dollars to euros at 0.9, then euros to yen at 160. One extra dollar in gives 0.9 × 160 = 144 extra yen out. <b>The rates multiply.</b>
           <br /><br />
@@ -133,7 +141,11 @@ ratio             0.006001 / 0.001 = 6.001
         <p>Chain rule: <span className="mono">4 × 1 × 3 = <b>12</b></span>.</p>
         <p>The honest check, treating the whole pipeline as a black box: <span className="mono">f(2) = 15</span>, <span className="mono">f(2.001) = 15.012003</span>. Moved by 0.012003, divided by 0.001: <span className="mono">12.003</span>. They agree.</p>
         <Callout kind="idea">
-          This is the entire mathematical content of <G t="backprop">backpropagation</G>, the algorithm that trains every neural network. A 50-layer network is a 50-stage pipeline. Backpropagation walks it from the output back to the input, multiplying local amplifications as it goes. (One more rule joins in when a value feeds several later stages: the effects along the separate routes add up.) You will build it in <a href="#/lesson/backprop">lesson 3.2</a>, and the “hard part” will be a multiplication you already understand.
+          This is the entire mathematical content of <G t="backprop">backpropagation</G>, the algorithm that trains every neural network.
+          <br /><br />
+          A 50-layer network is a 50-stage pipeline. Backpropagation walks it from the output back to the input, multiplying local amplifications as it goes. One more rule joins in when a value feeds several later stages: the effects along the separate routes add up.
+          <br /><br />
+          You will build it in <a href="#/lesson/backprop">lesson 3.2</a>. The “hard part” will be a multiplication you already understand.
         </Callout>
       </Numbers>
 
@@ -173,17 +185,19 @@ ratio             0.006001 / 0.001 = 6.001
           </table>
         </div>
         <DeepDive title="What about max(0, x)? It has a corner">
-          <p>max(0, x) is called <G t="relu">ReLU</G>, and it is inside many neural networks (most LLMs use a smoothed relative of it). Left of 0 it is flat (amplification 0: nudges die). Right of 0 it is the identity (amplification 1: nudges pass through).</p>
-          <p>Exactly at 0 there is a corner, and the nudge experiment gives 1 to the right and 0 to the left, so strictly there is no derivative there. Libraries pick one of the two values and move on (PyTorch uses 0). Landing on exactly 0.0 is rare, and either choice works in practice.</p>
+          <p>max(0, x) is called <G t="relu">ReLU</G>, and it is inside many neural networks (most LLMs use a smoothed relative of it).</p>
+          <p>Left of 0 it is flat: amplification 0, so nudges die. Right of 0 it passes x through unchanged: amplification 1, so nudges pass through.</p>
+          <p>Exactly at 0 there is a corner. The nudge experiment gives 1 to the right and 0 to the left, so strictly there is no derivative there. Libraries pick one of the two values and move on (PyTorch uses 0). Landing on exactly 0.0 is rare, and either choice works in practice.</p>
         </DeepDive>
         <DeepDive title="Why not make h as small as possible?">
-          <p>Floating-point numbers have about 16 significant digits. If h is so small that x + h rounds to x, or f(x + h) − f(x) loses all its digits, the ratio turns to noise. For x² at x = 3 in Python: h = 1e-6 gives 6.000001, h = 1e-12 gives 6.0005, h = 1e-15 gives roughly 5.33, and h = 1e-17 gives exactly 0.</p>
-          <p>Around 1e-6 is a good compromise, and it is the default in the repository. This is one reason real training does not measure gradients by nudging: backpropagation computes them from the formulas, with no h to choose, exact up to ordinary rounding.</p>
+          <p>Floating-point numbers have about 16 significant digits. If h is so small that x + h rounds to x, or f(x + h) − f(x) loses all its digits, the ratio turns to noise.</p>
+          <p>For x² at x = 3 in Python: h = 1e-6 gives 6.000001, h = 1e-12 gives 6.0005, h = 1e-15 gives roughly 5.33, and h = 1e-17 gives exactly 0.</p>
+          <p>Around 1e-6 is a good compromise, and it is the default in the repository. This is one reason real training does not measure gradients by nudging. Backpropagation computes them from the formulas, with no h to choose, exact up to ordinary rounding.</p>
         </DeepDive>
       </TheMath>
 
       <CodeIt>
-        <p>The whole idea, from the repository. Read the comment: it is the recipe.</p>
+        <p>After dinner Riya opens the repository to see how the nudge is written in code. It is the whole idea in two lines. Read the comment: it is the recipe.</p>
         <Code source="phase1-foundations/math_primer.py" title="the nudge experiment">{`
 def nudge_derivative(f, x, h=1e-6):
     return (f(x + h) - f(x)) / h      # nudge, re-measure, divide
@@ -228,6 +242,7 @@ assert abs(measured - end_to_end) < 1e-3
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="derivatives-code-chain-rule" />
         <Exercise
           id="derivatives-cube"
           type="experiment"
@@ -272,7 +287,7 @@ assert abs(measured - end_to_end) < 1e-3
           hints={['The measured value is 12. Which combination of 4, 1 and 3 gives 12?', 'Think of the currency exchange: do you add exchange rates or multiply them?']}
           solution={<><p>The amplifications must be <b>multiplied</b>, not added: 4 × 1 × 3 = 12. A nudge is stretched by stage 1, and the <em>stretched</em> nudge is what stage 2 receives, and so on.</p><p>Notice that the nudge check caught the bug without anyone reasoning about calculus. Keep that habit: whenever you derive a gradient by hand, measure it too.</p></>}
         >
-          <p>A colleague analyses the pipeline <code>x → square → +1 → ×3</code> at x = 2. The nudge experiment prints 12.0. What is wrong?</p>
+          <p>A colleague at Paisa Pal analyses the pipeline <code>x → square → +1 → ×3</code> at x = 2. His code says 8. The nudge experiment prints 12.0. What is wrong?</p>
           <Code>{`
 amps = [4.0, 1.0, 3.0]        # local amplification of each stage at x = 2
 end_to_end = sum(amps)        # 8.0
@@ -343,7 +358,14 @@ measured = nudge_derivative(lambda x: 3 * (x ** 2 + 1), 2.0)   # 12.0
         <Callout kind="established">
           In frameworks like PyTorch you never write the backward sweep yourself. Every operation records what it needs to work out its local amplification as it runs, and <code>loss.backward()</code> multiplies them together in reverse. This is called automatic differentiation. In <a href="#/lesson/backprop">Backpropagation</a> you will write it by hand once, in NumPy, and check it with the nudge experiment, so that <code>.backward()</code> is never magic again.
         </Callout>
-        <p>You now have all four tools: <a href="#/lesson/vectors">dot products</a> to compare, <a href="#/lesson/matrices">matrix multiplies</a> to do it in bulk, <a href="#/lesson/softmax">softmax</a> to turn scores into probabilities and a loss, and derivatives to find out which way to turn the knobs. Next, in <a href="#/lesson/gradient-descent">Part 2</a>, we put the last two together and watch a program learn.</p>
+        <p>You now have all four tools:</p>
+        <ul>
+          <li><a href="#/lesson/vectors">dot products</a> to compare,</li>
+          <li><a href="#/lesson/matrices">matrix multiplies</a> to do it in bulk,</li>
+          <li><a href="#/lesson/softmax">softmax</a> to turn scores into probabilities and a loss,</li>
+          <li>and derivatives to find out which way to turn the knobs.</li>
+        </ul>
+        <p>Next, in <a href="#/lesson/gradient-descent">Part 2</a>, we put the last two together and watch a program learn. Riya ends the call with Amma’s parting advice, which turns out to be the next lesson in one line: “Small turns. Then listen again.”</p>
       </RealLLM>
 
       <BeforeMovingOn

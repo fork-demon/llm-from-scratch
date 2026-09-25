@@ -1,3 +1,4 @@
+import { RepoRunner } from '../components/RepoRunner'
 import { Diagnostic } from '../components/Diagnostic'
 import { DIAGNOSTICS } from '../data/diagnostics'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
@@ -12,12 +13,16 @@ export default function AttentionLesson() {
     <Lesson id="attention">
       <Why>
         <Diagnostic id="diag-attention" part={DIAGNOSTICS["attention"].part} questions={DIAGNOSTICS["attention"].questions} />
-        <p className="lede">Read this sentence:</p>
+        <p className="lede">Saturday. Riya, Dev and Amma have driven to Srirangapatna. They sit on the stone steps by the Kaveri, the river bank warm in the afternoon sun.</p>
+        <p>Riya checks her phone once. She promised she wouldn’t. A support ticket: “The customer called the bank because it was closed.”</p>
+        <p>She reads “bank” and thinks of money, without trying. Two minutes ago, “bank” meant the steps under her feet. And “it”? The bank, of course. Nobody had to tell her.</p>
+        <p>Same word, two meanings, and her head picked the right one from the words around it. Her embedding table cannot do that. It gives “bank” one vector, full stop.</p>
+        <p>Here is the sentence from the end of the last lesson:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>
           “The animal didn’t cross the road because <span className="acc"><b>it</b></span> was tired.”
         </div>
-        <p>What does “it” refer to? The animal, obviously. Now change one word: “…because it was <em>flooded</em>.” Suddenly “it” is the road.</p>
-        <p>You worked that out by looking at <em>other words</em> in the sentence. A model that predicts the next token needs the same ability: the meaning of one token depends on the tokens around it, and <em>which</em> ones matter changes from sentence to sentence.</p>
+        <p>What does “it” refer to? The animal. Now change one word: “…because it was <em>flooded</em>.” Suddenly “it” is the road.</p>
+        <p>You worked that out by looking at <em>other words</em> in the sentence. A model that predicts the next token needs the same ability. The meaning of one token depends on the tokens around it. And <em>which</em> ones matter changes from sentence to sentence.</p>
         <Callout kind="idea">
           The model needs a mechanism that lets one token look at the other tokens and pull in the information that is relevant to it. That mechanism is called <b>attention</b>. It is the central idea of every modern LLM.
         </Callout>
@@ -45,7 +50,8 @@ export default function AttentionLesson() {
       </Problem>
 
       <MentalModel>
-        <p>So what would “looking at another token” need? Think about it as a developer. For one token to fetch information from the others, the model needs <b>three different views of the same token</b>:</p>
+        <p>On Monday Kabir writes “the river bank” on the whiteboard and asks one question: “If you were ‘bank’, what would you need from the other words?”</p>
+        <p>Think about it as a developer. For one token to fetch information from the others, the model needs <b>three different views of the same token</b>:</p>
         <div className="grid-3">
           <div className="card"><span className="chip q">what am I looking for?</span><p style={{ marginTop: 8 }}>“bank” needs to ask something like: <em>is there anything nearby about water or about money?</em></p></div>
           <div className="card"><span className="chip k">what do I contain?</span><p style={{ marginTop: 8 }}>“river” needs to advertise: <em>I am a watery thing.</em> This is what other tokens match against.</p></div>
@@ -89,7 +95,7 @@ export default function AttentionLesson() {
       </Numbers>
 
       <TheMath>
-        <p>You have now done every step. The famous formula is just those steps written on one line, for all tokens at once:</p>
+        <p>You have now done every step. The famous formula is those same steps, written on one line, for all tokens at once:</p>
         <Equation
           label="Attention equals softmax of Q K transpose over root d, times V"
           symbols={[
@@ -104,7 +110,8 @@ export default function AttentionLesson() {
         >
           Attention(<span className="q">Q</span>, <span className="k">K</span>, <span className="v">V</span>) = softmax( <span className="q">Q</span> <span className="k">K</span><sup>T</sup> / √d ) <span className="v">V</span>
         </Equation>
-        <p><b>Why a dot product for matching?</b> Because it is the cheapest way to ask “do these two vectors point the same way?”, as you saw in <a href="#/lesson/vectors">lesson 1.1</a>. It is the raw dot product, not the cosine, so a long key or query also raises the score, and a trained model can use that. <b>Why softmax?</b> Because we want a weighted <em>average</em>: weights that are positive and sum to one keep the blended vector in the same range as the values, however many tokens there are.</p>
+        <p><b>Why a dot product for matching?</b> Because it is the cheapest way to ask “do these two vectors point the same way?”, as you saw in <a href="#/lesson/vectors">lesson 1.1</a>. It is the raw dot product, not the cosine. So a long key or query also raises the score, and a trained model can use that.</p>
+        <p><b>Why softmax?</b> Because we want a weighted <em>average</em>. Weights that are positive and sum to one keep the blended vector in the same range as the values, however many tokens there are.</p>
         <DeepDive title="Why exactly √d, and not some other number?">
           <p>Suppose the entries of q and k are independent random numbers with mean 0 and variance 1. Each product q<sub>i</sub>k<sub>i</sub> then has mean 0 and variance 1. The dot product adds up d of them, so its variance is d and its typical size is √d. With d = 64 that means scores around ±8, and e⁸ ≈ 3000: softmax would put nearly all weight on one token.</p>
           <p>When softmax saturates like that, its gradient is almost zero, and training stalls. Dividing by √d brings the variance back to 1 regardless of d. This is the argument the original Transformer paper gives. It describes random vectors at the start of training, not a law that trained models obey. Turn scaling off in the playground to see the weights sharpen.</p>
@@ -146,6 +153,9 @@ def attention(x, Wq, Wk, Wv, causal=False):
     return out, weights
 `}</Code>
         <Callout kind="dev">Notice what is <em>not</em> here: no loop over tokens. All T² comparisons happen in one matrix multiply. That is why Transformers train fast on GPUs where RNNs could not.</Callout>
+        <RepoRunner path="phase3-transformers/attention_numpy.py" title="Run attention_numpy.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
@@ -181,7 +191,7 @@ def attention(x, Wq, Wk, Wv, causal=False):
           type="predict"
           title="All keys identical"
           hints={['If all keys are the same vector, what can you say about the scores in one row?', 'Equal scores in, equal weights out: softmax of [c, c, c] is [⅓, ⅓, ⅓].']}
-          solution={<p>Every query gets the same score against every key, so every row of weights is uniform. The output for every token is simply the plain average of all values. Attention degenerates into “average everything”. The model only gets selective behaviour when keys differ in ways queries can pick up on.</p>}
+          solution={<p>Every query gets the same score against every key, so every row of weights is uniform. The output for every token is the plain average of all values. Attention degenerates into “average everything”. The model only gets selective behaviour when keys differ in ways queries can pick up on.</p>}
         >
           <p>Predict: if every token had exactly the same key vector, what would the attention weights look like, and what would each token’s output be? Then test it by editing K in the playground.</p>
         </Exercise>
@@ -271,6 +281,7 @@ out = weights @ V
         />
         <Callout kind="established">The computation itself is identical. softmax(QKᵀ/√d)V, as you just coded it, is what runs inside GPT-2 and Llama, whose code is public, and by every public account inside closed models such as Claude and Gemini too. Production systems mostly change how it is <em>executed</em>, not what it computes: fused GPU kernels such as <G t="flash-attention">FlashAttention</G> get the same result without ever storing the full T × T table (so memory stops growing with T², while the arithmetic still does), and the <G t="kv-cache">KV cache</G> avoids recomputing keys and values. Some variants you will meet in <a href="#/lesson/modern-architecture">Modern LLM architecture</a> share keys and values between heads or limit how far back a token may look. The formula per head stays this one.</Callout>
         <Callout kind="research">What individual attention heads “mean” in a trained model is an open research area. Some heads have been found with clear roles (for example, copying a token that followed an earlier occurrence of the current token), but most are not cleanly interpretable. Treat any diagram that labels a head “the grammar head” as an illustration.</Callout>
+        <p>Back at her desk, Riya types “the river bank”, then “the money bank”, and watches “bank” come out as two different vectors. She thinks of the stone steps by the Kaveri. Her embedding table finally has help.</p>
       </RealLLM>
     </Lesson>
   )

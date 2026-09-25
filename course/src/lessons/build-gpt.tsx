@@ -1,3 +1,5 @@
+import { TrainedGptExplorer } from '../interactive/TrainedGptExplorer'
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -10,8 +12,10 @@ export default function BuildGptLesson() {
   return (
     <Lesson id="build-gpt">
       <Why>
-        <p className="lede">In the very first lesson you typed “What is a cat?” and we drew a row of boxes between your prompt and the answer. Back then every box was a promise.</p>
-        <p>Look at the list now:</p>
+        <p className="lede">It is past eight. The Paisa Pal office is empty except for Riya, the cleaning staff and the hum of the air conditioning.</p>
+        <p>On her second monitor is the photo she took on day one: Kabir’s whiteboard map, a row of boxes between “What is a cat?” and the answer. Back then every box was a promise. She has been ticking them off, one lesson at a time.</p>
+        <p>Tonight she opens a fresh file and types <code>class GPT</code>. Her phone buzzes. Kabir: “Don’t add anything new. Plug the boxes together and follow one token through.”</p>
+        <p>Look at her list:</p>
         <ul>
           <li>Tokenizer: <a href="#/lesson/tokenization">built</a>.</li>
           <li>Embeddings: <a href="#/lesson/embeddings">built</a>.</li>
@@ -19,12 +23,14 @@ export default function BuildGptLesson() {
           <li>The Transformer block: <a href="#/lesson/transformer-block">built</a>.</li>
           <li>Softmax, sampling, the generation loop: <a href="#/lesson/softmax">built</a>, <a href="#/lesson/next-token">built</a>.</li>
         </ul>
-        <p>There are <b>no new ideas</b> in this lesson. We bolt the parts together, and the result is a GPT: the same architecture as GPT-2, in about 100 lines of model code.</p>
-        <Callout kind="idea">The goal is that you can follow one token from text to prediction and say, at every step, what shape the data has and which lesson built that step.</Callout>
+        <p>There are <b>no new ideas</b> in this lesson. You bolt the parts together, and the result is a GPT. It has the same wiring as GPT-2, in about 100 lines of model code.</p>
+        <p>So the question for tonight is small and exact: <em>what happens to one token, from the moment it is typed to the moment the next one is chosen?</em></p>
+        <Callout kind="idea">The goal: follow one token from text to prediction and say, at every step, what shape the data has and which lesson built that step.</Callout>
       </Why>
 
       <Problem title="What is still missing?">
-        <p>A stack of blocks takes <span className="mono">(T, D)</span> and returns <span className="mono">(T, D)</span>: one context-aware vector per token. That is not yet a prediction. Two small gaps remain.</p>
+        <p>A stack of blocks takes <span className="mono">(T, D)</span> and returns <span className="mono">(T, D)</span>: one context-aware vector per token. That is not yet a prediction.</p>
+        <p>Riya stares at the output grid. “Fine. Now which character comes next?” Two small gaps remain.</p>
         <WhyExists
           problem="The last block gives us a vector of D numbers per position. We need a score for every token in the vocabulary: which one comes next?"
           naive="Compare the output vector with every token’s embedding by hand and pick the closest one."
@@ -32,21 +38,24 @@ export default function BuildGptLesson() {
           idea="One more matrix multiply, from D numbers per token to one number per vocabulary word. Row by row, that multiply is “dot the output vector with every token’s vector”. This last layer is called the head, and the raw scores it produces are called the logits."
           tradeoff="With a large vocabulary this matrix is big: 50,257 × 768 ≈ 38.6M numbers in GPT-2 small. A trick called weight tying lets it reuse the embedding table instead of storing a second one. We unpack it later in this lesson."
         />
-        <p>The second gap is the loop around the model. A GPT predicts <em>one</em> token. To write a sentence, you sample a token, append it to the input, and run the whole model again. You built that loop in <a href="#/lesson/next-token">Predicting the next token</a>; here it gets a real model inside.</p>
-        <p>And one practical question: this lesson’s code is in <b>PyTorch</b>, not NumPy. Is that a new thing to learn?</p>
+        <p>The second gap is the loop around the model. A GPT predicts <em>one</em> token. To write a sentence, you sample a token, append it to the input, and run the whole model again.</p>
+        <p>You built that loop in <a href="#/lesson/next-token">Predicting the next token</a>. Here it gets a real model inside.</p>
+        <p>And one practical worry. This lesson’s code is in <b>PyTorch</b>, not NumPy. Dev texts from the flat: “PyTorch? So that’s where the real magic is.” Is it?</p>
         <Callout kind="established" label="What PyTorch does for you: exactly two things">
           <ol>
             <li>During the forward pass it <b>records</b> every operation. You did this by hand in <a href="#/lesson/backprop">Backpropagation</a>, when you kept the intermediate values for the backward pass.</li>
             <li>When you call <code>loss.backward()</code>, it <b>replays your backward rules</b> through that recording, in reverse. That is the chain rule you applied by hand.</li>
           </ol>
-          A <code>torch.Tensor</code> is a NumPy array that carries that recorder. Everything else in the file, every matrix multiply and every shape, is something you have already written yourself.
+          A <code>torch.Tensor</code> is a NumPy array that carries that recorder. Everything else in the file, every matrix multiply and every shape, is something you have already written yourself. (It can also run the maths on a GPU. That is speed, not new maths.)
         </Callout>
       </Problem>
 
       <MentalModel>
-        <p>The whole machine in one picture, with the data drawn as grids: one row per token. Follow the numbers 1 to 9 and watch the <em>shape</em> at each stage. Every stage is a lesson you have done.</p>
+        <p>Kabir’s advice for nights like this: draw the data, not the boxes. So here is the whole machine in one picture, with the data drawn as grids, one row per token.</p>
+        <p>Follow the numbers 1 to 9 and watch the <em>shape</em> at each stage. Every stage is a lesson you have done.</p>
         <ShapeJourney />
-        <p>Two things to take from it. The grid that leaves the blocks is <b>exactly the size</b> of the grid that went in. And although the head produces a row of scores for every position, generation only uses the <b>last row</b>: the prediction for what follows the final character.</p>
+        <p>Two things to take from it. First, the grid that leaves the blocks is <b>exactly the size</b> of the grid that went in.</p>
+        <p>Second, the head produces a row of scores for every position, but generation only uses the <b>last row</b>. That row is the prediction for what follows the final character.</p>
         <Term
           name="The head (language-model head)"
           plain={<>The last layer: one matrix multiply that turns a token’s D-number vector into V raw scores, one for every token in the vocabulary.</>}
@@ -54,7 +63,7 @@ export default function BuildGptLesson() {
           formal={<><G t="logits">logits</G> = x W<sub>head</sub>, with W<sub>head</sub> of shape (D, V). Softmax of the logits gives next-token probabilities.</>}
         />
         <h3>A GPT is these 6 numbers</h3>
-        <p>This is the entire configuration of the model in the repository. GPT-2 is the same code with bigger numbers.</p>
+        <p>Riya scrolls to the top of the file and laughs. This is the entire configuration of the model. In its wiring, GPT-2 is the same code with bigger numbers.</p>
         <Code source="phase3-transformers/tiny_gpt.py" title="Config">{`
 class Config:
     context_len = 64     # max tokens the model can see (GPT-2: 1024)
@@ -91,12 +100,15 @@ class Config:
 
       <TryIt title="Trace one token, then count the parameters">
         <h3>1. Trace one token</h3>
-        <p>A complete GPT with 2 blocks runs in your browser. Step through all the stages. Read the shape at each stage before looking at the numbers.</p>
+        <p>This is what Riya did at her desk tonight. A complete GPT with 2 blocks runs in your browser. Step through all the stages, and read the shape at each stage before looking at the numbers.</p>
         <GptTracer />
         <Callout kind="warn" label="Honest warning">
           The tracer’s weights are random, so its prediction is noise. Every step of the computation is real. What is missing is the right <em>numbers</em> in the matrices, and finding them is called training: the next lesson.
         </Callout>
-        <h3>2. Where do the parameters live?</h3>
+        <h3>2. Now the same machine, trained</h3>
+        <p>Same architecture, different numbers. This one is the repository’s <code>tiny_gpt.py</code> after training on Shakespeare, running in your browser. Type a prompt and watch it write. Then open the attention grid and click a token to see where each head looks.</p>
+        <TrainedGptExplorer />
+        <h3>3. Where do the parameters live?</h3>
         <p>“GPT-2 small has 124M parameters.” Which 124 million? Load the presets and find out.</p>
         <ParamCounter />
       </TryIt>
@@ -121,7 +133,9 @@ class Config:
           </table>
         </div>
         <p>When you run the file it prints <span className="mono">params 0.81M</span>. That is this number.</p>
-        <p>Where do they live? The MLPs hold 526,848 (65%), attention 264,192 (33%), and the embeddings only 2%. In GPT-2 small the picture shifts: its vocabulary of 50,257 tokens makes the embedding table 38.6M, about 31% of the 124.4M total. In GPT-2 XL (1.56B) the same table is only 5%. <b>The bigger the model, the more it is dominated by the D² terms inside the blocks.</b></p>
+        <p>Where do they live? The MLPs hold 526,848 (65%), attention 264,192 (33%), and the embeddings only 2%.</p>
+        <p>In GPT-2 small the picture shifts. Its vocabulary of 50,257 tokens makes the embedding table 38.6M, about 31% of the 124.4M total. In GPT-2 XL (1.56B) the same table is only 5%.</p>
+        <p><b>The bigger the model, the more it is dominated by the D² terms inside the blocks.</b></p>
       </Numbers>
 
       <TheMath>
@@ -205,8 +219,9 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
           <li><code>torch.cat</code>: append the new token, and go round again.</li>
         </ul>
         <h3>Why the crop?</h3>
-        <p><code>idx[:, -self.cfg.context_len:]</code> keeps only the last 64 tokens. It has to: <code>pos_emb</code> has exactly 64 rows, so slot 64 does not exist, and the causal mask was built for 64×64. Anything older than the <G t="context-window">context window</G> is gone. The model does not “forget” it gradually. It never sees it at all.</p>
-        <Callout kind="dev">Notice the waste: to produce token 50, the loop re-runs the model on tokens 0…49, although their vectors cannot have changed (the causal mask guarantees it). Caching that work is the <G t="kv-cache">KV cache</G>, two lessons from now.</Callout>
+        <p><code>idx[:, -self.cfg.context_len:]</code> keeps only the last 64 tokens. It has to. <code>pos_emb</code> has exactly 64 rows, so slot 64 does not exist, and the causal mask was built for 64×64.</p>
+        <p>Anything older than the <G t="context-window">context window</G> is gone. The model does not “forget” it gradually. It never sees it at all.</p>
+        <Callout kind="dev">Notice the waste. To produce token 50, the loop re-runs the model on tokens 0…49, although their vectors have not changed: the causal mask guarantees it. Caching that work is the <G t="kv-cache">KV cache</G>, two lessons from now.<br /><br />One catch, and it comes from the crop. That guarantee holds only while the whole sequence fits in the window (T ≤ 64). Once the window starts to slide, every kept token moves to a new slot, gets a different position vector, and so every old vector really does change.</Callout>
       </CodeIt>
 
       <BreakIt>
@@ -223,6 +238,7 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="build-gpt-code-forward" />
         <Exercise
           id="build-gpt-calc-params"
           type="calculate"
@@ -359,7 +375,9 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
           real={<ul><li>Sub-word tokens, trained on trillions of tokens</li><li>Thousands of GPUs for weeks; the model is split across many devices</li><li>The same pipeline: embed, N blocks, norm, head, softmax, sample</li><li>Changed details inside the boxes: RoPE, RMSNorm, SwiGLU, grouped-query attention, no biases</li></ul>}
         />
         <Callout kind="established">GPT-2’s published architecture is what <code>tiny_gpt.py</code> implements: learned positions, pre-norm blocks, GELU MLPs, tied head. With vocab 50,257, context 1,024, D = 768 and 12 layers, the formula in this lesson gives exactly 124,439,808 parameters, the “124M” on the label.</Callout>
+        <Callout kind="note" label="One difference: where the weights start">The wiring matches; the starting numbers do not. <code>tiny_gpt.py</code> keeps PyTorch’s defaults, which fill the embedding table with numbers of size about 1. GPT-2 starts every weight small (standard deviation 0.02) and shrinks the layers that write into the residual stream by a further 1/√(2N) for N blocks. You will see in the next lesson why that choice matters on the very first step.</Callout>
         <Callout kind="note">The last column differs in the details of almost every box, but not in the wiring diagram. Each of those changes (RoPE, RMSNorm, SwiGLU, grouped-query attention, mixture of experts) is explained in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>. For closed models such as GPT-4, Claude and Gemini, architecture details are not public.</Callout>
+        <p>Riya runs the file one last time before leaving. It prints <span className="mono">params 0.81M</span> and a line of gibberish. Correct pipeline, wrong numbers. Tomorrow night: training.</p>
       </RealLLM>
     </Lesson>
   )

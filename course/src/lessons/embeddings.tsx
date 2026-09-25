@@ -1,3 +1,5 @@
+import { RepoRunner } from '../components/RepoRunner'
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
@@ -10,16 +12,20 @@ export default function EmbeddingsLesson() {
   return (
     <Lesson id="embeddings">
       <Why>
-        <p className="lede">The tokenizer gave us integers. Suppose “cat” is token 464, “dog” is token 12 and “car” is token 465.</p>
-        <p>Is “cat” more like “dog” or more like “car”? The IDs say “car”: 464 and 465 are neighbours. That is nonsense. The IDs were handed out in the order the tokenizer happened to create them.</p>
-        <p>An ID is like a primary key in a database. It tells you <em>which</em> row you have. It tells you nothing about what the row is <em>like</em>. And “what is this token like?” is exactly what a model needs, because a model that cannot tell that cats and dogs are similar must learn every fact about them twice.</p>
+        <p className="lede">Riya is on the Purple Line going home, laptop open on her knees. Her tokenizer works now. It turns “cat” into token 464, “dog” into token 12 and “car” into token 465.</p>
+        <p>She frowns at the screen. By these numbers, “cat” sits right next to “car”, and far away from “dog”.</p>
+        <p>Above the door hangs the metro map. MG Road, Trinity, Halasuru: stations that are close on the map are close in the city. The map means something. Her token IDs mean nothing at all.</p>
+        <p>She messages Kabir: “The IDs are just names, na? So how will the model ever know a cat is like a dog?” His reply comes two stations later: “It won’t. Not yet. Tomorrow we give every token a place on a map.”</p>
+        <p>Here is the problem in plain terms. The IDs were handed out in the order the tokenizer happened to create them. An ID is like a primary key in a database. It tells you <em>which</em> row you have. It tells you nothing about what the row is <em>like</em>.</p>
+        <p>And “what is this token like?” is exactly what a model needs. A model that cannot tell that cats and dogs are similar must learn every fact about them twice.</p>
         <Callout kind="idea">
           An <b>embedding</b> is a way of representing something using numbers so that useful relationships can be learned. Each token gets not one number but a whole list of numbers, a <G t="vector">vector</G>, and similar tokens end up with similar vectors.
         </Callout>
       </Why>
 
       <Problem title="The problem: an ID is a name, not a quantity">
-        <p>Why not just feed the ID into the network as a number? Because every operation you have learned treats numbers as <em>quantities</em>.</p>
+        <p>That evening Dev looks over her shoulder. “Just feed the number in, yaar. Computers love numbers.”</p>
+        <p>It is a fair thought. The trouble is that every operation you have learned treats numbers as <em>quantities</em>.</p>
         <ul>
           <li>A <a href="#/lesson/neurons">neuron</a> computes weight × input. With raw IDs, token 464 would push almost 39 times harder than token 12, for no reason.</li>
           <li>ID 464 is not “bigger” than ID 12, and the average of tokens 12 and 464 is not token 238.</li>
@@ -35,20 +41,21 @@ export default function EmbeddingsLesson() {
       </Problem>
 
       <MentalModel title="A mental model: words as points on a map">
-        <p>You already describe things with lists of numbers. A house in a property database might be <span className="mono">[price, area, bedrooms, year]</span>. Two similar houses have similar lists, without anyone writing a <code>similar()</code> function. Similarity falls out of the representation.</p>
-        <p>An embedding does this for tokens. Each token is a point in space, and the space is arranged so that <b>distance and direction mean something</b>: “cat” near “dog”, both far from “car”.</p>
+        <p>Next morning Kabir draws two dots on the whiteboard, close together, and labels them “cat” and “dog”. A third dot goes in the far corner: “car”. “That’s the whole idea,” he says.</p>
+        <p>You already describe things with lists of numbers. A house in a property database might be <span className="mono">[price, area, bedrooms, year]</span>. Two similar houses have similar lists. Nobody wrote a <code>similar()</code> function. Similarity falls out of the representation.</p>
+        <p>An embedding does this for tokens. Each token becomes a point in space. The space is arranged so that <b>distance and direction mean something</b>: “cat” near “dog”, both far from “car”.</p>
         <Term
           name="Embedding"
           plain={<>A list of numbers that stands for a token, chosen (by training) so that tokens used in similar ways get similar lists.</>}
           example={<>cat → [−3.0, 3.2], dog → [−3.6, 2.4], car → [−2.4, −3.4]. cat and dog are 1.0 apart; cat and car are 6.6 apart.</>}
           formal={<>A row of a learned matrix E with one row per token in the vocabulary: the embedding of token i is E[i], a vector of d numbers (d is typically 768 to 16,384).</>}
         />
-        <p>Mechanically it could not be simpler. The “embedding layer” is a table. The token ID is the row number.</p>
+        <p>The machinery is small. The “embedding layer” is a table. The token ID is the row number.</p>
         <TextToVector focus="lookup" id={464} idNote="(last lesson)" vector="[0.21, −1.30, …]" />
         <Callout kind="analogy">
-          Think of a <b>map</b>. Cities that are close on the map are close in reality, and “300 km north” is the same arrow wherever you start. In an embedding space, closeness is similarity of use, and some directions carry a consistent meaning.
+          Think of the <b>metro map</b>. Stations that are close on the map are close in the city. And “two stops east” is the same kind of move wherever you start. In an embedding space, closeness means “used in similar ways”, and some directions carry a consistent meaning.
           <br /><br />
-          Where the analogy stops: a map has two axes with names (north, east). A real embedding space has thousands of axes and <em>none of them has a name</em>. Nobody can picture it, and nobody drew it. The positions are learned.
+          Where the analogy stops: a map has two axes with names (north, east), and someone drew it. A real embedding space has thousands of axes and <em>none of them has a name</em>. Nobody can picture it, and nobody drew it. The positions are learned.
         </Callout>
       </MentalModel>
 
@@ -57,7 +64,7 @@ export default function EmbeddingsLesson() {
         <EmbeddingExplorer />
         <p>Things to try:</p>
         <ul>
-          <li>Click “cat”, then “car”. The dot product goes negative: the arrows point in opposing directions.</li>
+          <li>Click “cat”, then “car”. The dot product goes slightly negative and the cosine is −0.20. The arrows are nearly at right angles, tilted a little apart. That means “unrelated”, not “opposite”. (Opposite would be a cosine near −1.)</li>
           <li>Drag “kitten” straight away from the centre, along its own arrow. Distance to “cat” grows, but cosine barely moves. <G t="cosine">Cosine similarity</G> only cares about direction, which is why it is the usual way to compare embeddings.</li>
           <li>Switch on the arrow demo. The step from “man” to “woman”, replayed from “king”, lands next to “queen”. Now drag “woman” somewhere else and watch the trick break. It only works when the layout has that regularity.</li>
         </ul>
@@ -66,8 +73,9 @@ export default function EmbeddingsLesson() {
         </Callout>
         <h3>Why real models need hundreds or thousands of numbers per token</h3>
         <p>Try to improve the toy layout. “puppy” should be near “dog” (same animal), near “kitten” (both young), and “king” should be near “man” (both male) but also near “queen” (both royal). Now add: formal or casual, noun or verb, singular or plural, positive or negative, everyday or technical.</p>
-        <p>Words are similar in <b>many independent ways at once</b>. On a flat page you have two independent directions. Every new kind of similarity you try to respect wrecks one you already had. You can feel this by dragging: fix one relationship, break another.</p>
-        <p>With 4,096 numbers per token there is room for thousands of kinds of similarity to coexist. You do not need to visualise 4,096 dimensions, and nobody can. The arithmetic is unchanged: a dot product in 4,096-D is still “multiply matching entries, add up”. Only the picture is lost.</p>
+        <p>Words are similar in <b>many independent ways at once</b>. A flat page gives you only two independent directions. Every new kind of similarity you try to respect wrecks one you already had. You can feel this by dragging: fix one relationship, break another.</p>
+        <p>With 4,096 numbers per token, there is room for thousands of kinds of similarity to live side by side. Nobody can picture 4,096 dimensions, and you do not need to.</p>
+        <p>The arithmetic does not change. A dot product in 4,096 dimensions is still “multiply matching entries, add up”. Only the picture is lost.</p>
         <h3>Nobody assigns the coordinates</h3>
         <p>So who decides that “cat” gets <em>these</em> numbers? Nobody. They start random and are <b>learned</b>, using the loop you already know: predict, measure the <G t="loss">loss</G>, nudge the numbers downhill.</p>
         <p>But predict <em>what</em>? You cannot write a loss for “put similar words together” without already knowing which words are similar. The trick, from a 2013 method called <b>word2vec</b>, is to train on a <b>fake task</b> whose cheapest solution requires good geometry:</p>
@@ -95,7 +103,8 @@ export default function EmbeddingsLesson() {
         <p>The embedding of token 2 is <span className="mono">E[2] = [0.8, 0.9, 0.2]</span>. An array index. That is all.</p>
         <p>You will often read that this “is a matrix multiplication”. It is, in disguise. First write token 2 as a <b>one-hot</b> vector: a row of zeros with a single 1 in it, at position 2. (“One-hot” means one entry is switched on and all the rest are off.) Now multiply that row by E:</p>
         <p className="mono center">[0, 0, 1, 0] × E = 0·row0 + 0·row1 + 1·row2 + 0·row3 = [0.8, 0.9, 0.2]</p>
-        <p>Same answer. The zeros wipe out every row except one. Real code uses the index, because multiplying 50,000 numbers by zero is a waste. The matrix view matters for one reason: it shows that the table is an ordinary layer of weights, so <a href="#/lesson/backprop">backpropagation</a> can train it like any other.</p>
+        <p>Same answer. The zeros wipe out every row except one.</p>
+        <p>Real code uses the index, because multiplying 50,000 numbers by zero is a waste. The matrix view matters for one reason: it shows that the table is an ordinary layer of weights. So <a href="#/lesson/backprop">backpropagation</a> can train it like any other.</p>
         <p><b>Second, similarity.</b> With the toy coordinates from the explorer:</p>
         <div className="table-scroll">
           <table className="plain mono">
@@ -137,8 +146,15 @@ export default function EmbeddingsLesson() {
         </Equation>
         <p>When training is over, W is thrown away. E is the product.</p>
         <DeepDive title="Why does only one row of E change per example?">
-          <p>The loss for one example depends on E only through the row that was looked up, E[c]. Every other row was multiplied by zero in the one-hot view, so its gradient is exactly zero. In one training step on “cat”, row “cat” moves and the other rows stay put.</p>
-          <p>A consequence worth remembering: a token that is rare in the training text gets few updates, so its vector stays close to its random starting point. Models are unreliable about rare things partly for this plain reason.</p>
+          <p>The loss for one example depends on E only through the row that was looked up, E[c]. Every other row was multiplied by zero in the one-hot view, so its gradient is exactly zero.</p>
+          <p>So with plain gradient descent (the update in this file), a training step on “cat” moves row “cat” and leaves the other rows where they are.</p>
+          <p>That “only one row moves” rule has exceptions, and real LLMs hit all of them:</p>
+          <ul>
+            <li><b>Optimisers with momentum</b>, such as Adam, keep moving a row for a while after its gradient has gone back to zero.</li>
+            <li><b>Weight decay</b> shrinks every row a little on every step, looked up or not.</li>
+            <li><b>Weight tying</b> reuses E as the output layer that scores every token. Then every row gets a gradient on every step.</li>
+          </ul>
+          <p>A consequence worth remembering: a token that is rare in the training text gets few updates of its own, so its vector learns little about how the word is used. Models are unreliable about rare things partly for this plain reason.</p>
         </DeepDive>
       </TheMath>
 
@@ -190,6 +206,9 @@ analogy dog - cat + fish  ->  ['fish', 'beans', 'hungry', 'loudly']
         <Callout kind="established" label="Honest results">
           Look closely. “cat” found “dog” and “computer” found “laptop”. But cat’s third neighbour is “day”, and the analogy came back as noise. With 28 short sentences, that is what you get. The quality of the geometry grows with the amount of text. The original word2vec vectors were trained on roughly 100 billion words.
         </Callout>
+        <RepoRunner path="phase2-language/tiny_word2vec.py" title="Run tiny_word2vec.py in your browser">
+          <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
+        </RepoRunner>
       </CodeIt>
 
       <BreakIt>
@@ -202,6 +221,7 @@ analogy dog - cat + fish  ->  ['fish', 'beans', 'hungry', 'loudly']
       </BreakIt>
 
       <Exercises>
+        <CodeExercise id="embeddings-code-skipgram-step" />
         <Exercise
           id="embeddings-calc-table-size"
           type="calculate"
@@ -331,6 +351,7 @@ x = self.tok_emb(idx) + self.pos_emb(pos)                 # look up every token 
         <h3>The loose end: one vector per token is not enough</h3>
         <p>Where did you put “bank”? Any single spot is wrong. In “the river bank” it should sit with water. In “the money bank” it should sit with finance. A lookup table cannot see the sentence, so “bank” gets one vector: an awkward average that is wrong in every actual sentence.</p>
         <p>What we need is a way for a token’s vector to be <em>adjusted by the tokens around it</em>. That mechanism is the centre of this course, and we will get there in Part 6. First, we need a model that actually predicts something.</p>
+        <p>Riya writes “bank?” in the corner of Kabir’s whiteboard photo and saves it. Every token now has a place on the map. Next, she wants to make one of them talk.</p>
       </RealLLM>
 
       <BeforeMovingOn
