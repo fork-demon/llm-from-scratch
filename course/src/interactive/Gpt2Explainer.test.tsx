@@ -44,19 +44,34 @@ describe('Gpt2Explainer', () => {
     // the default prompt runs once: "The cat sat on the" -> GPT-2's top guess is " floor"
     await waitFor(() => expect(container.textContent).toContain('Forward pass over 5 tokens'), { timeout: 30000 })
     expect(screen.getByRole('button', { name: /position 2: token " cat", id 3797/ })).toBeTruthy()
-    expect(container.querySelector('[aria-label^="Top 10 next tokens"]')?.textContent).toContain('␣floor')
+    expect(container.querySelector('.Gpt2Explainer-guess')?.textContent).toContain('␣floor')
+    const tab = (name: RegExp) => screen.getByRole('tab', { name })
 
-    // Why? opens a link to the lesson
-    fireEvent.click(screen.getAllByRole('button', { name: /^Why\?/ })[0])
-    expect((container.querySelector('a[href="#/lesson/tokenization"]') as HTMLAnchorElement).textContent).toContain('Lesson')
+    // one stage shows at a time, and each names the lesson that explains it
+    expect(tab(/^Tokens/).getAttribute('aria-selected')).toBe('true')
+    expect((container.querySelector('a[href="#/lesson/tokenization"]') as HTMLAnchorElement).textContent).toBe('Tokenization')
+    expect(container.textContent).toContain('18 characters became 5 tokens')
 
-    // open block 3: Q/K/V, the attention heatmap and the MLP appear
+    // the blocks: block 1 opens by default; pick block 3, then its Q, K, V and its MLP
+    fireEvent.click(tab(/^12 blocks/))
     fireEvent.click(screen.getByRole('button', { name: /Block 3/ }))
+    await waitFor(() => expect(container.textContent).toContain('Inside block 3'), { timeout: 30000 })
+    fireEvent.click(tab(/^Q, K, V$/))
     await waitFor(() => expect(container.textContent).toContain('Queries, keys, values'), { timeout: 30000 })
-    expect(container.textContent).toContain('of 3,072 are positive')
     fireEvent.click(screen.getAllByRole('button', { name: 'head 5' })[0])
+    expect(container.textContent).toContain('Head 5 uses numbers 256 to 319')
+    fireEvent.click(tab(/^MLP$/))
+    expect(container.textContent).toContain('of 3,072 are positive')
 
-    // temperature 0 -> the top token gets 100%
+    // the scores, and the logit lens
+    fireEvent.click(screen.getByRole('button', { name: /Next: Scores/ }))
+    expect(container.querySelector('[aria-label^="The 10 highest logits"]')?.textContent).toContain('␣floor')
+    fireEvent.click(tab(/Guess after each block/))
+    expect(container.textContent).toContain('final answer')
+
+    // the next token: temperature 0 -> the top token gets 100%
+    fireEvent.click(tab(/^Next token/))
+    expect(container.querySelector('[aria-label^="Top 10 next tokens"]')?.textContent).toContain('␣floor')
     const temp = screen.getByRole('slider', { name: /^temperature/ }) as HTMLInputElement
     fireEvent.change(temp, { target: { value: '0' } })
     expect(container.querySelector('[aria-label^="Top 10 next tokens"] .Gpt2Explainer-probval')?.textContent).toBe('100%')
@@ -64,6 +79,7 @@ describe('Gpt2Explainer', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Generate next token' }))
     await waitFor(() => expect(container.querySelector('.Gpt2Explainer-gentext')?.textContent).toBe(' floor'), { timeout: 30000 })
     expect(container.textContent).toContain('With the KV cache only the new position was computed')
-    await waitFor(() => expect(container.textContent).toContain('final answer'), { timeout: 30000 })
+    // the sentence at the top grows by the generated token
+    expect(screen.getByRole('button', { name: /position 6: token " floor", id \d+, generated/ })).toBeTruthy()
   }, 90000)
 })

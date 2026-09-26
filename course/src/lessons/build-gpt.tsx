@@ -377,7 +377,7 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
         />
         <Callout kind="established">GPT-2’s published architecture is what <code>tiny_gpt.py</code> implements: learned positions, pre-norm blocks, GELU MLPs, tied head. With vocab 50,257, context 1,024, D = 768 and 12 layers, the formula in this lesson gives exactly 124,439,808 parameters, the “124M” on the label.</Callout>
         <p>Kabir stops at Riya’s desk on his way out and reads the number on her screen. “124,439,808. That’s GPT-2’s count.” He pulls up a chair. “Want to see the real one run? Same machine, full size.”</p>
-        <p>Below is GPT-2 small itself, with the weights OpenAI trained, running in your browser. Every stage is a box you built in this part. Press <b>Why?</b> on any stage to go back to the lesson that built it. It also has <a href="#/gpt2">a page of its own</a>.</p>
+        <p>Below is GPT-2 small itself, with the weights OpenAI trained, running in your browser. Every stage is a box you built in this part, and each one names the lesson that built it. It also has <a href="#/gpt2">a page of its own</a>, with more room.</p>
         <Gpt2Explainer />
         <p>Same wiring as Riya’s file. The difference is the numbers inside, and those come only from training.</p>
         <Callout kind="note" label="One difference: where the weights start">The wiring matches; the starting numbers do not. <code>tiny_gpt.py</code> keeps PyTorch’s defaults, which fill the embedding table with numbers of size about 1. GPT-2 starts every weight small (standard deviation 0.02) and shrinks the layers that write into the residual stream by a further 1/√(2N) for N blocks. You will see in the next lesson why that choice matters on the very first step.</Callout>

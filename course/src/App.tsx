@@ -220,7 +220,7 @@ export function App() {
           </button>
           <span className="topbar-title">{meta ? meta.title : route.page === 'gpt2' ? 'GPT-2 Explainer' : 'LLM From First Principles'}</span>
         </div>
-        <main id="content" tabIndex={-1} className={`page${route.page === 'map' ? ' wide' : ''}`} style={{ outline: 'none' }}>
+        <main id="content" tabIndex={-1} className={`page${route.page === 'map' || route.page === 'gpt2' ? ' wide' : ''}`} style={{ outline: 'none' }}>
           <ErrorBoundary what="this page">{body}</ErrorBoundary>
         </main>
       </div>
