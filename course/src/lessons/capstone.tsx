@@ -11,7 +11,7 @@ function Milestone({ id, goal, children }: { id: string; goal: ReactNode; childr
   const n = MILESTONES.findIndex((m) => m.id === id)
   const m = MILESTONES[n]
   return (
-    <section className="section" id={`milestone-${id}`}>
+    <section className="section" id={`milestone-${id}`} data-phase="build">
       <div className="section-head" style={{ minWidth: 0 }}><span className="section-kicker" style={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>Milestone {n + 1} of {MILESTONES.length} · {m.files.map((f) => f.split('/').pop()).join(' + ')}</span></div>
       <h2>{n + 1}. {m.title}</h2>
       <p className="lede"><b>Goal:</b> {goal}</p>
@@ -46,7 +46,7 @@ export default function CapstoneLesson() {
         <p>Each milestone has the same five parts: the goal, the idea in a few sentences, the task, a small test you write, and a validation checklist.</p>
       </Why>
 
-      <section className="section" id="setup">
+      <section className="section" id="setup" data-phase="build">
         <div className="section-head"><span className="section-kicker">Before you start</span></div>
         <h2>Setup, and how the tests work</h2>
         <p>Make a folder <code>capstone/</code> at the repository root for your own files. Run everything from the repository root. The phase folders have hyphens in their names, so they cannot be imported as packages; add them to the path instead:</p>
@@ -376,7 +376,7 @@ def test_unknown_tool_does_not_crash():
         <p className="muted" style={{ fontSize: 15 }}>The first test can import <code>verse_model</code> without loading any weights because <code>m6_agent.py</code> loads the model inside its <code>if __name__ == "__main__":</code> guard. The fake tool replaces <code>write_verse</code>, so the real model is never needed.</p>
       </Milestone>
 
-      <section className="section" id="explain">
+      <section className="section" id="explain" data-phase="practice">
         <div className="section-head"><span className="section-kicker">Wrap up</span></div>
         <h2>Explain what you built</h2>
         <ExplainBack

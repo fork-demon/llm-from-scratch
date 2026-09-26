@@ -563,7 +563,7 @@ best = Counter(answers).most_common(1)[0][0]
         <OrderExercise
           id="reasoning-models-order"
           title="From prompt to next token, from memory"
-          prompt={<p>Rebuild the path of one generation step. No scrolling back.</p>}
+          prompt={<p>Rebuild the path of one generation step. No looking back.</p>}
           correct={[
             'Text is split into tokens',
             'Tokens become ID numbers',

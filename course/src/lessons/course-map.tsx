@@ -295,7 +295,7 @@ pytest                            # run the repository's tests
         <OrderExercise
           id="course-map-pipeline-order"
           title="Rebuild the prompt → answer pipeline from memory"
-          prompt={<p>No scrolling back to lesson 0.1. Put the ten stages in order, from the text you type to the loop.</p>}
+          prompt={<p>No looking back at lesson 0.1. Put the ten stages in order, from the text you type to the loop.</p>}
           correct={PIPELINE_ORDER}
           solutionNote={<p>Text is cut into tokens by the tokenizer, tokens become ids, ids become embeddings. The Transformer turns those into next-token probabilities, sampling picks one, the token is appended, and the loop repeats. You will rebuild this pipeline several more times during the course, each time with more of the boxes opened up.</p>}
         />

@@ -96,7 +96,7 @@ export default function PromptToAnswerLesson() {
         <OrderExercise
           id="prompt-to-answer-order"
           title="Rebuild the pipeline"
-          prompt={<p>Without scrolling up, put the stages in the order the data flows through them.</p>}
+          prompt={<p>Without looking back, put the stages in the order the data flows through them.</p>}
           correct={['Text', 'Tokenizer', 'Tokens', 'Token IDs', 'Embeddings', 'Transformer', 'Next-token probabilities', 'Sampling', 'Next token', 'Repeat']}
           solutionNote={<p>Text must become numbers before any arithmetic can happen (tokenizer → tokens → ids → embeddings). The Transformer turns those numbers into probabilities. Sampling turns probabilities into one choice. The choice joins the text, and the loop goes round.</p>}
         />

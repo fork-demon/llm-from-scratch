@@ -13,8 +13,10 @@ import { ReviewPage } from './pages/Review'
 const Gpt2Page = lazy(() => import('./pages/Gpt2Page'))
 
 /* ---------- hash routing: static-host friendly, no dependency ---------- */
+// #/lesson/<id>/<section> opens one section; #/lesson/<id>#<element> jumps to an element (see components/lesson.tsx)
 const parseHash = () => {
-  const [, a = '', b = ''] = window.location.hash.replace(/^#/, '').split('/')
+  const path = window.location.hash.replace(/^#/, '').split('#')[0]
+  const [, a = '', b = ''] = path.split('/')
   return { page: a || 'home', arg: decodeURIComponent(b) }
 }
 const useRoute = () => {

@@ -259,7 +259,7 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
         <OrderExercise
           id="build-gpt-trace"
           title="Trace one token from text to prediction"
-          prompt={<p>Without scrolling up: put the full pipeline in order.</p>}
+          prompt={<p>Without looking back: put the full pipeline in order.</p>}
           correct={[
             'Input text',
             'Tokenizer: text → token ids',
