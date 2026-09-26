@@ -580,3 +580,13 @@ kbd { font-family: var(--mono); font-size: 0.85em; border: 1px solid var(--rule-
 @media (max-width: 960px) { .sidebar-reopen { display: none; } }
 /* Keep the reading column clear of the floating button. */
 .shell.collapsed .page { padding-top: 60px; }
+
+/* ---------- code editor (CodeMirror) and playground ---------- */
+.py-editor-wrap { position: relative; }
+.py-cm .cm-editor { max-height: 70vh; }
+.py-cm .cm-editor .cm-scroller { overflow: auto; }
+.py-cell:focus-within { box-shadow: 0 0 0 2px var(--accent); }
+.code-bar .code-run { border-color: rgba(143, 227, 189, 0.5); color: #8fe3bd; }
+.code-bar .code-run:hover { border-color: #8fe3bd; }
+.playground-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0 4px; font-size: 14.5px; }
+.playground-bar .input { width: auto; max-width: 100%; }

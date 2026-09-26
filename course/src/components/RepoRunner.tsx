@@ -61,7 +61,7 @@ export function RepoRunner({ path, title, children }: { path: RepoPath; title?: 
       </div>
       {editing && (
         <div style={{ maxHeight: 460, overflow: 'auto', marginTop: 12 }}>
-          <CodeEditor value={value} onChange={setValue} label={`${fileName(path)}: editable copy`} minRows={12} />
+          <CodeEditor value={value} onChange={setValue} label={`${fileName(path)}: editable copy`} minRows={12} onRun={() => { if (!phase) void run() }} />
         </div>
       )}
       <div className="py-actions">

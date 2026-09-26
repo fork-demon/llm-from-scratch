@@ -7,8 +7,46 @@ import { completeExercise, updateProgress, useProgress } from '../lib/progress'
 import { codeExerciseById } from '../data/codeExercises'
 import { sourceUrl } from '../data/curriculum'
 
-/* ---------- editor: a textarea over a highlighted copy of itself ---------- */
-export function CodeEditor({ value, onChange, label, minRows = 6 }: { value: string; onChange: (v: string) => void; label: string; minRows?: number }) {
+/* ---------- editor ----------
+   CodeMirror 6 (components/cmEditor.ts), loaded on first use. Until it arrives, and wherever it cannot
+   load, a plain textarea over a highlighted copy of itself does the job. */
+type CmHandle = ReturnType<typeof import('./cmEditor').createPythonEditor>
+let cmModule: Promise<typeof import('./cmEditor')> | null = null
+const loadCm = () => (cmModule ??= import('./cmEditor'))
+
+export function CodeEditor({ value, onChange, label, minRows = 6, onRun }: { value: string; onChange: (v: string) => void; label: string; minRows?: number; onRun?: () => void }) {
+  const host = useRef<HTMLDivElement>(null)
+  const cm = useRef<CmHandle | null>(null)
+  const [rich, setRich] = useState(false)
+  const latest = useRef({ value, onChange, onRun })
+  latest.current = { value, onChange, onRun }
+
+  useEffect(() => {
+    let dead = false
+    loadCm().then((m) => {
+      if (dead || !host.current) return
+      cm.current = m.createPythonEditor(host.current, {
+        doc: latest.current.value, label, minLines: minRows,
+        onChange: (v) => latest.current.onChange(v),
+        onRun: () => latest.current.onRun?.(),
+      })
+      setRich(true)
+    }).catch(() => undefined) // offline or blocked: keep the textarea
+    return () => { dead = true; cm.current?.destroy(); cm.current = null }
+  }, [label, minRows])
+
+  // Reset / Start over change the value from outside
+  useEffect(() => { cm.current?.setValue(value) }, [value])
+
+  return (
+    <div className="py-editor-wrap">
+      <div ref={host} className="py-cm" hidden={!rich} />
+      {!rich && <PlainEditor value={value} onChange={onChange} label={label} minRows={minRows} onRun={onRun} />}
+    </div>
+  )
+}
+
+function PlainEditor({ value, onChange, label, minRows, onRun }: { value: string; onChange: (v: string) => void; label: string; minRows: number; onRun?: () => void }) {
   const pre = useRef<HTMLPreElement>(null)
   const rows = Math.max(minRows, value.split('\n').length + 1)
 
@@ -19,14 +57,17 @@ export function CodeEditor({ value, onChange, label, minRows = 6 }: { value: str
       onChange(next)
       requestAnimationFrame(() => { ta.selectionStart = ta.selectionEnd = caret })
     }
-    if (e.key === 'Tab' && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      onRun?.()
+    } else if (e.key === 'Tab' && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
       // Tab indents. Escape then Tab leaves the editor, so keyboard users are never trapped.
       if (ta.dataset.escape === '1') { ta.dataset.escape = ''; return }
       e.preventDefault()
       set(value.slice(0, a) + '    ' + value.slice(b), a + 4)
     } else if (e.key === 'Escape') {
       ta.dataset.escape = '1'
-    } else if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+    } else if (e.key === 'Enter' && !e.shiftKey) {
       const lineStart = value.lastIndexOf('\n', a - 1) + 1
       const line = value.slice(lineStart, a)
       const indent = (line.match(/^\s*/) ?? [''])[0] + (line.trimEnd().endsWith(':') ? '    ' : '')
@@ -117,7 +158,7 @@ function Output({ result, showTests }: { result: PyRunResult; showTests: boolean
 }
 
 /* ---------- a scratch cell: edit, run, see the output ---------- */
-export function RunPython({ code, title = 'Python', source }: { code: string; title?: string; source?: string }) {
+export function RunPython({ code, title = 'Python', source, minRows }: { code: string; title?: string; source?: string; minRows?: number }) {
   const initial = code.replace(/^\n/, '').replace(/\s+$/, '') + '\n'
   const [value, setValue] = useState(initial)
   const { phase, result, run, clear } = useRunner([])
@@ -129,7 +170,7 @@ export function RunPython({ code, title = 'Python', source }: { code: string; ti
         {source && <a href={sourceUrl(source)} target="_blank" rel="noreferrer">{source.split('/').pop()} ↗</a>}
         <span className="py-badge">runs in your browser</span>
       </div>
-      <CodeEditor value={value} onChange={setValue} label={`${title}: editable Python`} />
+      <CodeEditor value={value} onChange={setValue} label={`${title}: editable Python`} minRows={minRows} onRun={() => { if (!phase) void run(value) }} />
       <div className="py-actions">
         <button className="btn small primary" onClick={() => run(value)} disabled={!!phase}>Run</button>
         {value !== initial && <button className="btn small" onClick={() => { setValue(initial); clear() }}>Reset</button>}
@@ -196,7 +237,7 @@ export function CodeExercise({ id, children }: { id: string; children?: ReactNod
             {def.source && <a href={sourceUrl(def.source)} target="_blank" rel="noreferrer">{def.source.split('/').pop()} ↗</a>}
             <span className="py-badge">runs in your browser</span>
           </div>
-          <CodeEditor value={value} onChange={setValue} label={`${def.title}: your Python code`} minRows={8} />
+          <CodeEditor value={value} onChange={setValue} label={`${def.title}: your Python code`} minRows={8} onRun={() => { if (!phase) void check() }} />
           <div className="py-actions">
             <button className="btn small primary" onClick={check} disabled={!!phase}>Run the tests</button>
             {value !== def.starter && <button className="btn small" onClick={() => { setValue(def.starter); clear() }}>Start over</button>}

@@ -53,7 +53,8 @@ self.onmessage = async (ev) => {
   py.setStdout({ batched: (s) => out.push(s) })
   py.setStderr({ batched: (s) => out.push(s) })
   try {
-    await py.loadPackagesFromImports(code + '\n' + (tests || []).map((t) => t.code).join('\n'))
+    // package-loading chatter ("Loading numpy") is not the learner's output
+    await py.loadPackagesFromImports(code + '\n' + (tests || []).map((t) => t.code).join('\n'), { messageCallback: () => {} })
     self.postMessage({ id, phase: 'running' })
     const ns = py.globals.get('dict')()
     let error = null

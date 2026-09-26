@@ -11,6 +11,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { ReviewPage } from './pages/Review'
 // the GPT-2 Explainer page is code-split: its engine and worker load only when someone opens it
 const Gpt2Page = lazy(() => import('./pages/Gpt2Page'))
+const PlaygroundPage = lazy(() => import('./pages/Playground').then((m) => ({ default: m.PlaygroundPage })))
 
 /* ---------- hash routing: static-host friendly, no dependency ---------- */
 // #/lesson/<id>/<section> opens one section; #/lesson/<id>#<element> jumps to an element (see components/lesson.tsx)
@@ -85,6 +86,7 @@ function Sidebar({ open, current, onNavigate, theme, toggleTheme, onCollapse }: 
         <a href="#/glossary" aria-current={route.page === 'glossary' ? 'page' : undefined} onClick={onNavigate}>Glossary</a>
         <a href="#/review" aria-current={route.page === 'review' ? 'page' : undefined} onClick={onNavigate}>Review{dueCount > 0 ? ` (${dueCount})` : ''}</a>
         <a href="#/gpt2" aria-current={route.page === 'gpt2' ? 'page' : undefined} onClick={onNavigate}>GPT-2 Explainer</a>
+        <a href="#/python" aria-current={route.page === 'python' ? 'page' : undefined} onClick={onNavigate}>Python playground</a>
       </div>
 
       <nav className="nav" aria-label="Lessons">
@@ -161,7 +163,7 @@ export function App() {
     window.scrollTo(0, 0)
     document.getElementById('content')?.focus({ preventScroll: true })
     const l = route.page === 'lesson' ? lessonById(route.arg) : undefined
-    document.title = l ? `${l.title} · LLM From First Principles` : route.page === 'gpt2' ? 'GPT-2 Explainer · LLM From First Principles' : 'LLM From First Principles'
+    document.title = l ? `${l.title} · LLM From First Principles` : route.page === 'gpt2' ? 'GPT-2 Explainer · LLM From First Principles' : route.page === 'python' ? 'Python playground · LLM From First Principles' : 'LLM From First Principles'
   }, [route.page, route.arg])
 
   useEffect(() => {
@@ -202,6 +204,7 @@ export function App() {
   else if (route.page === 'map') body = <ConceptMapPage />
   else if (route.page === 'selftest') body = <SelfTestPage />
   else if (route.page === 'review') body = <ReviewPage />
+  else if (route.page === 'python') body = <Suspense fallback={<p className="muted">Loading the playground…</p>}><PlaygroundPage /></Suspense>
   else if (route.page === 'gpt2') body = <Suspense fallback={<p className="muted">Loading the GPT-2 Explainer…</p>}><Gpt2Page arg={route.arg} /></Suspense>
   else body = <Home />
 
