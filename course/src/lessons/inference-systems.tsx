@@ -27,9 +27,7 @@ export default function InferenceSystemsLesson() {
         </div>
         <p>So the real question is not “how fast is the model?”. It is “how many conversations can share each pass, and what does each user pay for the sharing?”.</p>
         <p>That is a scheduling and memory problem. As a backend developer you already know most of the ideas: queues, tail latency, bin packing, paging.</p>
-        <Callout kind="idea">
-          LLM serving has one central trade-off: <b>throughput against latency</b>. Bigger batches make every token cheaper and every user slower. What limits the batch is not slots, it is the memory the <G t="kv-cache">KV caches</G> need. Almost every serving technique either packs the batch better or shrinks the bytes.
-        </Callout>
+        <p>LLM serving has one central trade-off: <b>throughput against latency</b>. Bigger batches make every token cheaper and every user slower. What limits the batch is not slots, it is the memory the <G t="kv-cache">KV caches</G> need. Almost every serving technique either packs the batch better or shrinks the bytes.</p>
         <p>This lesson is about packing the batch better. <a href="#/lesson/making-models-cheaper">The next one</a> is about shrinking the bytes.</p>
       </Why>
 
@@ -99,7 +97,7 @@ export default function InferenceSystemsLesson() {
           </table>
         </div>
         <p>Report each latency as a distribution, not as an average. <b>p50</b> is the median: half of your users were served faster than this. <b>p99</b> is the slow tail: only one request in a hundred was worse. Output lengths are heavily skewed, so an average hides the users who suffer.</p>
-        <p>The last row deserves its own sentence, because the two words look alike. <b>Throughput</b> counts tokens. <b>Goodput</b> counts only the requests that met your promise about how fast they would be served, an <b>SLO</b> or service level objective. A server can post an excellent throughput number while almost everyone waits too long.</p>
+        <p>The two words in the last rows look alike. <b>Throughput</b> counts tokens. <b>Goodput</b> counts only the requests that met your promise about speed, an <b>SLO</b> or service level objective. A server can post an excellent throughput number while almost everyone waits too long.</p>
 
         <h3>3. Continuous batching: schedule every step, not every batch</h3>
         <Term
@@ -125,9 +123,7 @@ export default function InferenceSystemsLesson() {
         </Callout>
         <p>That sharing, kept across requests, is <b>prefix caching</b> (vLLM calls it automatic prefix caching, SGLang’s version is RadixAttention). A long system prompt or a shared document is prefilled once, and later requests skip straight to their own suffix. It is what “prompt caching” on an API price list means. It cuts TTFT and prefill cost. It does nothing for decode.</p>
         <p>When blocks run out mid-generation, the scheduler <b>preempts</b> a sequence: it frees its blocks and later recomputes them by prefilling again (vLLM can also swap them to CPU memory). Users see a pause, not an error.</p>
-        <Callout kind="idea">
-          Those four points are one idea seen from four sides. A decode step is dominated by one read of the weights, that read is shared, so the batch is what you are selling, and the batch is limited by KV memory. Everything above either fills the batch (continuous batching) or fits more sequences into the same memory (paging).
-        </Callout>
+        <p>Those four points are one idea seen from four sides: the weight read is shared, so the batch is what you are selling, and KV memory limits the batch. Continuous batching fills it; paging fits more sequences into the same memory.</p>
       </MentalModel>
 
       <TryIt title="Two experiments">
@@ -203,9 +199,7 @@ export default function InferenceSystemsLesson() {
           <p>Little’s law says that the number of things in a system equals the arrival rate times how long each one stays. Here that gives the number of sequences in decode: L = λ × 300 × 0.050 s = 15 λ. At that batch the step is memory-bound, so it takes 3 + 8.0 + 0.0754 × 15 λ ms.</p>
           <p>Set step ÷ (1 − 0.1097 λ) = 50 ms and solve. The answer is <b>λ = 5.9 requests per second with 88 sequences in flight</b>, a 17.7 ms step, 1,769 tokens per second and 0.31 dollars per million.</p>
         </DeepDive>
-        <Callout kind="warn">
-          All of this is a napkin estimate. It ignores kernel efficiency at this batch shape and everything else a benchmark would reveal. Use it to see which resource binds and to sanity-check a vendor’s numbers, then measure your own workload before you order hardware.
-        </Callout>
+        <p>All of this is a napkin estimate. It ignores kernel efficiency at this batch shape and everything else a benchmark would reveal. Use it, and the simulator’s four-constant cost model, to see which resource binds and to sanity-check a vendor’s numbers, then measure your own workload before you order hardware.</p>
       </Numbers>
 
       <TheMath>
@@ -244,7 +238,14 @@ export default function InferenceSystemsLesson() {
       <CodeIt>
         <h3>The simulator</h3>
         <p><code>batching_sim.py</code> runs no neural network. It simulates the scheduler around one. Its only physics is this cost model, the roofline formula with illustrative constants:</p>
-        <Code source="phase6-engineering/batching_sim.py" title="the cost of one decode step, and of a prefill">{`
+        <Code
+          source="phase6-engineering/batching_sim.py"
+          title="the cost of one decode step, and of a prefill"
+          show={`for n in [1, 32, 128]:
+    ms = decode_step_ms(n, n * 300)          # every sequence holds 300 tokens of KV cache
+    print(f"{n:4d} sequences: step {ms:5.1f} ms -> {n / ms * 1000:6.0f} tokens/s in total")
+print("prefill of a 1,000-token prompt:", round(prefill_ms(1000), 1), "ms")`}
+        >{`
 COST = {"weight_read_ms": 7.0,          # 14 GB / 2 TB/s, shared by the whole batch
         "kv_read_ms_per_tok": 0.00026,  # 0.5 MiB / 2 TB/s, per cached token
         "compute_ms_per_tok": 0.09,     # 2 x 7e9 FLOP / 150 TFLOP/s
@@ -269,7 +270,20 @@ for k in range(2, steps + 1):
     st["padded_steps"] += n - live               # finished, still occupying the slot
 `}</Code>
         <p>Continuous batching makes its decision at the top of every iteration. Admission needs a free slot <em>and</em> free KV blocks:</p>
-        <Code source="phase6-engineering/batching_sim.py" title="continuous batching: admission, every iteration (simplified)">{`
+        <Code
+          source="phase6-engineering/batching_sim.py"
+          title="continuous batching: admission, every iteration (simplified)"
+          setup={`def _blocks(tokens, bs):               # blocks needed, rounded up
+    return (tokens + bs - 1) // bs
+bs, MAX_NEW, max_batch = 16, 512, 64    # block size, the max_tokens cap, slots
+cfg = {"kv_mode": "reserved"}          # then try "paged"
+st = {"free": 256}                     # free KV blocks: 256 x 16 = 4,096 tokens
+headroom = 0
+running, admitted = [], []
+waiting = [{"prompt": p, "generated": 0} for p in [120, 40, 300, 80, 200, 60, 150, 90, 30, 250]]`}
+          show={`print(cfg["kv_mode"], "admits", len(admitted), "of 10 waiting requests;", st["free"], "KV blocks left")
+print('(set cfg["kv_mode"] = "paged" in the setup and run again)')`}
+        >{`
 while waiting and len(running) + len(admitted) < max_batch:
     r = waiting[0]
     if cfg["kv_mode"] == "reserved":
@@ -378,25 +392,30 @@ while waiting and len(running) + len(admitted) < max_batch:
           <p>PagedAttention with a block size of 16 tokens. A sequence currently holds a 40-token prompt and has generated 10 tokens. How many blocks does it own?</p>
         </Exercise>
 
-        <Exercise
-          id="inference-systems-gqa-sim"
-          type="modify"
-          title="Give the simulated model GQA"
-          hints={[
-            'GQA with 8 of 32 K/V heads makes the cache 4 times smaller per token. Two constants in batching_sim.py depend on that.',
-            'Divide COST["kv_read_ms_per_tok"] by 4. In section 4 of main(), the same 8 GiB now holds 65,536 tokens instead of 16,384.',
-            'Pass a modified cost dict as the third argument of simulate(), and kv_budget_tokens=65536.',
-          ]}
-          solution={<><p>With the 4 times smaller cache, section 4 prints a mean of 47.1 running sequences and 1,814 tokens per second for <em>both</em> KV modes, and the peak is 64: the slot limit, not memory, is now what binds, so paging no longer matters at this setting. Raise <code>max_batch</code> and the gap returns. At 128 slots with ample memory, throughput rises from 1,869 to 2,070 tokens per second and TPOT p50 falls from 49.2 to 43.7 ms, because each sequence drags fewer cache bytes across the link.</p><p>The point: which resource binds depends on the configuration. A technique that doubles throughput on one setup can do nothing on another. Find the binding constraint first.</p></>}
-        >
-          <p>The simulator models a 7B model with plain multi-head attention: 0.5 MiB of cache per token. Change it to a GQA model with a quarter of the K/V heads, in the same 8 GiB of KV memory. Predict what happens to the reserved-versus-paged gap in section 4, then run it.</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="inference-systems-gqa-sim"
+            type="modify"
+            title="Give the simulated model GQA"
+            hints={[
+              'GQA with 8 of 32 K/V heads makes the cache 4 times smaller per token. Two constants in batching_sim.py depend on that.',
+              'Divide COST["kv_read_ms_per_tok"] by 4. In section 4 of main(), the same 8 GiB now holds 65,536 tokens instead of 16,384.',
+              'Pass a modified cost dict as the third argument of simulate(), and kv_budget_tokens=65536.',
+            ]}
+            solution={<><p>With the 4 times smaller cache, section 4 prints a mean of 47.1 running sequences and 1,814 tokens per second for <em>both</em> KV modes, and the peak is 64: the slot limit, not memory, is now what binds, so paging no longer matters at this setting. Raise <code>max_batch</code> and the gap returns. At 128 slots with ample memory, throughput rises from 1,869 to 2,070 tokens per second and TPOT p50 falls from 49.2 to 43.7 ms, because each sequence drags fewer cache bytes across the link.</p><p>The point: which resource binds depends on the configuration. A technique that doubles throughput on one setup can do nothing on another. Find the binding constraint first.</p></>}
+          >
+            <p>The simulator models a 7B model with plain multi-head attention: 0.5 MiB of cache per token. Change it to a GQA model with a quarter of the K/V heads, in the same 8 GiB of KV memory. Predict what happens to the reserved-versus-paged gap in section 4, then run it.</p>
+          </Exercise>
 
-        <ExplainBack
-          id="inference-systems-explain"
-          prompt="A product manager asks: “If the GPU can do 32 users for almost the price of one, why not run 1,000 users per GPU and cut our bill by 30?” Explain what stops you, using the two limits and the metrics from this lesson."
-          modelAnswer={<p>Batching is nearly free only while the step is dominated by reading the weights, which every sequence shares. Two things end that. First, memory: every sequence needs its own KV cache, and once the caches fill the GPU no more sequences fit, however many slots we configure. Paged allocation and GQA push that limit out, they do not remove it. Second, time: each sequence adds its own cache reads and arithmetic to every step, so past some batch size the step gets slower in proportion, throughput flattens, and every user’s time per token keeps rising. Prefills for new arrivals also interrupt everyone’s stream. So throughput is bought with latency, and what we actually sell is goodput: requests that meet the TTFT and per-token objectives at p99. The right batch size is the largest one that still meets them, and we find it by measuring our own traffic.</p>}
-        />
+          <ExplainBack
+            id="inference-systems-explain"
+            prompt="A product manager asks: “If the GPU can do 32 users for almost the price of one, why not run 1,000 users per GPU and cut our bill by 30?” Explain what stops you, using the two limits and the metrics from this lesson."
+            modelAnswer={<p>Batching is nearly free only while the step is dominated by reading the weights, which every sequence shares. Two things end that. First, memory: every sequence needs its own KV cache, and once the caches fill the GPU no more sequences fit, however many slots we configure. Paged allocation and GQA push that limit out, they do not remove it. Second, time: each sequence adds its own cache reads and arithmetic to every step, so past some batch size the step gets slower in proportion, throughput flattens, and every user’s time per token keeps rising. Prefills for new arrivals also interrupt everyone’s stream. So throughput is bought with latency, and what we actually sell is goodput: requests that meet the TTFT and per-token objectives at p99. The right batch size is the largest one that still meets them, and we find it by measuring our own traffic.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -413,17 +432,6 @@ while waiting and len(running) + len(admitted) < max_batch:
             explain: 'One token needs all the weights once and very little arithmetic. Tokens per second for one stream is bounded by bandwidth divided by weight bytes. Extra arithmetic helps prefill and large batches, not a single stream.',
           },
           {
-            q: 'Why can a server add a second, third and tenth sequence to a decode batch at almost no cost in step time?',
-            options: [
-              'Because the sequences are averaged into a single vector before they go through the model',
-              'Because one read of the weights serves every sequence in the batch, and arithmetic was idle',
-              'Because the KV cache is shared between users, so extra sequences need no additional memory',
-              'Because the GPU runs each sequence on a separate copy of the weights held in spare memory',
-            ],
-            answer: 1,
-            explain: 'The expensive part of a step, moving the weights, is paid once per step. Each extra sequence adds only its own arithmetic and its own cache reads. KV caches are not shared, which is exactly what ends the free lunch.',
-          },
-          {
             q: 'Under load, static batching and continuous batching show almost the same time per output token, but time to first token differs by a factor of several hundred. What explains it?',
             options: [
               'Continuous batching uses a faster attention kernel for the first token of each sequence',
@@ -433,17 +441,6 @@ while waiting and len(running) + len(admitted) < max_batch:
             ],
             answer: 2,
             explain: 'A decode step costs about the same under both. The difference is queueing: static batching holds slots hostage until the longest sequence ends, so new requests wait outside. That shows up in TTFT and in goodput, not in TPOT.',
-          },
-          {
-            q: 'What does PagedAttention change, and what does it leave alone?',
-            options: [
-              'It compresses keys and values to 4 bits, which changes the attention output very slightly',
-              'It moves old KV blocks to disk, so that context length is no longer limited by GPU memory',
-              'It approximates attention over distant blocks, trading a little quality for a lot of memory',
-              'It changes where KV blocks live in memory and how they are found; the attention result is the same',
-            ],
-            answer: 3,
-            explain: 'It is memory management: fixed-size blocks, a block table per sequence, blocks allocated on demand and shareable. The attention computed over those blocks is the ordinary one. The gain is more sequences per GPU.',
           },
           {
             q: 'A server reports 2,000 tokens per second of throughput, and the team is pleased. What would make that number misleading?',
@@ -462,10 +459,9 @@ while waiting and len(running) + len(admitted) < max_batch:
       <Remember
         items={[
           <><b>Decode is memory-bound, prefill is compute-bound.</b> One stream gets at most <span className="mono">bandwidth ÷ weight bytes</span> tokens per second: about 143 for 14 GB on 2 TB/s. The arithmetic units are nearly idle.</>,
-          <><b>Batching is nearly free</b> because the weight read is shared, until KV reads or arithmetic catch up, or KV memory runs out. Bigger batch: cheaper tokens, slower users. That is the trade-off.</>,
+          <><b>Batching is nearly free</b> because the weight read is shared, until KV reads or arithmetic catch up, or KV memory runs out. Bigger batch: cheaper tokens, slower users. The batch is what you sell, and <b>KV memory is what limits it</b>: capacity planning is one subtraction (memory minus weights) and one division (what is left, by the cache per sequence).</>,
           <>Keep the metrics apart: <b>TTFT</b> (queue + prefill), <b>TPOT</b> (decode step + stalls), end-to-end, throughput, and <b>goodput</b> under an SLO, at p50 and p99.</>,
           <><b>Continuous batching</b> reschedules at every step, so nobody pads and nobody waits for a whole batch. <b>PagedAttention</b> allocates the KV cache in blocks on demand, like virtual memory, so twice as many sequences fit and prefixes can be shared.</>,
-          <>The batch is what you sell, and <b>KV memory is what limits it</b>. Capacity planning is one subtraction (memory minus weights) and one division (what is left, by the cache per sequence).</>,
         ]}
       />
 
@@ -485,12 +481,7 @@ while waiting and len(running) + len(admitted) < max_batch:
             </tbody>
           </table>
         </div>
-        <Callout kind="established">
-          The mechanisms in this lesson are published and open: iteration-level scheduling (Orca, OSDI 2022), PagedAttention (vLLM, SOSP 2023) and chunked prefill (Sarathi-Serve, OSDI 2024). That decode is limited by memory bandwidth and prefill by arithmetic follows from counting bytes and FLOPs, and you can verify it on any GPU by watching tokens per second as you change batch size.
-        </Callout>
-        <Callout kind="model">
-          Our cost model is a roofline with four constants. Real step times also depend on kernel efficiency at each batch shape, attention cost growing with context, interconnect in multi-GPU setups, and scheduler overhead. Use the model to reason about <em>which</em> resource binds. Use a benchmark of your own traffic for the actual numbers.
-        </Callout>
+        <p>The mechanisms in this lesson are published and open: iteration-level scheduling (Orca, OSDI 2022), PagedAttention (vLLM, SOSP 2023) and chunked prefill (Sarathi-Serve, OSDI 2024). That decode is limited by memory bandwidth and prefill by arithmetic follows from counting bytes and FLOPs, and you can verify it on any GPU by watching tokens per second as you change batch size.</p>
         <Callout kind="research">
           How to split prefill and decode across machines, how to schedule for goodput rather than throughput, and how far KV caches can be compressed or evicted without hurting long-context quality are all active areas. How closed providers serve their models is not published: treat any specific claim about it as a guess.
         </Callout>

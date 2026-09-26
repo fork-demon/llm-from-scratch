@@ -18,10 +18,7 @@ export default function TransformerBlockLesson() {
           “Dog bites man.” &nbsp;&nbsp; “Man bites dog.”
         </div>
         <p>Same three words. Only one of them is news. Yet the attention you have built so far <b>cannot tell them apart</b>. It compares vectors, and it has no idea where in the sentence a vector came from.</p>
-        <p>That is one of four gaps between “attention” and a working model. In this lesson we close all four. Each fix is small. Together they form the <b>Transformer block</b>, the unit that GPT repeats 12, 32 or 80 times.</p>
-        <Callout kind="idea">
-          Nothing in a block is decoration. For every part we will ask: what goes wrong <em>without</em> it? And you will be able to remove it and watch.
-        </Callout>
+        <p>That is one of four gaps between “attention” and a working model. In this lesson we close all four. Each fix is small. Together they form the <b>Transformer block</b>, the unit that GPT repeats 12, 32 or 80 times. Nothing in it is decoration: for every part we ask what goes wrong <em>without</em> it, and you can remove it and watch.</p>
       </Why>
 
       <Problem title="Four things attention cannot do alone">
@@ -38,8 +35,7 @@ export default function TransformerBlockLesson() {
         />
 
         <h3>2. It mostly moves information, it barely processes it</h3>
-        <p>Look at what attention outputs: a <em>weighted average</em> of value vectors.</p>
-        <p>Choosing the weights is not a simple step. They come out of a softmax over query-key scores, a nonlinear function that changes with every input. But once the weights are fixed, the mixing itself is linear in V: each output is a weighted sum of value vectors.</p>
+        <p>Look at what attention outputs: a <em>weighted average</em> of value vectors. The weights come out of a nonlinear softmax, but once they are fixed, the mixing itself is linear in V.</p>
         <p>A weighted sum moves information between tokens. It cannot build new features that bend or combine the gathered values in nonlinear ways.</p>
         <p>Once “it” has gathered information from “animal”, something must <em>process</em> the result. You already own the tool: the <a href="#/lesson/neurons">MLP from the neurons lesson</a>, with its bend in the middle. In a block it is applied to <b>each token separately</b>.</p>
         <Callout kind="model" label="Simplified mental model: communicate, then compute">
@@ -80,14 +76,7 @@ export default function TransformerBlockLesson() {
           example={<>[10, 20, 60] → subtract the mean 30 → [−20, −10, 30] → divide by the spread 21.6 → [−0.93, −0.46, 1.39].</>}
           formal={<>y = (x − mean(x)) / std(x) · γ + β, computed separately for every token; γ (gain) and β (bias) are learned, starting at 1 and 0.</>}
         />
-        <Callout kind="analogy">
-          Think of the residual stream as a <b>shared document</b> that travels past a line of editors. Each editor (sub-layer) reads the document and appends a note. Nobody is allowed to throw the document away and start again.
-          <br /><br />
-          Where the analogy stops: the “notes” are added number by number to the same D numbers, not appended. A later layer can cancel an earlier note by adding its negative. And LayerNorm means each editor reads a volume-adjusted <em>copy</em>, while the original continues untouched.
-        </Callout>
-        <Callout kind="dev">
-          A residual block has the same contract as middleware: same type in, same type out, <code>(T, D) → (T, D)</code>. That is why blocks can be stacked, removed, or counted with a single config number.
-        </Callout>
+        <p>For a developer, a residual block has the same contract as middleware: same type in, same type out, <code>(T, D) → (T, D)</code>. That is why blocks can be stacked, removed, or counted with a single config number.</p>
       </MentalModel>
 
       <TryIt title="Open every box, then remove one">
@@ -222,7 +211,7 @@ class Block(nn.Module):
         <Code source="phase3-transformers/tiny_gpt.py" title="Piece 4: × N">{`
 self.blocks = nn.Sequential(*[Block(cfg) for _ in range(cfg.n_layer)])
 `}</Code>
-        <Callout kind="dev">N blocks means N <em>separate</em> sets of weights, not one block called N times. The list comprehension constructs a new <code>Block</code> for every layer.</Callout>
+        <p>N blocks means N <em>separate</em> sets of weights, not one block called N times. The list comprehension constructs a new <code>Block</code> for every layer.</p>
       </CodeIt>
 
       <BreakIt>
@@ -272,16 +261,6 @@ self.blocks = nn.Sequential(*[Block(cfg) for _ in range(cfg.n_layer)])
         />
 
         <Exercise
-          id="transformer-block-predict"
-          type="predict"
-          title="A block that has learned nothing"
-          hints={['If every weight in attention and in the MLP is zero, what does each sub-layer output?', 'Both sub-layers output all zeros. Now read the two lines of forward() with that in mind.']}
-          solution={<><p>The block returns its input <b>unchanged</b>: x + 0 = x, twice. With residuals, “knowing nothing” means “do no harm”. A new block can start as a near-identity and gradually grow a useful correction.</p><p>Without residuals the same block would output all zeros, and every token would be erased. This is the deepest reason residual networks are trainable when they are very deep: adding a layer cannot, at first, make things much worse.</p></>}
-        >
-          <p>Imagine a block in which every weight matrix and bias of the attention and of the MLP is exactly zero (LayerNorms as normal). What does the block output for an input x? And what would it output if the residual connections were removed?</p>
-        </Exercise>
-
-        <Exercise
           id="transformer-block-debug"
           type="debug"
           title="One missing character"
@@ -300,25 +279,40 @@ def forward(self, x):
 `}</Code>
         </Exercise>
 
-        <Exercise
-          id="transformer-block-implement"
-          type="implement"
-          title="Delete a plus sign, for real"
-          hints={[
-            'In tiny_gpt.py set n_layer = 6 in Config. Run python tiny_gpt.py --quick and write down the train and val loss at step 300.',
-            'Now change both lines in Block.forward to x = self.attn(self.ln1(x)) and x = self.ffn(self.ln2(x)). Run --quick again.',
-            'For LayerNorm: put the residuals back, replace self.ln1(x) and self.ln2(x) by plain x, and run again.',
-          ]}
-          solution={<><p>Our run (6 layers, 300 steps, CPU, validation loss at step 300; yours will differ a little): <b>2.89</b> as is, <b>3.36</b> without the LayerNorms, <b>3.66</b> without the residuals. Both removals hurt, and the missing plus signs hurt most: the early layers are barely learning, and the samples stay closer to noise.</p><p>One more experiment: raise <code>lr</code> from 3e-4 to 3e-3. In our run the normal model got <em>better</em> (2.34), while the version without LayerNorm stayed stuck at 3.37. Normalisation is what lets you train fast without the numbers getting out of hand.</p></>}
-        >
-          <p>Run the most instructive failure in the course. Train the 6-layer tiny GPT three times with <code>--quick</code>: as is, without the two residual connections, and without the two LayerNorms. Predict the ranking of the final losses before you run them.</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="transformer-block-predict"
+            type="predict"
+            title="A block that has learned nothing"
+            hints={['If every weight in attention and in the MLP is zero, what does each sub-layer output?', 'Both sub-layers output all zeros. Now read the two lines of forward() with that in mind.']}
+            solution={<><p>The block returns its input <b>unchanged</b>: x + 0 = x, twice. With residuals, “knowing nothing” means “do no harm”. A new block can start as a near-identity and gradually grow a useful correction.</p><p>Without residuals the same block would output all zeros, and every token would be erased. This is the deepest reason residual networks are trainable when they are very deep: adding a layer cannot, at first, make things much worse.</p></>}
+          >
+            <p>Imagine a block in which every weight matrix and bias of the attention and of the MLP is exactly zero (LayerNorms as normal). What does the block output for an input x? And what would it output if the residual connections were removed?</p>
+          </Exercise>
 
-        <ExplainBack
-          id="transformer-block-explain"
-          prompt="Explain to a colleague why a Transformer block needs a feed-forward network at all. Attention already combines information from all tokens: what is left to do?"
-          modelAnswer={<p>Attention mainly moves information: its output for a token is a weighted average of value vectors from the tokens it looked at. The weights are chosen by a nonlinear softmax, but the mixing itself is linear in the values, so it cannot build new nonlinear features out of what was gathered. The feed-forward network is an MLP with a non-linear bend, applied to each token separately, so it can compute new features from the mixture that attention delivered. A block therefore alternates: communicate between tokens (attention), then compute within each token (MLP). The MLPs also hold about two thirds of a block’s parameters, so most of the model’s capacity sits there.</p>}
-        />
+          <Exercise
+            id="transformer-block-implement"
+            type="implement"
+            title="Delete a plus sign, for real"
+            hints={[
+              'In tiny_gpt.py set n_layer = 6 in Config. Run python tiny_gpt.py --quick and write down the train and val loss at step 300.',
+              'Now change both lines in Block.forward to x = self.attn(self.ln1(x)) and x = self.ffn(self.ln2(x)). Run --quick again.',
+              'For LayerNorm: put the residuals back, replace self.ln1(x) and self.ln2(x) by plain x, and run again.',
+            ]}
+            solution={<><p>Our run (6 layers, 300 steps, CPU, validation loss at step 300; yours will differ a little): <b>2.89</b> as is, <b>3.36</b> without the LayerNorms, <b>3.66</b> without the residuals. Both removals hurt, and the missing plus signs hurt most: the early layers are barely learning, and the samples stay closer to noise.</p><p>One more experiment: raise <code>lr</code> from 3e-4 to 3e-3. In our run the normal model got <em>better</em> (2.34), while the version without LayerNorm stayed stuck at 3.37. Normalisation is what lets you train fast without the numbers getting out of hand.</p></>}
+          >
+            <p>Run the most instructive failure in the course. Train the 6-layer tiny GPT three times with <code>--quick</code>: as is, without the two residual connections, and without the two LayerNorms. Predict the ranking of the final losses before you run them.</p>
+          </Exercise>
+
+          <ExplainBack
+            id="transformer-block-explain"
+            prompt="Explain to a colleague why a Transformer block needs a feed-forward network at all. Attention already combines information from all tokens: what is left to do?"
+            modelAnswer={<p>Attention mainly moves information: its output for a token is a weighted average of value vectors from the tokens it looked at. The weights are chosen by a nonlinear softmax, but the mixing itself is linear in the values, so it cannot build new nonlinear features out of what was gathered. The feed-forward network is an MLP with a non-linear bend, applied to each token separately, so it can compute new features from the mixture that attention delivered. A block therefore alternates: communicate between tokens (attention), then compute within each token (MLP). The MLPs also hold about two thirds of a block’s parameters, so most of the model’s capacity sits there.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -341,28 +335,15 @@ def forward(self, x):
             answer: 3,
             explain: 'A chain of multiplications is fragile. With the residual, every layer passes the incoming gradient straight through, in addition to its own contribution.',
           },
-          {
-            q: 'LayerNorm turns [100, 300, 500, 700] and [1, 3, 5, 7] into the same vector. What does that tell you about its job?',
-            options: ['It removes the differences between tokens: after normalisation every token looks the same to the next sub-layer', 'It discards overall scale and offset, keeping the pattern, so that the next sub-layer always receives inputs of a familiar size', 'It sorts the numbers', 'It converts numbers into probabilities'],
-            answer: 1,
-            explain: 'It is a volume control between stages. It is not softmax: the outputs can be negative and they do not sum to 1.',
-          },
-          {
-            q: 'Why can blocks be stacked N times with no glue code in between?',
-            options: ['Because all blocks share the same weights', 'Because attention is commutative', 'Because a block’s output has exactly the same shape as its input, (T, D)', 'Because LayerNorm makes every block’s output identical'],
-            answer: 2,
-            explain: 'Same type in, same type out. Each of the N blocks has its own weights, though.',
-          },
         ]}
       />
 
       <Remember
         items={[
-          <>A block is <b>communicate, then compute</b>: masked self-attention moves information between tokens, the feed-forward MLP processes each token alone.</>,
+          <>A block is <b>communicate, then compute</b>: masked self-attention moves information between tokens, the feed-forward MLP processes each token alone. Shape in = shape out = <b>(T, D)</b>, so blocks stack: “block × N”.</>,
           <><b>Positional information</b> exists because attention is order-blind. Our GPT adds a learned vector per slot to each token embedding, once, before the first block.</>,
           <><b>Residual connections</b>, x = x + f(x): every sub-layer adds a correction instead of overwriting, and gradients get a direct highway to the early layers.</>,
           <><b>LayerNorm</b> rescales each token’s vector to mean 0, spread 1 (then a learned gain and bias) so every sub-layer sees inputs of a standard size. GPT does this <em>before</em> each sub-layer (pre-norm).</>,
-          <>Shape in = shape out = <b>(T, D)</b>. That is why a Transformer is “block × N”, and why one config number sets the depth.</>,
         ]}
       />
 
@@ -373,7 +354,7 @@ def forward(self, x):
           real={<ul><li>The same two-line block, repeated 12 times (GPT-2 small) to 80 or more times (70B-class models), with D in the thousands</li><li>Gated MLP variants such as <G t="swiglu">SwiGLU</G></li><li>Rotary positions (<G t="rope">RoPE</G>) applied inside attention, and RMSNorm, a cheaper LayerNorm without the mean subtraction</li><li>Still pre-norm, still residual, still “attention then MLP”</li></ul>}
         />
         <Callout kind="established">The structure you explored, pre-norm residual blocks alternating attention and an MLP, is shared by GPT-2, GPT-3, Llama, Mistral and, as far as is publicly documented, the other major LLM families. The differences are in the details of each box, covered in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>.</Callout>
-        <Callout kind="established">About two thirds of a block’s parameters are in the MLP (8D² against 4D² for attention). You will count them yourself in the next lesson.</Callout>
+        <p>About two thirds of a block’s parameters are in the MLP (8D² against 4D² for attention). You will count them yourself in the next lesson.</p>
         <Callout kind="research">What do the MLPs <em>do</em> with all those parameters? Interpretability studies suggest that MLP layers play a major role in recalling factual associations, and some describe them as key-value memories. This is evidence from specific experiments, not a complete account: knowledge in a trained model appears to be spread over many layers and both kinds of sub-layer. Treat “facts live in the MLP” as a useful hypothesis, not as settled.</Callout>
         <p>See it in real GPT-2: in the <a href="#/gpt2">GPT-2 Explainer</a>, open any of its 12 blocks to watch LayerNorm, the two residual adds and the 768 → 3,072 → 768 MLP work on your own prompt.</p>
         <p>At 7 p.m. the office floor is empty. Riya draws one block on the whiteboard, meeting then desk, and writes “× N” next to it. Tomorrow she stacks them into a GPT of her own.</p>

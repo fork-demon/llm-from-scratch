@@ -16,9 +16,7 @@ export default function FineTuningLesson() {
         <p>She has described all of that in the prompt. It mostly works. But the description is now 800 tokens long, Paisa Pal pays for it on every call, and one request in fifty still comes back as a chatty paragraph.</p>
         <p>Adding documents with <a href="#/lesson/rag">RAG</a> will not help. The model is not missing <em>information</em>. It is missing a <em>habit</em>.</p>
         <p>Kabir puts it in one line: “Habits live in the weights.” To change a habit, you change the weights.</p>
-        <Callout kind="idea">
-          Part 9’s question again: <b>what exactly changes?</b> RAG changed the prompt and left the weights alone. Fine-tuning is the mirror image: <b>the weights change, and the prompt can stay short</b>.
-        </Callout>
+        <p>Part 9’s question again: <b>what exactly changes?</b> RAG changed the prompt and left the weights alone. Fine-tuning is the mirror image: <b>the weights change, and the prompt can stay short</b>.</p>
         <WeightsShift />
         <p>Nothing is added to the model and nothing is removed. It is the same grid of numbers, with some of them nudged, and the habit moves with them.</p>
       </Why>
@@ -214,7 +212,7 @@ def apply_lora(model, r=4):
 params = [p for p in model.parameters() if p.requires_grad]
 opt = torch.optim.AdamW(params, lr=lr)
 `}</Code>
-        <Callout kind="dev">Evaluation in the script logs <em>two</em> losses every 50 steps: the new corpus and the old one. Copy that habit. A fine-tune that is only evaluated on the new task will always look like a success.</Callout>
+        <p>Evaluation in the script logs <em>two</em> losses every 50 steps: the new corpus and the old one. Copy that habit. A fine-tune that is only evaluated on the new task will always look like a success.</p>
       </CodeIt>
 
       <BreakIt>
@@ -264,42 +262,35 @@ self.B = nn.Parameter(torch.zeros(r, base.out_features))
 `}</Code>
         </Exercise>
 
-        <Exercise
-          id="fine-tuning-experiment"
-          type="experiment"
-          title="Run the real thing, then add replay"
-          hints={['python phase4-modern-llms/finetune_tiny_gpt.py --quick takes a few minutes on a laptop CPU. Watch the “full” lines: two numbers moving in opposite directions.', 'For replay, in train() draw the batch from the old data one time in five: data_now = old_data if torch.rand(1).item() < 0.2 else data. You will need to pass shk_train in.', 'Compare the final scoreboard line for full-FT with and without replay.']}
-          solution={<p>You should see the same scissors as in the lab: modern loss falling, Shakespeare loss rising, for both full fine-tuning and LoRA with the adapter attached. With 20% replay the Shakespeare loss rises much less, and the modern loss ends slightly higher than without replay. Exact numbers depend on your machine and seed. The point to notice: replay needs access to (some of) the old training data. For a model you downloaded, you usually do not have it, which is one reason frozen-base methods such as LoRA are so popular.</p>}
-        >
-          <p>Run <code>finetune_tiny_gpt.py --quick</code> and find the numbers of the table above in your own output: the scoreboard at the end, the “trainable” line and the checksum line. Then implement the oldest anti-forgetting trick: mix 20% Shakespeare batches into the full fine-tune. Predict first: what happens to each of the two losses?</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="fine-tuning-experiment"
+            type="experiment"
+            title="Run the real thing, then add replay"
+            hints={['python phase4-modern-llms/finetune_tiny_gpt.py --quick takes a few minutes on a laptop CPU. Watch the “full” lines: two numbers moving in opposite directions.', 'For replay, in train() draw the batch from the old data one time in five: data_now = old_data if torch.rand(1).item() < 0.2 else data. You will need to pass shk_train in.', 'Compare the final scoreboard line for full-FT with and without replay.']}
+            solution={<p>You should see the same scissors as in the lab: modern loss falling, Shakespeare loss rising, for both full fine-tuning and LoRA with the adapter attached. With 20% replay the Shakespeare loss rises much less, and the modern loss ends slightly higher than without replay. Exact numbers depend on your machine and seed. The point to notice: replay needs access to (some of) the old training data. For a model you downloaded, you usually do not have it, which is one reason frozen-base methods such as LoRA are so popular.</p>}
+          >
+            <p>Run <code>finetune_tiny_gpt.py --quick</code> and find the numbers of the table above in your own output: the scoreboard at the end, the “trainable” line and the checksum line. Then implement the oldest anti-forgetting trick: mix 20% Shakespeare batches into the full fine-tune. Predict first: what happens to each of the two losses?</p>
+          </Exercise>
 
-        <ExplainBack
-          id="fine-tuning-explain"
-          prompt="A teammate proposes: “Let’s fine-tune the model on our product documentation so it knows our product.” Explain what is likely to go wrong, and what you would do instead."
-          modelAnswer={<p>Fine-tuning changes weights, which is the right tool for behaviour (style, format, a narrow skill) and a poor one for facts. Facts seen a few times in training are stored unreliably, so the model would sound like our docs while still inventing details. Every documentation change would need a new training run, and we could not show users where an answer came from. Meanwhile the fine-tune can damage abilities we rely on, because nothing in the training loss protects them. Documentation is knowledge that changes, so it belongs in the prompt via retrieval (RAG). If, after that, the model still does not answer in our format or tone, that is the moment to fine-tune, on a few hundred excellent examples, with a held-out set and a check of the old abilities.</p>}
-        />
+          <ExplainBack
+            id="fine-tuning-explain"
+            prompt="A teammate proposes: “Let’s fine-tune the model on our product documentation so it knows our product.” Explain what is likely to go wrong, and what you would do instead."
+            modelAnswer={<p>Fine-tuning changes weights, which is the right tool for behaviour (style, format, a narrow skill) and a poor one for facts. Facts seen a few times in training are stored unreliably, so the model would sound like our docs while still inventing details. Every documentation change would need a new training run, and we could not show users where an answer came from. Meanwhile the fine-tune can damage abilities we rely on, because nothing in the training loss protects them. Documentation is knowledge that changes, so it belongs in the prompt via retrieval (RAG). If, after that, the model still does not answer in our format or tone, that is the moment to fine-tune, on a few hundred excellent examples, with a held-out set and a check of the old abilities.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
         questions={[
           {
-            q: 'Mechanically, how does fine-tuning differ from pretraining?',
-            options: ['It uses a different loss function designed for behaviour', 'It is the same training loop: different data, starts from trained weights, usually a smaller learning rate', 'It edits the prompt instead of the weights', 'It adds new layers that understand instructions'],
-            answer: 1,
-            explain: 'Same forward pass, same cross-entropy, same gradient descent. What differs is where you start and what you train on.',
-          },
-          {
             q: 'Why does a fully fine-tuned model get worse at things that are not in the fine-tuning data?',
             options: ['The optimizer deletes unused weights', 'The new loss only measures the new data, so nothing stops shared weights being moved away from what old abilities needed', 'The context window gets shorter', 'Fine-tuning data is always lower quality than pretraining data'],
             answer: 1,
             explain: 'Forgetting is the absence of protection. Replay helps precisely because it puts old data back into the loss.',
-          },
-          {
-            q: 'In LoRA, B starts at zero and A starts random. What does that achieve?',
-            options: ['It makes training faster by skipping the first step', 'The adapter’s contribution A·B is exactly zero at the start, so training begins at the pretrained model, yet gradients can still flow', 'It guarantees the adapter stays low-rank', 'It prevents overfitting'],
-            answer: 1,
-            explain: 'Zero product, so no initial damage. Non-zero A, so B gets a gradient. Both zero would mean no gradient for either, ever.',
           },
           {
             q: 'After LoRA fine-tuning with the adapter attached, performance on an old task has dropped. What does LoRA still guarantee?',
@@ -318,8 +309,7 @@ self.B = nn.Parameter(torch.zeros(r, base.out_features))
 
       <Remember
         items={[
-          <><b>What changes: the weights. Not the prompt.</b> Fine-tuning is the same training loop on new data, from trained weights, with a small learning rate.</>,
-          <><b>RAG for knowledge that changes. Fine-tuning for behaviour:</b> style, format, narrow skills. Try prompting first.</>,
+          <><b>What changes: the weights. Not the prompt.</b> The same training loop on new data, from trained weights, with a small learning rate. <b>RAG for knowledge that changes, fine-tuning for behaviour</b> (style, format, narrow skills). Try prompting first.</>,
           <>The model imitates everything in your examples, including your mistakes. <b>A few hundred excellent examples beat thousands of sloppy ones.</b></>,
           <><b>Catastrophic forgetting:</b> nothing in the new loss protects old abilities, and they share weights. Always evaluate on a held-out set <em>and</em> re-test old capabilities.</>,
           <><b>LoRA:</b> freeze W, train a low-rank correction A·B with B = 0 at the start. About 1% of the numbers; base model preserved exactly; adapters can be merged or swapped.</>,
@@ -332,7 +322,7 @@ self.B = nn.Parameter(torch.zeros(r, base.out_features))
           toy={<ul><li>A 0.8M-parameter character GPT; a 27×27 bigram in the browser</li><li>Two tiny synthetic corpora standing in for “old skill” and “new task”</li><li>Rank 4 on the attention layers: 12,288 trainable numbers</li><li>Forgetting measured as one loss on one old corpus</li></ul>}
           real={<ul><li>Billions of parameters; the pretrained weights are usually downloaded, not trained by you</li><li>Prompt → response pairs (SFT), often followed by preference tuning such as DPO (see <a href="#/lesson/alignment-safety">Alignment and safety</a>). The ideal replies are often written by a bigger model rather than by people (see <a href="#/lesson/distillation">Small models from big ones</a>)</li><li>LoRA on attention and often feed-forward layers, commonly combined with a quantised (compressed) frozen base so it fits on one GPU</li><li>Forgetting checked with a battery of benchmarks and task-specific regression tests</li></ul>}
         />
-        <Callout kind="established">The assistant you chat with is itself a fine-tuned model: pretraining, then <G t="sft">SFT</G>, then preference tuning and reinforcement learning, as in <a href="#/lesson/training-pipeline">From raw text to assistant</a>. How those later stages teach a model what it should not do is the subject of <a href="#/lesson/alignment-safety">Alignment and safety</a>. Serving many LoRA adapters over one shared frozen base is standard practice, because swapping a small adapter is far cheaper than loading another full model.</Callout>
+        <p>The assistant you chat with is itself a fine-tuned model: pretraining, then <G t="sft">SFT</G>, then preference tuning and reinforcement learning, as in <a href="#/lesson/training-pipeline">From raw text to assistant</a>. How those later stages teach a model what it should not do is the subject of <a href="#/lesson/alignment-safety">Alignment and safety</a>. Serving many LoRA adapters over one shared frozen base is standard practice, because swapping a small adapter is far cheaper than loading another full model.</p>
         <Callout kind="research">Why low-rank corrections work as well as they do, when they fall short of full fine-tuning, and how to fine-tune without forgetting are all open questions. Reported results differ by task: LoRA tends to match full fine-tuning on style and instruction-following, and to lag on tasks that need a lot of new knowledge or skill. One careful comparison on code and maths (Biderman et al., 2024, “LoRA Learns Less and Forgets Less”) found that LoRA learned less of the new domain and also forgot less of the old one than full fine-tuning. Our tiny run shows the first half clearly and the second only weakly, so do not generalise from it. A later study (Thinking Machines Lab, 2025, “LoRA Without Regret”) reported that LoRA applied to every layer, including the feed-forward ones, matched full fine-tuning on many post-training datasets, and fell behind mainly when the dataset was large. Treat any blanket claim in either direction with suspicion.</Callout>
         <p>Two weeks later Riya runs the held-out tickets through the adapter. The replies come back short, warm and in valid JSON. Then, following the script’s habit, she re-tests the old abilities too. Dev asks why she is checking things nobody complained about. “Because the loss never checked them,” she says.</p>
       </RealLLM>

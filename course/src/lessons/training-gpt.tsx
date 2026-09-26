@@ -19,19 +19,17 @@ export default function TrainingGptLesson() {
         <p>Not Shakespeare. But look at what is there: real words (“hath”, “day”, “now”, “thou”, “to this”), line breaks, a speaker’s name in capitals followed by a colon, lines that start with a capital letter.</p>
         <p>Nobody programmed any of that. No line of code changed between the two samples. The only thing that changed is the values of the model’s 809,856 <G t="parameters">parameters</G>.</p>
         <p>She screenshots the falling loss curve and sends it to Kabir. At 2:07 a.m. he replies with one word: “Good.” So what exactly happened to those numbers?</p>
-        <Callout kind="idea">
-          <b>Training</b> is the process that changes those numbers. It is one short loop, repeated thousands of times: take some text, let the model guess each next character, measure how surprised it was, and nudge every number so it would be a little less surprised next time.
-        </Callout>
+        <p><b>Training</b> is the process that changes those numbers. It is one short loop, repeated thousands of times: take some text, let the model guess each next character, measure how surprised it was, and nudge every number so it would be a little less surprised next time.</p>
         <p>You already own every piece: <a href="#/lesson/gradient-descent">gradient descent</a>, <a href="#/lesson/backprop">backpropagation</a>, <a href="#/lesson/softmax">cross-entropy</a>. This lesson is about how they fit together for text, and about the question every practitioner actually worries about: <em>how do I know it is working?</em></p>
       </Why>
 
       <Problem>
         <p>Next morning, Dev reads the samples over breakfast. “So you gave it a million questions and answers. Who wrote them?” Nobody did. That is the first of three practical questions the pieces leave open.</p>
-        <div className="grid-3">
-          <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Where are the examples?</h4><p>Gradient descent needs (input, correct answer) pairs. We have a text file. Nobody labelled it.</p></div>
-          <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Is it learning?</h4><p>A loss that falls is a good sign. But falling on <em>what</em>? A model can score perfectly by memorising.</p></div>
-          <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Which knobs matter?</h4><p>Learning rate, batch size, number of steps. Pick badly and the loss explodes, or crawls.</p></div>
-        </div>
+        <ul>
+          <li><b>Where are the examples?</b> Gradient descent needs (input, correct answer) pairs. We have a text file. Nobody labelled it.</li>
+          <li><b>Is it learning?</b> A loss that falls is a good sign. But falling on <em>what</em>? A model can score perfectly by memorising.</li>
+          <li><b>Which knobs matter?</b> Learning rate, batch size, number of steps. Pick badly and the loss explodes, or crawls.</li>
+        </ul>
         <WhyExists
           problem="A GPT has around a million numbers (a real one: billions). They start random. We need good values for all of them."
           naive="Pay people to write (question, correct answer) pairs, as in classic supervised learning."
@@ -83,16 +81,12 @@ export default function TrainingGptLesson() {
           example={<>Train loss keeps falling: 0.9, 0.6, 0.3. Validation loss turns around: 1.8, 1.9, 2.2.</>}
           formal={<>Validation loss increasing while training loss decreases: the gap between them is the generalisation gap.</>}
         />
-        <Callout kind="analogy">
-          A student with last year’s exam can learn the subject, or can memorise the answer key. Both score 100% on last year’s exam. Only a <em>new</em> exam tells them apart. The validation split is the new exam.
-          <br /><br />
-          Where the analogy stops: the model has no intention to cheat. Memorising is the easiest way downhill when there is little data and a lot of capacity. Gradient descent takes whatever reduces the training loss.
-        </Callout>
-        <p>Because a run can go bad (or the power can go out), long runs save the weights to disk every so often. That saved file is a <b>checkpoint</b>. You keep the one with the best validation loss, not necessarily the last one.</p>
+        <p>The validation split is the new exam paper. Unlike a student, the model has no intention to cheat: memorising is simply the easiest way downhill when there is little data and a lot of capacity.</p>
+        <p>Long runs save the weights to disk every so often. That saved file is a <b>checkpoint</b>. You keep the one with the best validation loss, not necessarily the last one.</p>
       </MentalModel>
 
       <TryIt title="Train one yourself">
-        <p>This trains a real neural language model, from random weights, in your browser. Be clear about which one: it is the small character MLP from <code>bigram_lm.py</code> (Model C), which reads the last few characters (3 in the Python file, 4 by default here). It is <b>not a Transformer</b>, and it uses plain gradient descent. The training <em>loop</em> is the same one your GPT uses. A real Transformer comes right after it, in part 2.</p>
+        <p>This trains a real neural language model, from random weights, in your browser: the small character MLP from <code>bigram_lm.py</code> (Model C), which reads the last few characters (3 in the Python file, 4 by default here). It is <b>not a Transformer</b> and uses plain gradient descent, but the training <em>loop</em> is the one your GPT uses. A real Transformer comes right after it.</p>
         <p>Suggested route:</p>
         <ol>
           <li>Press <b>Start</b> with the defaults. Watch the loss start on the dotted “pure guessing” line and fall. Read the samples as they appear.</li>
@@ -190,7 +184,7 @@ def get_batch(split):
     y = torch.stack([d[i + 1:i + cfg.context_len + 1] for i in ix])   # (32, 64) one char later
     return x.to(device), y.to(device)
 `}</Code>
-        <p>Random start points mean the model rarely sees exactly the same stretch twice. There are no tidy epochs here: the code just runs a fixed number of steps.</p>
+        <p>Random start points mean there are no tidy epochs here: the code just runs a fixed number of steps.</p>
         <Code title="Step 3: forward pass and loss (inside GPT.forward)">{`
 logits = self.head(x)                           # (B, T, vocab): a score for every char, at every position
 loss = F.cross_entropy(logits.view(-1, logits.size(-1)),   # flatten to (B*T, vocab)
@@ -241,15 +235,15 @@ for step in range(steps + 1):
           <p>A gap of around 90 in the logits means softmax gives nearly everything to “repeat the input”. But the right answer is the <em>next</em> character, which equals the current one only about 2% of the time. So the correct character gets a logit about 85 below the winner, and the loss is in the 80s.</p>
           <p>The run recovers: it spends its first hundred or so steps unlearning the copying and climbing down to the guessing line (3.88 at step 100). GPT-2 style code avoids the whole detour by starting small. Every weight starts with standard deviation 0.02, and the layers that write into the residual stream are shrunk by a further 1/√(2N) for N blocks. With that initialisation our model starts at about 4.2, right on ln(65). More on this recipe below.</p>
         </Callout>
-        <Callout kind="dev">Look how little of this is about language. Swap <code>get_batch</code> and the model, and the same eight lines train an image classifier or a speech recogniser. The loop is the constant of deep learning. Also note what this file does <em>not</em> do: it saves no checkpoint, because the run takes minutes. Adding <code>torch.save(model.state_dict(), "ckpt.pt")</code> whenever <code>vl</code> improves is a two-line change.</Callout>
+        <p>Look how little of this is about language. Swap <code>get_batch</code> and the model, and the same eight lines train an image classifier. The file saves no checkpoint, because the run takes minutes; adding <code>torch.save(model.state_dict(), "ckpt.pt")</code> whenever <code>vl</code> improves is a two-line change.</p>
 
         <h3>The rest of the recipe</h3>
         <p><code>tiny_gpt.py</code> keeps things bare: default initialisation, a constant learning rate, nothing else. Real training runs add four small things around the same loop. Each one fixes a specific way a run goes wrong.</p>
         <ul>
-          <li><b>Small, depth-scaled initialisation.</b> Start every weight small (GPT-2: standard deviation 0.02). The layers that write into the <G t="residual">residual stream</G> (attention’s output projection and the MLP’s second matrix) are shrunk further, by 1/√(2N) for N blocks. Why: the stream adds up 2N such contributions, so without the shrink the stream’s size would grow with depth. This is also what makes step 0 start near ln(V) instead of the copying you saw above.</li>
-          <li><b>Warm-up.</b> For the first few hundred to few thousand steps, raise the learning rate in a straight line from near zero up to its peak. Why: at the start the weights are random and AdamW’s running averages are built from only a few batches, so large steps can throw the run into a bad region.</li>
-          <li><b>Cosine decay.</b> After warm-up, lower the learning rate along half a cosine curve, often ending around a tenth of the peak. Why: big steps travel far early on; small steps late let the weights settle into a low point instead of bouncing around it.</li>
-          <li><b>Gradient clipping.</b> Measure the length of the whole gradient (all parameters together as one long vector). If it is longer than a limit, commonly 1.0, scale it down to that length. The direction stays the same. Why: one odd batch can produce a huge gradient, and one huge step can undo hours of training.</li>
+          <li><b>Small, depth-scaled initialisation.</b> Start every weight small (GPT-2: standard deviation 0.02), and shrink the layers that write into the <G t="residual">residual stream</G> by a further 1/√(2N) for N blocks. Why: the stream adds up 2N such contributions, so without the shrink its size would grow with depth. This is also what makes step 0 start near ln(V) instead of copying.</li>
+          <li><b>Warm-up.</b> For the first few hundred to few thousand steps, raise the learning rate in a straight line from near zero to its peak. Why: at the start AdamW’s running averages are built from only a few batches, so large steps can throw the run into a bad region.</li>
+          <li><b>Cosine decay.</b> After warm-up, lower the learning rate along half a cosine curve, often to about a tenth of the peak. Why: small steps late let the weights settle into a low point instead of bouncing around it.</li>
+          <li><b>Gradient clipping.</b> If the length of the whole gradient (all parameters as one long vector) is above a limit, commonly 1.0, scale it down to that length, keeping its direction. Why: one odd batch can produce a huge step that undoes hours of training.</li>
         </ul>
         <Code title="Sketch: warm-up + cosine decay, and clipping (not in tiny_gpt.py)">{`
 def lr_at(step, peak=3e-4, warmup=200, total=3000, floor=3e-5):
@@ -264,7 +258,7 @@ loss.backward()
 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)   # cap the gradient's length
 opt.step()
 `}</Code>
-        <Callout kind="note">None of these four changes the goal: same data, same loss, same loop. They change how safely and quickly the run gets there. Most of the exact values (warm-up length, peak, floor, clip limit) are found by experiment and differ between labs.</Callout>
+        <p>None of these four changes the goal: same data, same loss, same loop. They change how safely and quickly the run gets there. The exact values (warm-up length, peak, floor, clip limit) are found by experiment and differ between labs.</p>
       </CodeIt>
 
       <BreakIt>
@@ -298,19 +292,6 @@ opt.step()
         </Exercise>
 
         <Exercise
-          id="training-gpt-lr-experiment"
-          type="experiment"
-          title="Three learning rates"
-          hints={[
-            'Reset between runs so each one starts from the same random weights. Defaults for everything else. Use Pause at step 1,000.',
-            'Record three things for each run: did it diverge, the validation loss at step 1,000, and what the sample looks like.',
-          ]}
-          solution={<><p>With the default settings you should see roughly: <b>0.01</b> → validation loss about 2.8 (still mostly gibberish, it is only slow). <b>0.3</b> → about 0.4 (real words and sentences). <b>3</b> → the loss falls fast, then explodes to NaN a little after step 200.</p><p>The lesson: the learning rate is the most sensitive knob in training. Too low wastes compute, too high destroys the run, and the best value sits surprisingly close to the edge of disaster. This is why real training runs change the learning rate as they go, on a fixed plan called a schedule. The usual shape: a short <b>warm-up</b>, where the rate climbs from near zero over the first few thousand steps, then a long slow decay back down.</p></>}
-        >
-          <p>In the playground, train for 1,000 steps at learning rates <b>0.01</b>, <b>0.3</b> and <b>3</b> (everything else default). Write down the final validation loss of each. Which is best, and what goes wrong with the other two?</p>
-        </Exercise>
-
-        <Exercise
           id="training-gpt-debug"
           type="debug"
           title="The loss falls, then goes wild"
@@ -331,32 +312,50 @@ print("final loss", loss.item())
 `}</Code>
         </Exercise>
 
-        <Exercise
-          id="training-gpt-implement"
-          type="implement"
-          title="Run the real one"
-          hints={[
-            'cd phase3-transformers, then: python tiny_gpt.py --quick   (needs PyTorch; about two minutes on a laptop CPU).',
-            'Compare every printed loss with ln(65) = 4.17. Then read the four samples: look for spaces first, then line breaks, then word-like strings.',
-            'For the second part, add one line at the end of GPT.__init__:  nn.init.normal_(self.tok_emb.weight, std=0.02)   and run again.',
-          ]}
-          solution={<>
-            <p><b>What you will see.</b> Our quick run printed train / validation loss of <b>80.5 / 80.3</b> at step 0, then 3.88 / 3.96, 3.16 / 3.21 and 2.93 / 2.96 at steps 100, 200, 300. The full run (3,000 steps) reached 2.04 / 2.10.</p>
-            <p>With the one-line change, step 0 printed <b>4.14</b>. Then, in our run, the loss dropped to about 3.3 and sat there for the rest of the 300 steps, ending <em>worse</em> than the original.</p>
-            <p><b>Why.</b> Step 0 at 80 is the confident copying from the warning box: large embeddings, tied head, each input character predicts itself. Shrinking the embeddings removes the copying, so the model starts at ln(65) as it should.</p>
-            <p>Train and validation stay close because after 300 steps the model has seen 300 × 32 × 64 ≈ 614,000 characters, less than one pass over the one million characters of training text. It has had no chance to memorise.</p>
-            <p>The plateau at 3.3 is roughly what you get by predicting how common each character is while ignoring the context. A likely reason: the tied output layer is now tiny, so the learning signal that flows back through it is tiny too, and at a fixed learning rate of 3e-4 it takes a while to grow. Real recipes pair small initial weights with a warm-up and a larger peak learning rate (the recipe section).</p>
-            <p><b>Takeaway.</b> The ln(V) check tells you whether the start is sane. It does not tell you the rest of the recipe is tuned.</p>
-          </>}
-        >
-          <p>Run <code>python tiny_gpt.py --quick</code>. Note the train and validation loss at steps 0, 100, 200, 300 and read the samples. Is the step 0 loss what the sanity check says it should be? Then make the one-line change in hint 3 and run again. Predict first: what will step 0 print now, and will the run end better or worse?</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="training-gpt-lr-experiment"
+            type="experiment"
+            title="Three learning rates"
+            hints={[
+              'Reset between runs so each one starts from the same random weights. Defaults for everything else. Use Pause at step 1,000.',
+              'Record three things for each run: did it diverge, the validation loss at step 1,000, and what the sample looks like.',
+            ]}
+            solution={<><p>With the default settings you should see roughly: <b>0.01</b> → validation loss about 2.8 (still mostly gibberish, it is only slow). <b>0.3</b> → about 0.4 (real words and sentences). <b>3</b> → the loss falls fast, then explodes to NaN a little after step 200.</p><p>The lesson: the learning rate is the most sensitive knob in training. Too low wastes compute, too high destroys the run, and the best value sits surprisingly close to the edge of disaster. This is why real training runs change the learning rate as they go, on a fixed plan called a schedule. The usual shape: a short <b>warm-up</b>, where the rate climbs from near zero over the first few thousand steps, then a long slow decay back down.</p></>}
+          >
+            <p>In the playground, train for 1,000 steps at learning rates <b>0.01</b>, <b>0.3</b> and <b>3</b> (everything else default). Write down the final validation loss of each. Which is best, and what goes wrong with the other two?</p>
+          </Exercise>
 
-        <ExplainBack
-          id="training-gpt-explain"
-          prompt="Your product manager looks at a chart and says: “Training loss is still going down, so why did you stop the run?” Explain overfitting and what the validation curve told you."
-          modelAnswer={<p>The training loss only says how well the model predicts text it has already practised on. A model with enough capacity can keep lowering it by memorising that text. What we care about is new text, so we hold some text back and measure the loss on it without ever training on it. While both curves fall, the model is learning patterns that carry over. When the validation loss flattens and turns upward while the training loss keeps falling, further training is making the model worse at the real job. So we stop there and keep the checkpoint with the best validation loss. The fix for wanting more is more data (or a smaller model, or regularisation), not more steps.</p>}
-        />
+          <Exercise
+            id="training-gpt-implement"
+            type="implement"
+            title="Run the real one"
+            hints={[
+              'cd phase3-transformers, then: python tiny_gpt.py --quick   (needs PyTorch; about two minutes on a laptop CPU).',
+              'Compare every printed loss with ln(65) = 4.17. Then read the four samples: look for spaces first, then line breaks, then word-like strings.',
+              'For the second part, add one line at the end of GPT.__init__:  nn.init.normal_(self.tok_emb.weight, std=0.02)   and run again.',
+            ]}
+            solution={<>
+              <p><b>What you will see.</b> Our quick run printed train / validation loss of <b>80.5 / 80.3</b> at step 0, then 3.88 / 3.96, 3.16 / 3.21 and 2.93 / 2.96 at steps 100, 200, 300. The full run (3,000 steps) reached 2.04 / 2.10.</p>
+              <p>With the one-line change, step 0 printed <b>4.14</b>. Then, in our run, the loss dropped to about 3.3 and sat there for the rest of the 300 steps, ending <em>worse</em> than the original.</p>
+              <p><b>Why.</b> Step 0 at 80 is the confident copying from the warning box: large embeddings, tied head, each input character predicts itself. Shrinking the embeddings removes the copying, so the model starts at ln(65) as it should.</p>
+              <p>Train and validation stay close because after 300 steps the model has seen 300 × 32 × 64 ≈ 614,000 characters, less than one pass over the one million characters of training text. It has had no chance to memorise.</p>
+              <p>The plateau at 3.3 is roughly what you get by predicting how common each character is while ignoring the context. A likely reason: the tied output layer is now tiny, so the learning signal that flows back through it is tiny too, and at a fixed learning rate of 3e-4 it takes a while to grow. Real recipes pair small initial weights with a warm-up and a larger peak learning rate (the recipe section).</p>
+              <p><b>Takeaway.</b> The ln(V) check tells you whether the start is sane. It does not tell you the rest of the recipe is tuned.</p>
+            </>}
+          >
+            <p>Run <code>python tiny_gpt.py --quick</code>. Note the train and validation loss at steps 0, 100, 200, 300 and read the samples. Is the step 0 loss what the sanity check says it should be? Then make the one-line change in hint 3 and run again. Predict first: what will step 0 print now, and will the run end better or worse?</p>
+          </Exercise>
+
+          <ExplainBack
+            id="training-gpt-explain"
+            prompt="Your product manager looks at a chart and says: “Training loss is still going down, so why did you stop the run?” Explain overfitting and what the validation curve told you."
+            modelAnswer={<p>The training loss only says how well the model predicts text it has already practised on. A model with enough capacity can keep lowering it by memorising that text. What we care about is new text, so we hold some text back and measure the loss on it without ever training on it. While both curves fall, the model is learning patterns that carry over. When the validation loss flattens and turns upward while the training loss keeps falling, further training is making the model worse at the real job. So we stop there and keep the checkpoint with the best validation loss. The fix for wanting more is more data (or a smaller model, or regularisation), not more steps.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -366,12 +365,6 @@ print("final loss", loss.item())
             options: ['64: one at every position, because the causal mask stops each position from seeing its own answer', '1: only the token after the last position', '32: every other position', '64 × 64'],
             answer: 0,
             explain: 'y is x shifted by one. Every position predicts its next token in the same forward pass, and the mask guarantees nobody peeks.',
-          },
-          {
-            q: 'Your freshly initialised model with a 50,000-token vocabulary reports a loss of 10.8 at step 0. What do you conclude?',
-            options: ['Something is broken: the loss should start near 0', 'The learning rate is too high', 'That is about ln(50,000) = 10.8: the model is guessing uniformly, as an untrained model should', 'The model is overfitting'],
-            answer: 2,
-            explain: 'ln(vocabulary size) is the loss of knowing nothing. Starting there is the sign of a healthy setup.',
           },
           {
             q: 'Train loss 0.15, validation loss 2.4 and rising. What is happening?',
@@ -385,22 +378,15 @@ print("final loss", loss.item())
             answer: 1,
             explain: 'The validation split is only useful as long as no gradient from it ever reaches the weights.',
           },
-          {
-            q: 'What does AdamW add to plain gradient descent?',
-            options: ['It removes the need for backpropagation', 'It computes the exact gradient over the whole dataset at every step, instead of a noisy estimate from one batch', 'Momentum (a running average of gradients) and a separate, automatically scaled step size for each parameter, plus a small pull of weights toward zero', 'It guarantees that the loss never goes up'],
-            answer: 2,
-            explain: 'Same idea, step downhill, with smarter step sizes. Nothing guarantees the loss never rises.',
-          },
         ]}
       />
 
       <Remember
         items={[
           <>Text labels itself: <b>y is x shifted by one</b>. Every position is an example, and the causal mask lets one sequence of T tokens give T predictions in a single pass.</>,
-          <>The loop: <b>batch → forward → loss → backward → step</b>. In code: <code>get_batch</code>, <code>model(x, y)</code>, <code>zero_grad</code>, <code>loss.backward()</code>, <code>opt.step()</code>.</>,
+          <>The loop: <b>batch → forward → loss → backward → step</b>. In code: <code>get_batch</code>, <code>model(x, y)</code>, <code>zero_grad</code>, <code>loss.backward()</code>, <code>opt.step()</code>. The <b>learning rate</b> is the touchiest knob: too small crawls, too large diverges.</>,
           <>Loss is <b>average surprise</b>. A healthy untrained model starts at <b>ln(vocabulary size)</b>: 4.17 for 65 characters. Check it every time: in our own file it caught confident copying, caused by large starting weights.</>,
           <>Hold text back. <b>Validation loss</b> is the honest score. Train loss falling while validation loss rises is <b>overfitting</b>: memorising, not generalising.</>,
-          <>The <b>learning rate</b> is the touchiest knob: too small crawls, too large diverges. AdamW is gradient descent with momentum and per-parameter step sizes.</>,
         ]}
       />
 
@@ -427,7 +413,7 @@ print("final loss", loss.item())
         <p>So a 7-billion-parameter model needs about 7 × 10⁹ × 16 = 112 GB for this alone, before counting the activations kept for backprop. That is more than most single GPUs hold, which is one reason training is split across many.</p>
         <p><b>Compute: about 6 · N · D operations.</b> For N parameters and D training tokens, the forward pass costs about 2 operations per parameter per token (one multiply, one add), and the backward pass about twice that. 2 + 4 = 6.</p>
         <p>Our tiny GPT: 6 × 809,856 × (3,000 steps × 2,048 tokens) ≈ 3 × 10¹³. A 70B model on 1.4 trillion tokens: 6 × 7 × 10¹⁰ × 1.4 × 10¹² ≈ 5.9 × 10²³. The same formula, ten orders of magnitude apart.</p>
-        <Callout kind="model">Both are rules of thumb. The 16 bytes ignores activations and varies with the setup (some runs keep other parts in 32-bit, or shard and compress the optimizer state). 6·N·D ignores the attention scores, which add a little more at long context.</Callout>
+        <p>Both are rules of thumb. The 16 bytes ignores activations and varies with the setup. 6·N·D ignores the attention scores, which add a little more at long context.</p>
         <Callout kind="model">“Loss goes down, so the model gets smarter” is a useful simplification. Lower next-token loss correlates well with better capabilities, but the link to any specific skill is not a simple formula, and it is an area of active study. You will meet this again in <a href="#/lesson/why-llms-know">Why LLMs know things</a>.</Callout>
         <p>What you trained here is called a <b>base model</b>: it continues text. Turning it into an assistant takes further training stages, covered in <a href="#/lesson/training-pipeline">From raw text to assistant</a>. Next, though: the weights are frozen, and we make the model talk.</p>
         <p>Riya saves Kabir’s one-word reply. On Monday she has to demo this to the team, live, and that is where a new problem is waiting.</p>

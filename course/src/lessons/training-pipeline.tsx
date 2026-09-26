@@ -47,21 +47,14 @@ export default function TrainingPipelineLesson() {
         <p>Riya does not laugh. She knows this model has read more text than any person alive. It almost certainly knows the answer. So why is it asking questions back?</p>
         <p>Kabir, passing by with his chai, glances at the screen. “It did what it was trained to do. It continued the document.”</p>
         <p>He is right, and it is not a bug. A quiz question on the web is very often followed by more quiz questions. Yet the assistant on Dev’s phone answers the question. Same architecture, same kind of weights. So what happened in between?</p>
-        <Callout kind="idea">
-          An assistant is made in stages. <b>Pretraining</b> produces a model that can continue any text. <b>Supervised fine-tuning</b> teaches it that the text to continue is a conversation, and that its part is the helpful reply. <b>Preference optimisation</b> teaches it which of many possible replies people actually prefer. Every stage is gradient descent on the same weights. Only the data and the loss change.
-        </Callout>
+        <p>An assistant is made in stages. <b>Pretraining</b> produces a model that can continue any text. <b>Supervised fine-tuning</b> teaches it that the text to continue is a conversation, and that its part is the helpful reply. <b>Preference optimisation</b> teaches it which replies people actually prefer. Every stage is gradient descent on the same weights. Only the data and the loss change.</p>
       </Why>
 
       <Problem>
-        <p>First, where did that raw model come from? You already know the training loop. You ran it yourself in <a href="#/lesson/training-gpt">Training GPT</a>, at 2 a.m., watching the loss fall.</p>
-        <p>At scale, the loop is the same. What surrounds it is not.</p>
+        <p>First, where did that raw model come from? You ran the training loop yourself in <a href="#/lesson/training-gpt">Training GPT</a>, at 2 a.m., watching the loss fall. At scale, the loop is the same. What surrounds it is not.</p>
         <PipelineAtScale />
-        <Callout kind="established">
-          Data quality is not a detail. Groups that train open models report that filtering and de-duplication were some of the most effective things they did. Controlled experiments agree: removing duplicated text improves models and reduces word-for-word memorisation.
-          <br /><br />
-          The sizes are hard to picture. Meta reports more than 15 trillion tokens for Llama 3. Your Shakespeare file has about one million characters.
-        </Callout>
-        <p>The result of all that is called a <b>base model</b>. It is what Riya was typing into. And it brings us to the real problem of this lesson.</p>
+        <p>Data quality is not a detail. Groups that train open models report that filtering and de-duplication were some of the most effective things they did, and controlled experiments agree. The sizes are hard to picture: Meta reports more than 15 trillion tokens for Llama 3. Your Shakespeare file has about one million characters.</p>
+        <p>The result is called a <b>base model</b>. It is what Riya was typing into. And it brings us to the real problem of this lesson.</p>
         <WhyExists
           problem="A base model continues text. Users want their question answered, in a helpful manner, and they want the model to stop afterwards."
           naive="Prompt engineering: write the beginning of a document in which a helpful answer is the likely continuation, for example a fake FAQ page or an interview transcript."
@@ -73,23 +66,23 @@ export default function TrainingPipelineLesson() {
 
       <MentalModel>
         <p>Kabir draws three boxes on the whiteboard. “Three kinds of teacher,” he says. “Each one takes over when the one before runs out.”</p>
-        <div className="grid-3">
-          <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>1 · Read everything</h4><p><G t="pretraining">Pretraining</G>. The right answer at every position is the next token of a real document. No human has to label anything, so you can use trillions of tokens.</p></div>
-          <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>2 · Watch demonstrations</h4><p><G t="sft">Supervised fine-tuning</G>, usually shortened to SFT. People write example conversations. The right answer is the next token of the demonstrated reply. Each example costs human time, so there are far fewer.</p></div>
-          <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>3 · Get feedback on your own attempts</h4><p>Preference optimisation. For “write a haiku” there is no single right next token. But a person can look at two attempts and say which one is better.</p></div>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>teacher</th><th>stage</th><th>where the right answer comes from</th></tr></thead>
+            <tbody>
+              <tr><td>1 · Read everything</td><td><G t="pretraining">Pretraining</G></td><td>The next token of a real document. No labelling, so trillions of tokens.</td></tr>
+              <tr><td>2 · Watch demonstrations</td><td><G t="sft">Supervised fine-tuning</G> (SFT)</td><td>The next token of a reply people wrote. Each costs human time, so far fewer.</td></tr>
+              <tr><td>3 · Feedback on your own attempts</td><td>Preference optimisation</td><td>No single right token for “write a haiku”, but a person can say which of two attempts is better.</td></tr>
+            </tbody>
+          </table>
         </div>
         <Callout kind="analogy">
           Think of a bright new joiner on Paisa Pal’s support team. In week one she reads the whole wiki (pretraining). In week two she sits next to a senior and copies how tickets are answered (SFT). In week three she answers tickets herself, and a reviewer marks them: “this reply was better than that one” (preference feedback).
           <br /><br />
           Where the analogy stops: the joiner understands <em>why</em> a reply was preferred. The model only receives a number that moves its weights. If reviewers happen to favour long replies, the model gets longer, not wiser.
         </Callout>
-        <Callout kind="model" label="Simplified mental model: knowledge first, behaviour after">
-          A common summary is “pretraining gives knowledge, the later stages shape behaviour”. It is a good first approximation. The later stages use a tiny fraction of the data, and mostly change format, tone and choices.
-          <br /><br />
-          It is not a strict rule. Fine-tuning can teach some new facts. It can also damage existing abilities. And the newer reinforcement-learning stages (in <a href="#/lesson/reasoning-models">Reasoning models</a>) appear to improve problem-solving, not just manners.
-        </Callout>
-        <p>Stage 2 needs one new piece of plumbing. A model takes one sequence of tokens. A conversation has roles and turns. How do you feed one into the other?</p>
-        <p>Riya, the backend developer, recognises this problem at once. It is serialisation.</p>
+        <p>A common summary is “pretraining gives knowledge, the later stages shape behaviour”. It is a good first approximation, not a strict rule: fine-tuning can teach some new facts or damage existing abilities, and the newer reinforcement-learning stages (in <a href="#/lesson/reasoning-models">Reasoning models</a>) appear to improve problem-solving, not just manners.</p>
+        <p>Stage 2 needs one new piece of plumbing. A model takes one sequence of tokens. A conversation has roles and turns. Riya, the backend developer, recognises this problem at once. It is serialisation.</p>
         <Term
           name="Chat template"
           plain={<>A fixed recipe for flattening a list of messages into one long token sequence, using special marker tokens to say “a new message by this role starts here” and “this message ends here”.</>}
@@ -97,9 +90,9 @@ export default function TrainingPipelineLesson() {
           formal={<>A deterministic function from a list of (role, content) pairs to a token sequence. The markers are extra entries in the vocabulary whose embeddings are learned during fine-tuning. Each model family defines its own.</>}
         />
         <Callout kind="dev">
-          A chat API is a thin wrapper. Your JSON list of messages is serialised with the template into one string. The model continues that string. The server stops when the model emits the end marker.
+          A chat API is a thin wrapper. Your JSON list of messages is serialised with the template into one string, the model continues it, and the server stops when the model emits the end marker.
           <br /><br />
-          So there is no separate “system prompt channel”. The system message is only earlier tokens in the same sequence. The model was trained to give those tokens special weight, and it does. But that is a learned habit, not an enforced boundary. That gap is one reason prompt injection is possible, as you will see in <a href="#/lesson/agents">Agents</a> and <a href="#/lesson/alignment-safety">Alignment and safety</a>.
+          So there is no separate “system prompt channel”. The system message is only earlier tokens in the same sequence. The model was trained to give them special weight, but that is a learned habit, not an enforced boundary. That gap is one reason prompt injection is possible (<a href="#/lesson/agents">Agents</a>, <a href="#/lesson/alignment-safety">Alignment and safety</a>).
         </Callout>
       </MentalModel>
 
@@ -113,17 +106,13 @@ export default function TrainingPipelineLesson() {
         <ChatTemplateViewer />
 
         <h3>3. When there is no right answer, only a better one</h3>
-        <p>Now the third stage. Nobody can write “the correct haiku” into a loss function. But you can compare two answers.</p>
-        <p>In this lab, you are the reviewer. Your comparisons train a small <b>reward model</b>: a function that gives any answer a score, fitted so that the answers you preferred score higher.</p>
+        <p>Nobody can write “the correct haiku” into a loss function, but you can compare two answers. In this lab, you are the reviewer. Your comparisons train a small <b>reward model</b>: a function that gives any answer a score, fitted so that the answers you preferred score higher.</p>
         <PreferenceLab />
-        <p>Step 3 of that lab is the whole idea of <b>RLHF</b> in one table: a model that scores answers, and a second model that is pushed towards high-scoring answers while being held close to where it started.</p>
-        <p>RLHF stands for reinforcement learning from human feedback. It is the classic form of preference optimisation.</p>
-        <p>“Reinforcement learning” is the part worth unpacking. Up to now, training meant showing the model the right next token. Here nobody knows the right answer. Instead the model writes something, a score comes back, and the weights move to make high-scoring writing more likely.</p>
-        <p>Amma would recognise it at once. A student who copies the model answer from the board is doing SFT. A student who hands in her own essay and gets back “7 out of 10” is doing reinforcement learning. Learning from a mark, not from a worked example.</p>
+        <p>Step 3 of that lab is the whole idea of <b>RLHF</b> (reinforcement learning from human feedback, the classic form of preference optimisation) in one table: a model that scores answers, and a second model pushed towards high-scoring answers while held close to where it started.</p>
+        <p>Up to now, training meant showing the model the right next token. Here nobody knows the right answer. The model writes something, a score comes back, and the weights move to make high-scoring writing more likely. Amma would put it this way: copying the model answer from the board is SFT; handing in your own essay and getting back “7 out of 10” is reinforcement learning.</p>
       </TryIt>
 
       <Numbers>
-        <p>Riya likes to see numbers before she believes anything. Here are three small ones.</p>
         <p><b>First, the loss mask.</b> Take the default conversation from the template viewer. Flattened, it is 34 tokens in our toy tokenizer.</p>
         <div className="table-scroll">
           <table className="plain">
@@ -139,7 +128,7 @@ export default function TrainingPipelineLesson() {
           </table>
         </div>
         <p>9 of 34 tokens are graded: 26%. The loss is the average <G t="cross-entropy">cross-entropy</G> over those 9 positions only.</p>
-        <p>The other 25 tokens are not wasted. They still flow through attention as context. They produce no gradient of their own.</p>
+        <p>The other 25 tokens still flow through attention as context. They produce no gradient of their own.</p>
 
         <p><b>Second, one preference comparison.</b> Suppose the reward model currently scores answer A at 2.0 and answer B at 0.5. How confident is it that a person prefers A?</p>
         <div className="table-scroll">
@@ -172,7 +161,7 @@ export default function TrainingPipelineLesson() {
           P(A ≻ B) = σ( r(A) − r(B) ) &nbsp;&nbsp;&nbsp; loss = −log σ( r(chosen) − r(rejected) )
         </Equation>
         <p>Notice that only the <em>difference</em> of rewards matters. A reward of 7 means nothing on its own. It only means “better than an answer that scores 5”.</p>
-        <p>This way of turning pairwise choices into scores is called the <b>Bradley-Terry model</b>. It is decades older than LLMs (Bradley and Terry, 1952). It was designed for experiments where people compare items two at a time. The same model ranks sports teams and chess players from match results.</p>
+        <p>This way of turning pairwise choices into scores is the <b>Bradley-Terry model</b> (Bradley and Terry, 1952). It is decades older than LLMs; the same model ranks sports teams and chess players from match results.</p>
         <p>Then the policy (the language model) is tuned. The objective has two parts, pulling in opposite directions:</p>
         <Equation
           label="Maximise expected reward minus beta times the KL divergence from the SFT model"
@@ -184,8 +173,7 @@ export default function TrainingPipelineLesson() {
         >
           maximise &nbsp; average reward &nbsp;−&nbsp; β × KL( tuned model ‖ SFT model )
         </Equation>
-        <p><b>Why the leash?</b> The reward model was only trained on answers that look like what the SFT model writes. Far away from those, its scores are unreliable guesses.</p>
-        <p>Without the leash, the optimiser wanders off to strange text that happens to score well. You saw that in step 3 of the lab with β near 0.1.</p>
+        <p><b>Why the leash?</b> The reward model was only trained on answers that look like what the SFT model writes. Far from those, its scores are unreliable guesses, and without the leash the optimiser wanders off to strange text that happens to score well. You saw that in step 3 of the lab with β near 0.1.</p>
         <Term
           name="Reinforcement learning, in the four words you need"
           plain={<>Learning from a score for what you did, instead of from a worked example of what you should have done.</>}
@@ -238,7 +226,26 @@ loss = F.cross_entropy(logits.view(-1, logits.size(-1)),
 `}</Code>
         <p><code>ignore_index</code> is a standard PyTorch option: positions whose target equals that value contribute nothing to the loss or the gradient. The average is taken over the remaining positions, as in the 9-of-34 example above.</p>
         <p>The reward model’s loss is the equation from the last section, one line:</p>
-        <Code title="sketch: reward model loss on a batch of comparisons">{`
+        <Code
+          title="sketch: reward model loss on a batch of comparisons"
+          setup={`import numpy as np
+from types import SimpleNamespace
+
+# NumPy stand-in for torch.nn.functional.logsigmoid: log(1 / (1 + e^-z))
+F = SimpleNamespace(logsigmoid=lambda z: -np.log1p(np.exp(-z)))
+
+# A made-up reward model: a lookup of the scores used in this lesson.
+SCORES = {"A": 2.0, "B": 0.5, "A2": 1.2, "B2": 0.2}
+def reward_model(prompt, answers):
+    return np.array([SCORES[a] for a in answers])
+
+prompt   = ["q1", "q2"]
+chosen   = ["A", "A2"]      # the answers the person preferred
+rejected = ["B", "B2"]`}
+          show={`print("P(chosen preferred):", (1 / (1 + np.exp(-(r_chosen - r_rejected)))).round(2))
+print("loss per comparison:", (-F.logsigmoid(r_chosen - r_rejected)).round(2))
+print("batch loss:", round(float(loss), 3))`}
+        >{`
 r_chosen   = reward_model(prompt, chosen)      # (B,) one score per answer
 r_rejected = reward_model(prompt, rejected)    # (B,)
 loss = -F.logsigmoid(r_chosen - r_rejected).mean()
@@ -253,26 +260,12 @@ loss = -F.logsigmoid(r_chosen - r_rejected).mean()
           <li><b>Be a biased rater.</b> In the preference lab, reset and always pick the longer answer (or use the simulated rater). The “contains the answer” weight ends near 0 (−0.09) while length reaches 1.57. With β = 0.5 the tuned model then puts most of its probability on a long, polite reply that never says “Paris”.</li>
           <li><b>Notice the accident.</b> In that same run the “polite words” weight also rose to 1.51, although the rater never cared about politeness. In this data the longer answers tend to be the polite ones. A reward model cannot tell what you cared about. It only sees what your choices correlate with.</li>
           <li><b>Tighten the leash.</b> Keep the length-loving reward and slide β up to 5. The tuned model returns close to the SFT model. The leash limits damage from a flawed reward. It also limits improvement from a good one.</li>
-          <li><b>Remove the mask.</b> In the template viewer, untick “assistant tokens only”. Now the model is also trained to write system prompts and user questions. Often that is only wasteful. But with many short replies to long user texts, most of the gradient is spent on imitating users.</li>
+          <li><b>Remove the mask.</b> In the template viewer, untick “assistant tokens only”. Now the model is also trained to write system prompts and user questions. With many short replies to long user texts, most of the gradient is spent on imitating users.</li>
           <li><b>Delete the assistant message’s text.</b> One target remains: <code>&lt;|im_end|&gt;</code>. You would be teaching the model that the best reply is to stop immediately.</li>
         </ul>
       </BreakIt>
 
       <Exercises>
-        <Exercise
-          id="training-pipeline-predict-base"
-          type="predict"
-          title="Prompting a base model"
-          hints={[
-            'A base model continues documents. In what kind of document does this text appear, and what usually comes next there?',
-            'Think about where “Translate to French: good morning” shows up on the web: exercise sheets, forum posts, lists of prompts.',
-            'To get a translation out of a base model, write the start of a document where the translation is the natural continuation, for example a two-column phrase list with a few filled-in rows.',
-          ]}
-          solution={<><p>Likely continuations: more exercise lines (“Translate to French: good evening”), or a forum-style reply, or sometimes the translation. It depends on which kind of document the model guesses it is in, and that varies from sample to sample.</p><p>The pre-SFT fix is a few-shot prompt: “English: thank you / French: merci / English: good morning / French:”. Now the translation really is the most plausible next text. SFT makes this disguise unnecessary by training the model that an instruction is followed by its fulfilment.</p></>}
-        >
-          <p>You give a <em>base</em> model the text <code>Translate to French: good morning</code>. Predict two different continuations it might plausibly write. Then: how would you rewrite the prompt so that a base model is likely to produce the translation?</p>
-        </Exercise>
-
         <Exercise
           id="training-pipeline-calc-bt"
           type="calculate"
@@ -308,25 +301,44 @@ What is a cat?<|im_end|>
 `}</Code>
         </Exercise>
 
-        <Exercise
-          id="training-pipeline-experiment-hack"
-          type="experiment"
-          title="Find the smallest bias that breaks it"
-          hints={[
-            'First be a careful rater: always pick an answer that contains the correct answer, and when both do, pick the more thorough one. Your clicks should be A, A, B, B, B, A, B, B. Check the readout in step 3.',
-            'In comparisons 1, 5 and 7 the long answer never states the answer. Those are the places where a rater in a hurry slips. Reset, and slip in only some of them.',
-            'Try slipping only in comparisons 5 and 7: clicks A, A, B, B, A, A, A, B.',
-          ]}
-          solution={<><p>The careful rater ends with weights of about [0.10, 0.67, 1.74]: “contains the answer” dominates, and the tuned model says “Paris” 99% of the time (the SFT model: 90%).</p><p>Slip only in comparisons 5 and 7 and the chance of “Paris” falls to 41%: the tuned model’s favourite reply, at 55%, is the long polite one that never answers. Slip in all three and you have reproduced the “always longer” rater exactly, because in the other five comparisons the longer answer is also a correct one. The chance of “Paris” is then 20%.</p><p>Two lazy clicks out of eight were enough. The reward model fits the raters’ actual choices, shortcuts included. Real raters work under time pressure, and a long, confident, agreeable answer is easy to mistake for a good one.</p></>}
-        >
-          <p>In the preference lab, keep β = 0.5. How few “lazy” choices (picking an answer because it looks more thorough, although it never states the answer) does it take before the tuned model is more likely than not to give a reply without “Paris”? Try it by hand, and watch the readout under step 3.</p>
-        </Exercise>
-
         <ExplainBack
           id="training-pipeline-explain"
           prompt="Dev says: “ChatGPT-style models are a different kind of neural network from the GPT you built, because they follow instructions and ours only continues text.” Correct them in three or four sentences: what is the same, what differs, and why can comparison data teach something demonstrations cannot?"
           modelAnswer={<p>The network is the same kind: a Transformer that outputs a probability for the next token, and an assistant’s reply is produced by the same sampling loop. What differs is the training data and loss applied to the same weights after pretraining. Supervised fine-tuning continues next-token training on conversations flattened by a chat template, graded on the assistant’s tokens, so “a question is followed by a helpful answer, then a stop token” becomes the likely continuation. For many prompts there is no single correct reply to demonstrate, but people can say which of two replies is better, so a reward model is fitted to those comparisons and the model is pushed towards higher-scoring replies while being held close to the SFT model (or, with DPO, trained on the pairs directly). Because the reward is only a stand-in for what people want, the model can learn to please the scorer, for example with length or flattery.</p>}
         />
+
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+            <Exercise
+              id="training-pipeline-predict-base"
+              type="predict"
+              title="Prompting a base model"
+              hints={[
+                'A base model continues documents. In what kind of document does this text appear, and what usually comes next there?',
+                'Think about where “Translate to French: good morning” shows up on the web: exercise sheets, forum posts, lists of prompts.',
+                'To get a translation out of a base model, write the start of a document where the translation is the natural continuation, for example a two-column phrase list with a few filled-in rows.',
+              ]}
+              solution={<><p>Likely continuations: more exercise lines (“Translate to French: good evening”), or a forum-style reply, or sometimes the translation. It depends on which kind of document the model guesses it is in, and that varies from sample to sample.</p><p>The pre-SFT fix is a few-shot prompt: “English: thank you / French: merci / English: good morning / French:”. Now the translation really is the most plausible next text. SFT makes this disguise unnecessary by training the model that an instruction is followed by its fulfilment.</p></>}
+            >
+              <p>You give a <em>base</em> model the text <code>Translate to French: good morning</code>. Predict two different continuations it might plausibly write. Then: how would you rewrite the prompt so that a base model is likely to produce the translation?</p>
+            </Exercise>
+
+            <Exercise
+              id="training-pipeline-experiment-hack"
+              type="experiment"
+              title="Find the smallest bias that breaks it"
+              hints={[
+                'First be a careful rater: always pick an answer that contains the correct answer, and when both do, pick the more thorough one. Your clicks should be A, A, B, B, B, A, B, B. Check the readout in step 3.',
+                'In comparisons 1, 5 and 7 the long answer never states the answer. Those are the places where a rater in a hurry slips. Reset, and slip in only some of them.',
+                'Try slipping only in comparisons 5 and 7: clicks A, A, B, B, A, A, A, B.',
+              ]}
+              solution={<><p>The careful rater ends with weights of about [0.10, 0.67, 1.74]: “contains the answer” dominates, and the tuned model says “Paris” 99% of the time (the SFT model: 90%).</p><p>Slip only in comparisons 5 and 7 and the chance of “Paris” falls to 41%: the tuned model’s favourite reply, at 55%, is the long polite one that never answers. Slip in all three and you have reproduced the “always longer” rater exactly, because in the other five comparisons the longer answer is also a correct one. The chance of “Paris” is then 20%.</p><p>Two lazy clicks out of eight were enough. The reward model fits the raters’ actual choices, shortcuts included. Real raters work under time pressure, and a long, confident, agreeable answer is easy to mistake for a good one.</p></>}
+            >
+              <p>In the preference lab, keep β = 0.5. How few “lazy” choices (picking an answer because it looks more thorough, although it never states the answer) does it take before the tuned model is more likely than not to give a reply without “Paris”? Try it by hand, and watch the readout under step 3.</p>
+            </Exercise>
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -336,18 +348,6 @@ What is a cat?<|im_end|>
             options: ['The model does not know the capital of France', 'Nothing went wrong: more questions are a plausible continuation of that text, and continuing text is all it was trained to do', 'The sampling temperature was too high', 'The context window was too short'],
             answer: 1,
             explain: 'The knowledge is very likely in the weights. What is missing is the behaviour: treating the text as a request to fulfil.',
-          },
-          {
-            q: 'From the model’s point of view, what is a multi-turn conversation with a system prompt?',
-            options: ['Three separate inputs fed into three different parts of the network', 'A database of messages it can query', 'One flat sequence of tokens, with special marker tokens showing where each role’s message starts and ends', 'A sequence of independent calls that share hidden state between them'],
-            answer: 2,
-            explain: 'The chat template serialises everything into one sequence. The model then does next-token prediction on it, as always.',
-          },
-          {
-            q: 'Why is the SFT loss usually computed only on the assistant’s tokens?',
-            options: ['Because the model cannot see the user’s tokens', 'Because we want gradient spent on learning to write good replies, not on learning to imitate users and system prompts', 'Because user tokens have no embeddings', 'Because it makes the forward pass faster'],
-            answer: 1,
-            explain: 'The user’s tokens are still read as context through attention. They are not used as prediction targets. The forward pass costs the same.',
           },
           {
             q: 'Why does preference optimisation use comparisons (“A is better than B”) and not more demonstrations?',
@@ -366,8 +366,7 @@ What is a cat?<|im_end|>
 
       <Remember
         items={[
-          <>At scale the loop is unchanged: batch, forward, <G t="loss">loss</G>, backprop, update. What is new surrounds it: <b>data filtering and de-duplication</b>, distribution over many GPUs, checkpoints, and evaluation that must guard against contamination.</>,
-          <><b>Pretraining</b> gives a base model: it continues text and holds most of the knowledge. It does not follow instructions, and that is not a defect.</>,
+          <><b>Pretraining</b> is the loop you know (batch, forward, <G t="loss">loss</G>, backprop, update) at scale, with <b>data filtering and de-duplication</b> doing much of the work. It gives a base model that continues text and holds most of the knowledge, but does not follow instructions.</>,
           <><b>SFT</b> is the same next-token loss on demonstrations. A <b>chat template</b> flattens the conversation into one token sequence with role markers, and the loss is usually counted only on assistant tokens, including the end marker.</>,
           <><b>Preference optimisation</b> exists because many prompts have no single right answer but people can compare two. RLHF fits a reward model with P(A ≻ B) = σ(r(A) − r(B)), then tunes the model against it on a <b>KL leash</b>. DPO uses the same pairs with no separate reward model.</>,
           <>The reward is a <b>stand-in</b> for what people want. Optimising a stand-in invites reward hacking: length, flattery and confident tone can win. These stages shape behaviour. They do not install a truth checker.</>,
@@ -381,21 +380,11 @@ What is a cat?<|im_end|>
           real={<ul><li>Base and instruction-tuned versions of many open models are both published, so you can observe the difference yourself</li><li>Each model family has its own template and special tokens, shipped with the tokenizer</li><li>The reward model is a full Transformer trained on tens of thousands of comparisons or more, increasingly with AI-generated feedback guided by written principles</li><li>The policy is tuned by many small gradient steps on its own sampled answers, often in several rounds mixing methods</li></ul>}
         />
         <Callout kind="established">
-          The three-stage recipe is publicly documented. OpenAI’s InstructGPT paper (2022) describes SFT, a reward model fitted to human comparisons, and RL with a KL penalty, and reports that human raters preferred the outputs of a tuned model with 1.3 billion parameters to those of the untuned GPT-3 with 175 billion, on the prompts the authors collected. Reports for open model families such as Llama describe similar pipelines using combinations of SFT, rejection sampling (sample several answers, keep the best-scored ones as new training examples), PPO and DPO. For example, the Llama 2 paper describes rejection sampling and PPO, and the Llama 3 paper describes rejection sampling and DPO.
+          The three-stage recipe is publicly documented. OpenAI’s InstructGPT paper (2022) describes SFT, a reward model fitted to human comparisons, and RL with a KL penalty, and reports that human raters preferred the outputs of a tuned model with 1.3 billion parameters to those of the untuned GPT-3 with 175 billion, on the prompts the authors collected. The Llama 2 paper describes rejection sampling (sample several answers, keep the best-scored ones as new training examples) and PPO; the Llama 3 paper, rejection sampling and DPO.
         </Callout>
-        <Callout kind="model" label="Simplified mental model: three clean stages">
-          “Pretrain, then SFT, then preference tuning” is the textbook order. Real pipelines blur it: several rounds, instruction-like data mixed into late pretraining, and many variants of the preference loss.
-          <br /><br />
-          A growing share of the data is <b>synthetic</b>: written by another, usually stronger, model rather than by people. A big model drafts the demonstrations or judges the comparisons, and a smaller model learns from them. That idea has its own lesson, <a href="#/lesson/distillation">Small models from big ones</a>.
-          <br /><br />
-          The exact recipes and data of commercial assistants are mostly not public. So do not trust anyone’s detailed diagram of them, including a confident-sounding one from a model.
-        </Callout>
+        <p>“Pretrain, then SFT, then preference tuning” is the textbook order. Real pipelines blur it: several rounds, instruction-like data mixed into late pretraining, many variants of the preference loss. A growing share of the data is <b>synthetic</b>, written or judged by another, usually stronger, model (the subject of <a href="#/lesson/distillation">Small models from big ones</a>). The exact recipes of commercial assistants are mostly not public, so do not trust anyone’s detailed diagram of them.</p>
         <Callout kind="research">
-          How to get a trustworthy training signal is an open problem. Published studies have found that preference-tuned models can become sycophantic (agreeing with the user’s stated view), and that human and learned reward signals both tend to favour longer answers.
-          <br /><br />
-          Two questions are still open. Can these stages make a model reliably <em>honest</em>? And how do you supervise a model on tasks where human raters cannot easily tell a good answer from a convincing one? Using these same stages to teach a model what it should refuse is the subject of <a href="#/lesson/alignment-safety">Alignment and safety</a>.
-          <br /><br />
-          Training models to express uncertainty reduces hallucination. It does not remove it, for the structural reasons in <a href="#/lesson/why-llms-know">Why LLMs know things</a>.
+          How to get a trustworthy training signal is an open problem. Published studies have found that preference-tuned models can become sycophantic (agreeing with the user’s stated view), and that human and learned reward signals both tend to favour longer answers. Can these stages make a model reliably <em>honest</em>? How do you supervise tasks where raters cannot tell a good answer from a convincing one? Both are open. (Refusals are the subject of <a href="#/lesson/alignment-safety">Alignment and safety</a>. Training models to express uncertainty reduces hallucination but does not remove it, for the reasons in <a href="#/lesson/why-llms-know">Why LLMs know things</a>.)
         </Callout>
         <p>One stage is still missing from this picture. When the task has a checkable answer, such as a maths result or code that must pass tests, the reward does not need to be learned from people at all. That changes what RL can do, and it is the subject of <a href="#/lesson/reasoning-models">Reasoning models</a>, at the end of this part.</p>
         <p>Riya types the France question again, this time into the chat version of the same model. “Paris.” One word, then it stops. Same network underneath. It has been to school twice more.</p>

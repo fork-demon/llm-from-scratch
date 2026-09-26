@@ -6,6 +6,68 @@ import { Exercise, ExplainBack, OrderExercise } from '../components/exercise'
 import { BackpropFlow } from '../interactive/BackpropFlow'
 import { ForwardBackward } from '../illustrations/ForwardBackward'
 
+// Try it: the spiral network from mlp_numpy.py, condensed, so the training-loop excerpts below can run.
+const SPIRAL_SETUP = `import numpy as np
+rng = np.random.default_rng(0)              # the seed of mlp_numpy.py
+
+def make_spiral(points_per_class=100, num_classes=3):
+    N, K = points_per_class, num_classes
+    X = np.zeros((N * K, 2)); y = np.zeros(N * K, dtype=int)
+    for k in range(K):
+        ix = range(N * k, N * (k + 1))
+        r = np.linspace(0.0, 1.0, N)
+        t = np.linspace(k * 4, (k + 1) * 4, N) + rng.normal(0, 0.2, N)
+        X[ix] = np.column_stack([r * np.sin(t), r * np.cos(t)]); y[ix] = k
+    return X, y
+
+def softmax(logits):
+    e = np.exp(logits - logits.max(axis=1, keepdims=True))
+    return e / e.sum(axis=1, keepdims=True)
+
+def cross_entropy(probs, y):
+    return -np.log(probs[np.arange(len(y)), y] + 1e-12).mean()
+
+class MLP:                                  # the class from mlp_numpy.py
+    def __init__(self, sizes=(2, 64, 64, 3)):
+        self.W = [0.1 * rng.normal(size=(a, b)) for a, b in zip(sizes, sizes[1:])]
+        self.b = [np.zeros(b) for b in sizes[1:]]
+    def forward(self, X):
+        self.cache = [X]; h = X
+        for i in range(len(self.W) - 1):
+            h = np.maximum(0, h @ self.W[i] + self.b[i]); self.cache.append(h)
+        return h @ self.W[-1] + self.b[-1]
+    def loss(self, X, y):
+        return cross_entropy(softmax(self.forward(X)), y)
+    def backward(self, logits, y):
+        n = len(y); d_W = [None] * len(self.W); d_b = [None] * len(self.b)
+        d = softmax(logits); d[np.arange(n), y] -= 1; d /= n
+        for i in reversed(range(len(self.W))):
+            d_W[i] = self.cache[i].T @ d; d_b[i] = d.sum(axis=0)
+            if i > 0:
+                d = (d @ self.W[i].T) * (self.cache[i] > 0)
+        return d_W, d_b
+    def step(self, d_W, d_b, lr):
+        for i in range(len(self.W)):
+            self.W[i] -= lr * d_W[i]; self.b[i] -= lr * d_b[i]
+    def accuracy(self, X, y):
+        return (self.forward(X).argmax(axis=1) == y).mean()
+
+X, y = make_spiral()
+rng.normal(size=(2, 3))                     # the file trains a linear model first; skip past its draw
+net = MLP()`
+
+const TINY_NET = `import numpy as np
+def softmax(z):
+    e = np.exp(z - z.max(axis=1, keepdims=True))
+    return e / e.sum(axis=1, keepdims=True)
+# the network from the hand-worked table: x = [1, 2], hidden h = [2, 0], logits = [1, -1]
+x = np.array([[1.0, 2.0]])
+W1 = np.array([[1.0, -1.0], [0.5, 0.25]])
+W2 = np.array([[0.5, -0.5], [0.5, 1.0]])
+h = np.maximum(0, x @ W1)
+logits = h @ W2
+y = np.array([1])          # the correct class is class 2 (index 1)`
+
 export default function BackpropLesson() {
   return (
     <Lesson id="backprop">
@@ -15,23 +77,13 @@ export default function BackpropLesson() {
         <p>Each team only has to answer one question: “given what reached you, what did you do with it?” Then it passes the question upstream. By lunch every service knows its share of the blame, and nobody had to understand the whole system.</p>
         <p>Walking out, Kabir says: “You just did backpropagation. Now do it to a network.”</p>
         <p>Here is why that matters. You now have two things that do not yet fit together.</p>
-        <div className="grid-2">
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>A learning loop</h4>
-            <p><a href="#/lesson/gradient-descent">Gradient descent</a>: get the slope of the loss for every parameter, step against it. For a line we derived the slope formula by hand.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>A model that can bend</h4>
-            <p><a href="#/lesson/neurons">A neural network</a>: layers of weighted sums and hinges, with thousands of weights. Nobody can derive a formula per weight by hand.</p>
-          </div>
-        </div>
+        <ul>
+          <li><b>A learning loop.</b> <a href="#/lesson/gradient-descent">Gradient descent</a>: get the slope of the loss for every parameter, step against it. For a line we derived the slope formula by hand.</li>
+          <li><b>A model that can bend.</b> <a href="#/lesson/neurons">A neural network</a>: layers of weighted sums and hinges, with thousands of weights. Nobody can derive a formula per weight by hand.</li>
+        </ul>
         <p>The loss is measured at the very end of the network. The weights are spread through every layer. When the prediction is wrong, how does a weight in the first layer, several steps away from the output, find out its share of the blame?</p>
-        <p>This is the part everyone finds strange at first, and the one place in Part 3 where it pays to go slowly. Work the numbers by hand with us, and it turns into three small rules you can hold in your head.</p>
-        <Callout kind="idea">
-          The answer is <b>backpropagation</b>: run the chain rule backward through the network, once, and reuse intermediate results.
-          <br /><br />
-          It produces the gradient for every weight at about the cost of two extra forward passes. It is the reason training large networks is possible at all.
-        </Callout>
+        <p>This is the part everyone finds strange at first. Work the numbers by hand with us, and it turns into three small rules you can hold in your head.</p>
+        <p>The answer is <b>backpropagation</b>: run the chain rule backward through the network, once, and reuse intermediate results. It produces the gradient for every weight at about the cost of two extra forward passes. It is the reason training large networks is possible at all.</p>
       </Why>
 
       <Problem>
@@ -75,8 +127,6 @@ export default function BackpropLesson() {
         />
         <Callout kind="analogy">
           This is the post-mortem from this morning. The symptom (the loss) is known at the end. The payout team knows exactly what it did with what it received, so it can turn “the refund was doubled” into a question about its <em>input</em>, and pass that to the retry layer. And so on, upstream.
-          <br /><br />
-          No service needs to understand the whole system. It only needs its own operation and the message from downstream.
           <br /><br />
           Where the analogy stops: “blame” here is not a judgement and it is not all-or-nothing. A post-mortem usually finds one culprit. Backpropagation gives <em>every</em> value a number: how much the loss would change if that value were nudged. It can be positive, negative or zero.
         </Callout>
@@ -165,8 +215,7 @@ softmax+cross-entropy at the logits:  d_logits = probs - one_hot
         >
           d<sub>W</sub> = X<sup>T</sup> d<sub>out</sub> &nbsp;&nbsp;&nbsp; d<sub>X</sub> = d<sub>out</sub> W<sup>T</sup> &nbsp;&nbsp;&nbsp; d<sub>b</sub> = Σ d<sub>out</sub>
         </Equation>
-        <p>The <a href="#/lesson/matrices">transpose</a> is not a trick. Going forward, W carries you from inputs to outputs. Going backward, you travel the same wires in the opposite direction, from outputs back to inputs.</p>
-        <p>Flipping rows and columns is what “the same wires, reversed” looks like when the wires are written as a matrix. You already did it by hand, entry by entry, in step 3 of the table above.</p>
+        <p>The <a href="#/lesson/matrices">transpose</a> is not a trick. Going backward, you travel the same wires as the forward pass in the opposite direction, from outputs back to inputs. Flipping rows and columns is what that looks like when the wires are written as a matrix. You already did it by hand in step 3 of the table above.</p>
         <Equation
           label="Backward rule for ReLU"
           symbols={[
@@ -192,7 +241,13 @@ softmax+cross-entropy at the logits:  d_logits = probs - one_hot
 
       <CodeIt>
         <p>The forward pass from last lesson saved each layer’s output in <code>self.cache</code>. Now you can see why: the rule <code>d_W = X.T @ d_out</code> needs X, the input each layer saw.</p>
-        <Code title="Step 1: start at the loss. The gradient is the miss.">{`
+        <Code
+          title="Step 1: start at the loss. The gradient is the miss."
+          setup={`${TINY_NET}
+n = 1`}
+          show={`print("probs  :", softmax(logits).round(3))
+print("d (the miss):", d.round(3))`}
+        >{`
 probs = softmax(logits)
 d = probs                        # d = blame flowing backward
 d[np.arange(n), y] -= 1          # subtract 1 at the correct class: probs - one_hot
@@ -209,7 +264,17 @@ d = d * (self.cache[i] > 0)      # pass blame only where the ReLU was open
 `}</Code>
         <p>A detail: <code>self.cache[i]</code> holds the ReLU’s <em>output</em>, not its input. That is fine: the output is positive exactly where the input was positive.</p>
         <p>Loop over the layers in reverse, and that is the whole method, unchanged from the repository:</p>
-        <Code source="phase1-foundations/mlp_numpy.py" title="MLP.backward">{`
+        <Code
+          source="phase1-foundations/mlp_numpy.py"
+          title="MLP.backward"
+          setup={TINY_NET}
+          show={`from types import SimpleNamespace
+net = SimpleNamespace(W=[W1, W2], b=[np.zeros(2), np.zeros(2)], cache=[x, h])   # what forward() left behind
+d_W, d_b = backward(net, logits, y)
+print("d_W2 =", d_W[1].round(2).tolist())
+print("d_W1 =", d_W[0].round(2).tolist())
+print("d_b1 =", d_b[0].round(2).tolist(), " (hidden unit 2 was shut: no blame)")`}
+        >{`
 def backward(self, logits, y):
     n = len(y)
     d_W = [None] * len(self.W)
@@ -230,7 +295,13 @@ def backward(self, logits, y):
     return d_W, d_b
 `}</Code>
         <p>The training loop is the one from <a href="#/lesson/gradient-descent">Part 2</a>, with two lines swapped in:</p>
-        <Code source="phase1-foundations/mlp_numpy.py" title="train_mlp: forward, loss, backward, update">{`
+        <Code
+          source="phase1-foundations/mlp_numpy.py"
+          title="train_mlp: forward, loss, backward, update"
+          setup={`${SPIRAL_SETUP}
+steps, lr = 2000, 0.5`}
+          show={`print(f"final loss {loss:.4f}, accuracy on the 300 spiral points {net.accuracy(X, y):.3f}")`}
+        >{`
 for step in range(steps):
     logits = net.forward(X)                      # forward
     loss = cross_entropy(softmax(logits), y)     # loss
@@ -239,7 +310,16 @@ for step in range(steps):
 `}</Code>
         <h3>Trust, but verify: the gradient check</h3>
         <p>Hand-written backward code is easy to get subtly wrong, and a wrong gradient often still trains, only badly. So we test it against the slow method that is hard to get wrong: nudging. This is the <b>gradient check</b> promised in <a href="#/lesson/derivatives">lesson 1.4</a>, the black-box nudge experiment used as a unit test for the white-box chain rule.</p>
-        <Code source="phase1-foundations/mlp_numpy.py" title="gradient_check (printing removed)">{`
+        <Code
+          source="phase1-foundations/mlp_numpy.py"
+          title="gradient_check (printing removed)"
+          setup={`${SPIRAL_SETUP}
+X, y = X[:50], y[:50]
+li, r, c, h = 1, 3, 2, 1e-5        # check weight W1[3, 2]`}
+          show={`print(f"backprop  {analytic:.10f}")
+print(f"numerical {numerical:.10f}")
+print(f"|diff|    {diff:.2e}")`}
+        >{`
 logits = net.forward(X)
 d_W, _ = net.backward(logits, y)
 
@@ -259,11 +339,9 @@ diff = abs(numerical - analytic)
           In PyTorch you will never write <code>backward</code> yourself. Every operation (matmul, relu, softmax…) ships with its own local backward rule. During the forward pass PyTorch records which operations ran and keeps their inputs. <code>loss.backward()</code> then walks that record in reverse, applying the rules, exactly like the loop above. That system is called autograd. From <a href="#/lesson/build-gpt">Part 7</a> on we rely on it, and you will know what it is doing.
         </Callout>
         <Callout kind="established">
-          <b>Why training needs so much memory.</b> The backward pass needs every layer’s forward values, so they all stay in memory until it has run.
+          <b>Why training needs so much memory.</b> The backward pass needs every layer’s forward values, so they all stay in memory until it has run. Add the gradients themselves (one number per parameter) and the optimiser’s bookkeeping, and training a model takes several times the memory of running it.
           <br /><br />
-          Just using a model (inference) has no backward pass, so it keeps no activations <em>for gradients</em>. An LLM at inference does keep something: the keys and values of earlier tokens, the <G t="kv-cache">KV cache</G>, so it does not redo work for every new token. That is a different cache for a different reason, and you will meet it in <a href="#/lesson/inference">Inference</a>.
-          <br /><br />
-          Add the gradients themselves (one number per parameter) and the optimiser’s bookkeeping, and training a model takes several times the memory of running it.
+          Just using a model (inference) has no backward pass, so it keeps no activations <em>for gradients</em>. An LLM at inference does keep a different cache for a different reason, the <G t="kv-cache">KV cache</G>, which you will meet in <a href="#/lesson/inference">Inference</a>.
         </Callout>
       </CodeIt>
 
@@ -274,7 +352,6 @@ diff = abs(numerical - analytic)
           <li><b>Plant the bug</b> (“forget the ReLU gate”), then nudge-check the weight x2 → h2. Backprop claims −0.88. Nudging says 0. Who is right, and why? (Nudging. That hinge is shut, so the weight cannot affect the loss.)</li>
           <li><b>Keep training.</b> With learning rate 0.1, repeat Backward and Apply a few times. The loss goes 2.13 → 1.16 → 0.81 → 0.65. Why does each step help less than the one before? (The gradient is the miss. As the miss shrinks, every gradient shrinks, so the steps get smaller by themselves.)</li>
           <li><b>A step that is too big.</b> Reset, run both passes, set the learning rate to 0.5 and apply. The loss falls to 0.35, which looks great. Now look at h₁ and run Backward again. (Both hinges are now shut. Every weight gradient is 0 and only the biases can still learn. One oversized step switched the hidden layer off for this input. Practitioners call this a “dead ReLU”.)</li>
-          <li><b>Open the shut hinge.</b> Edit W1 (x1 → h2) from −1 to 1 and run both passes again. Gradients now appear on all eight weights.</li>
           <li><b>In the Python file</b>, change <code>h_in.T @ d</code> to <code>h_in.T @ (2 * d)</code> and run it. Training still works (it is like doubling the learning rate for the weights), but the gradient check reports FAIL. Only the check catches this kind of bug.</li>
         </ul>
       </BreakIt>
@@ -336,6 +413,9 @@ return d_W, d_b
 `}</Code>
         </Exercise>
 
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
         <Exercise
           id="backprop-implement"
           type="implement"
@@ -355,6 +435,8 @@ return d_W, d_b
           prompt="A teammate says: “Backpropagation is the algorithm neural networks use to learn.” That is not quite right. Explain what backpropagation actually computes, why it goes backward, and what does the learning."
           modelAnswer={<p>Learning is done by gradient descent: every weight takes a small step against its gradient. Backpropagation is only the method that computes those gradients. It starts at the loss, where the sensitivity is easy to write down (for a classifier: probs − one_hot), and passes that sensitivity backward through each layer using the layer’s local rule, which is the chain rule. Going backward means every intermediate result is computed once and reused by all the layers before it, so one backward sweep yields the gradient of every weight. The alternative, nudging each weight and re-running the network, would need one forward pass per weight. The price is memory: the forward pass must keep its intermediate values until the backward pass has used them.</p>}
         />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -364,12 +446,6 @@ return d_W, d_b
             options: ['They are too inaccurate to learn from', 'They need one forward pass per parameter per step: billions of passes for a single update', 'They only work for linear models', 'They require calculus that nobody can do'],
             answer: 1,
             explain: 'They are accurate enough and need no calculus at all. They are hopelessly slow, which makes them a perfect test oracle and a useless training method.',
-          },
-          {
-            q: 'A model predicts [0.2, 0.7, 0.1] and the correct class is the first. The gradient at the logits is…',
-            options: ['[0.2, 0.7, 0.1]', '[−0.8, 0.7, 0.1]', '[0.8, −0.7, −0.1]', '[1, 0, 0]'],
-            answer: 1,
-            explain: 'probs − one_hot = [0.2 − 1, 0.7 − 0, 0.1 − 0]. Negative for the class whose score must rise.',
           },
           {
             q: 'During the backward pass, what happens to blame arriving at a ReLU whose input was negative in the forward pass?',
@@ -383,19 +459,12 @@ return d_W, d_b
             answer: 2,
             explain: 'This is the memory cost of training. At inference time there is no backward pass, so no activations need to be kept for gradients. (An LLM still keeps its KV cache at inference, but that is for speed, not for gradients.)',
           },
-          {
-            q: 'What does PyTorch’s loss.backward() do?',
-            options: ['Updates the weights', 'Runs the model in reverse to reconstruct the input', 'Applies each recorded operation’s local backward rule in reverse order, leaving a gradient on every parameter', 'Estimates gradients by nudging each parameter'],
-            answer: 2,
-            explain: 'It is the loop you just read, automated and generalised to more operations. Updating the weights is a separate call (optimizer.step()).',
-          },
         ]}
       />
 
       <Remember
         items={[
-          <>Backpropagation answers “which weights are to blame, and by how much?” for <b>every weight in one backward sweep</b>, by running the chain rule from the loss toward the input and reusing intermediate results.</>,
-          <>It only <em>measures</em> gradients. Learning is still <code>W -= lr * d_W</code>.</>,
+          <>Backpropagation answers “which weights are to blame, and by how much?” for <b>every weight in one backward sweep</b>, by running the chain rule from the loss toward the input and reusing intermediate results. It only <em>measures</em> gradients. Learning is still <code>W -= lr * d_W</code>.</>,
           <>Three local rules cover our whole network. Linear: <code>d_W = X.T @ d_out</code>, <code>d_X = d_out @ W.T</code>. ReLU: pass blame where the hinge was open. Softmax + cross-entropy: <code>d_logits = probs − one_hot</code>, <b>the gradient is the miss</b>.</>,
           <>The backward pass needs the forward pass’s values, so training <b>caches activations</b>. That is why training uses far more memory than inference.</>,
           <>Always <b>gradient-check</b> hand-written backward code against nudging. In PyTorch, <code>loss.backward()</code> does all of this for you.</>,
@@ -408,7 +477,7 @@ return d_W, d_b
           toy={<ul><li>Three backward rules, written by hand in NumPy</li><li>4,547 parameters, 300 data points, the whole dataset in every step</li><li>Classes: 3 spiral arms</li><li>Activations cached in a Python list</li></ul>}
           real={<ul><li>The same rules plus a few dozen more (attention, normalisation, embeddings…), generated by an autograd system</li><li>Billions of parameters, mini-batches of text, many GPUs each computing part of the gradient</li><li>Classes: every token in the vocabulary, tens of thousands of them. The backward pass still starts with probs − one_hot, at every position in the text</li><li>Cached activations are a main limit on batch size and context length. A common workaround is to store only some of them and recompute the rest during the backward pass, trading time for memory</li></ul>}
         />
-        <Callout kind="established">Every neural language model is trained with backpropagation plus a gradient-descent-style update. When you read that training a model took thousands of GPUs for months, this is what those GPUs were doing: forward pass, backward pass, update, on batch after batch of text.</Callout>
+        <p>Every neural language model is trained with backpropagation plus a gradient-descent-style update. When you read that training a model took thousands of GPUs for months, this is what those GPUs were doing: forward pass, backward pass, update, on batch after batch of text.</p>
         <Callout kind="model">“Blame” is a convenient word for a partial derivative. A gradient tells you how the loss would change for a <em>tiny</em> nudge to one weight, with everything else held fixed. It does not tell you what a weight “means” or what would happen after a large change.</Callout>
         <p>That evening Riya writes the post-mortem for the refund bug. Out of habit she lists the services in reverse order, from the symptom back to the cause. She notices, smiles, and leaves it that way.</p>
       </RealLLM>

@@ -17,9 +17,7 @@ export default function ContextWallLesson() {
         <div className="card mono" style={{ fontSize: 15 }}>hin is the ile sundr de arethe f eof auilonger reree me ththene ofaiven thersthe wigsle n awhe t m cks qumin qut wathe</div>
         <p>Look closely. Every <em>pair</em> of neighbouring characters is plausible English: “th”, “he”, “qu”, “in”. And the whole is nonsense.</p>
         <p>That is not a bug. The model sees exactly one character. When it writes the “e” of “the”, it has already forgotten the “t”. It cannot finish a word it cannot remember starting. A sentence, or a joke, is out of reach.</p>
-        <Callout kind="idea">
-          A language model is only as good as the <b>context</b> it can use. So the obvious next move is: look further back. This lesson is about why the obvious ways of doing that hit a wall, and what question they leave behind.
-        </Callout>
+        <p>A language model is only as good as the <b>context</b> it can use. So the obvious next move is: look further back. This lesson is about why the obvious ways of doing that hit a wall, and what question they leave behind.</p>
       </Why>
 
       <Problem title="The problem: why not just remember longer phrases?">
@@ -44,7 +42,7 @@ export default function ContextWallLesson() {
           <br /><br />
           Where the analogy stops: “knowing the language” is not a second magic ingredient. In this lesson it will mean something precise and modest: similar contexts flow through the same weights, so what is learned from one applies to the other.
         </Callout>
-        <Callout kind="dev">You know this as the difference between a cache and a function. A cache keyed on the exact input has a 0% hit rate on inputs it has never seen. A function computes an answer for any input. The n-gram table is a cache of the training text.</Callout>
+        <p>As a developer you know this as the difference between a cache and a function. A cache keyed on the exact input has a 0% hit rate on inputs it has never seen. A function computes an answer for any input. The n-gram table is a cache of the training text.</p>
       </MentalModel>
 
       <TryIt title="Two experiments">
@@ -56,9 +54,7 @@ export default function ContextWallLesson() {
         <p>Same counting idea, more context. Read the output at n = 1, then 3, then 6.</p>
         <NgramGenerator />
         <p>Somewhere around n = 4 the text starts to look like English. Do not be impressed. Look at the two read-outs: by n = 6 almost every step had only one possible continuation, and the output is long runs copied letter for letter from the training text. The model did not learn to write. It learned to <b>recite</b>.</p>
-        <Callout kind="idea">
-          Counting with long contexts gives you <b>memorisation, not generalisation</b>. Fluent output on the training text tells you nothing. Give this model a context it has not seen, which for long contexts means almost every context, and it has no row to look up.
-        </Callout>
+        <p>Counting with long contexts gives you <b>memorisation, not generalisation</b>. Fluent output on the training text tells you nothing. Give this model a context it has not seen, which for long contexts means almost every context, and it has no row to look up.</p>
       </TryIt>
 
       <Numbers>
@@ -129,18 +125,80 @@ MODEL C: 3 chars of context -- breaking the bigram ceiling
 
       <CodeIt>
         <p>Model C in the repository differs from the neural bigram in three lines. The input is now a window of <code>ctx</code> character IDs instead of one:</p>
-        <Code source="phase2-language/bigram_lm.py" title="Step 1: windows of 3 characters, and the character that follows each">{`
+        <Code
+          source="phase2-language/bigram_lm.py"
+          title="Step 1: windows of 3 characters, and the character that follows each"
+          setup={`import numpy as np
+rng = np.random.default_rng(7)                  # the seed of bigram_lm.py
+CORPUS = (
+    "the quick brown fox jumps over the lazy dog and the cat sleeps "
+    "in the warm sun while the dog barks at the mailman who walks "
+    "down the street every morning with letters for the people in "
+    "the town where the children play in the park near the river "
+    "that flows past the old mill and under the stone bridge to the "
+    "sea where the fishermen cast their nets in the early light of "
+    "dawn and sing the old songs of the water and the wind and the "
+    "long summer days that fade into the quiet evenings of autumn "
+) * 3
+chars = sorted(set(CORPUS))
+stoi = {c: i for i, c in enumerate(chars)}
+V = len(chars)
+ids = np.array([stoi[c] for c in CORPUS])
+ctx, batch = 3, 4                               # 3 characters of context, a batch of 4 windows
+idx = rng.integers(0, len(ids) - ctx, size=batch)`}
+          show={`print("xb shape:", xb.shape)
+for window, target in zip(xb, yb):
+    print(repr("".join(chars[i] for i in window)), "->", repr(chars[target]))`}
+        >{`
 xb = np.stack([ids[s:s + ctx] for s in idx])    # (batch, ctx)  e.g. ['t','h','e']
 yb = ids[idx + ctx]                             #               e.g. ' '
 `}</Code>
-        <Code source="phase2-language/bigram_lm.py" title="Step 2: look up, glue together, run the MLP from Part 3">{`
+        <Code
+          source="phase2-language/bigram_lm.py"
+          title="Step 2: look up, glue together, run the MLP from Part 3"
+          setup={`import numpy as np
+rng = np.random.default_rng(7)                  # the seed of bigram_lm.py
+CORPUS = (
+    "the quick brown fox jumps over the lazy dog and the cat sleeps "
+    "in the warm sun while the dog barks at the mailman who walks "
+    "down the street every morning with letters for the people in "
+    "the town where the children play in the park near the river "
+    "that flows past the old mill and under the stone bridge to the "
+    "sea where the fishermen cast their nets in the early light of "
+    "dawn and sing the old songs of the water and the wind and the "
+    "long summer days that fade into the quiet evenings of autumn "
+) * 3
+chars = sorted(set(CORPUS))
+stoi = {c: i for i, c in enumerate(chars)}
+V = len(chars)
+ids = np.array([stoi[c] for c in CORPUS])
+ctx, batch = 3, 4                               # 3 characters of context, a batch of 4 windows
+idx = rng.integers(0, len(ids) - ctx, size=batch)
+xb = np.stack([ids[s:s + ctx] for s in idx])    # step 1
+def softmax(z):
+    e = np.exp(z - z.max(axis=-1, keepdims=True))
+    return e / e.sum(axis=-1, keepdims=True)
+dim, hidden = 16, 64                            # untrained weights, the file's sizes
+E = 0.1 * rng.normal(size=(V, dim))
+W1 = 0.1 * rng.normal(size=(ctx * dim, hidden)); b1 = np.zeros(hidden)
+W2 = 0.1 * rng.normal(size=(hidden, V));         b2 = np.zeros(V)`}
+          show={`print("E[xb]:", E[xb].shape, "-> glued:", emb.shape, "-> h:", h.shape, "-> probs:", probs.shape)`}
+        >{`
 emb = E[xb].reshape(batch, -1)                  # concat ctx embeddings: 3 x 16 = 48 numbers
 h = np.maximum(0, emb @ W1 + b1)                # hidden layer with ReLU
 logits = h @ W2 + b2                            # one score per possible next character
 probs = softmax(logits)
 `}</Code>
         <p>The rest (cross-entropy, <a href="#/lesson/backprop">backpropagation</a>, the update) is what you have seen three times now. Look at the shape of the first weight matrix:</p>
-        <Code source="phase2-language/bigram_lm.py" title="the catch is visible in one shape">{`
+        <Code
+          source="phase2-language/bigram_lm.py"
+          title="the catch is visible in one shape"
+          setup={`import numpy as np
+rng = np.random.default_rng(7)
+ctx, dim, hidden = 3, 16, 64`}
+          show={`print("W1:", W1.shape)
+print("rows 0-15 read slot 1, rows 16-31 read slot 2, rows 32-47 read slot 3")`}
+        >{`
 W1 = 0.1 * rng.normal(size=(ctx * dim, hidden))   # (3 * 16, 64)
 `}</Code>
         <p><code>ctx * dim</code>. The first 16 columns of the input only ever see the character in position 1, the next 16 only position 2, the last 16 only position 3. That one shape contains all three flaws of this design:</p>
@@ -184,16 +242,6 @@ W1 = 0.1 * rng.normal(size=(ctx * dim, hidden))   # (3 * 16, 64)
         </Exercise>
 
         <Exercise
-          id="context-wall-modify-ctx"
-          type="modify"
-          title="Give Model C more context"
-          hints={['At the bottom of phase2-language/bigram_lm.py, change train_context3(ids, V) to train_context3(ids, V, ctx=5), then ctx=8. Each run takes a few seconds.', 'Compare the printed losses with 0.3480. Then remember how long the underlying text is (493 characters) and what the loss is measured on.']}
-          solution={<><p>With the file otherwise unchanged you get about <b>0.24</b> for ctx=5 and <b>0.03</b> for ctx=8 (against 0.35 for ctx=3). A loss of 0.03 means the model gives about 97% probability to the correct next character. English is not that predictable. The network has memorised its 493-character text, which with 8 characters of context is almost always enough to know exactly where you are in it.</p><p>Two lessons. First, a falling <em>training</em> loss can mean learning or memorising, and only held-out text can tell them apart. Second, even here the window is still 8 characters. Nothing this model does can connect a pronoun to a noun 50 characters earlier.</p></>}
-        >
-          <p>Open <code>phase2-language/bigram_lm.py</code>. Model C is trained by the call <code>train_context3(ids, V)</code> near the end. Predict what happens to the loss with <code>ctx=5</code> and <code>ctx=8</code>, then run both. Is the ctx=8 model a better model of English?</p>
-        </Exercise>
-
-        <Exercise
           id="context-wall-debug-window"
           type="debug"
           title="“Just make the window 200”"
@@ -207,27 +255,30 @@ loss_C = train_context3(ids, V, ctx=200)
 `}</Code>
         </Exercise>
 
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+        <Exercise
+          id="context-wall-modify-ctx"
+          type="modify"
+          title="Give Model C more context"
+          hints={['At the bottom of phase2-language/bigram_lm.py, change train_context3(ids, V) to train_context3(ids, V, ctx=5), then ctx=8. Each run takes a few seconds.', 'Compare the printed losses with 0.3480. Then remember how long the underlying text is (493 characters) and what the loss is measured on.']}
+          solution={<><p>With the file otherwise unchanged you get about <b>0.24</b> for ctx=5 and <b>0.03</b> for ctx=8 (against 0.35 for ctx=3). A loss of 0.03 means the model gives about 97% probability to the correct next character. English is not that predictable. The network has memorised its 493-character text, which with 8 characters of context is almost always enough to know exactly where you are in it.</p><p>Two lessons. First, a falling <em>training</em> loss can mean learning or memorising, and only held-out text can tell them apart. Second, even here the window is still 8 characters. Nothing this model does can connect a pronoun to a noun 50 characters earlier.</p></>}
+        >
+          <p>Open <code>phase2-language/bigram_lm.py</code>. Model C is trained by the call <code>train_context3(ids, V)</code> near the end. Predict what happens to the loss with <code>ctx=5</code> and <code>ctx=8</code>, then run both. Is the ctx=8 model a better model of English?</p>
+        </Exercise>
+
         <ExplainBack
           id="context-wall-explain"
           prompt="Explain to a teammate why “just count longer phrases” cannot produce a good language model, however much text you have. Use the words memorisation and generalisation."
           modelAnswer={<p>The number of possible contexts is the vocabulary size to the power of the context length, so it grows exponentially, while the number of contexts you can observe grows only in proportion to your text. For any useful context length, almost every context you meet is new, and the ones you did see were seen once. A table can only replay what it saw: that is memorisation, and it looks fluent only on the training text. Generalisation means giving sensible probabilities for contexts never seen before, which requires treating similar contexts similarly. A table cannot, because every key is unrelated to every other key. A neural network with embeddings can, because similar inputs pass through the same weights.</p>}
         />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
         questions={[
-          {
-            q: 'Why is bigram output locally plausible but globally nonsense?',
-            options: ['Each character is chosen while seeing only the one before it, so nothing ties a word or sentence together', 'The training text was too short', 'The random seed was unlucky', 'Smoothing adds 0.01 to every count, and that noise builds up over a long sample until the words fall apart'],
-            answer: 0,
-            explain: 'Every adjacent pair is likely. But the model that writes “e” has already forgotten the “t”.',
-          },
-          {
-            q: 'What happens to a count table when you add one more token of context, with a 50,000-token vocabulary?',
-            options: ['It gets one more row', 'It doubles', 'It gets 50,000 times more rows, almost all of which will never be observed', 'Nothing: tables do not depend on context length'],
-            answer: 2,
-            explain: 'Rows = Vⁿ. Exponential growth in n, against data that grows only linearly.',
-          },
           {
             q: 'The n = 6 character model produces nearly perfect English. What is the best explanation?',
             options: ['Six characters cover most English words, so the table has learned the rules of spelling and grammar', 'Six is the natural context length of English', 'Longer contexts make the die fairer', 'With 6 characters of context there is almost always exactly one continuation in the training text, so it is copying that text'],
@@ -254,8 +305,7 @@ loss_C = train_context3(ids, V, ctx=200)
           <>One token of context gives text that is <b>locally plausible, globally nonsense</b>. More context helps enormously: 1.75 → 0.35 with three characters.</>,
           <>Count tables cannot scale: possible contexts = <b>Vⁿ</b>, and almost every long context in real text occurs <b>once or never</b> (data sparsity).</>,
           <>Long-context counting <b>memorises</b>; it does not <b>generalise</b>. Fluent output on training text proves nothing. Judge models on unseen text.</>,
-          <>Embeddings + a neural network share strength across similar contexts, with parameters that grow by addition, not multiplication.</>,
-          <>But a concatenated window is <b>fixed in length, bound to positions, and cannot choose what matters</b>. Open question: how can a model use relationships between distant tokens, when which tokens matter changes every sentence?</>,
+          <>Embeddings + a neural network share strength across similar contexts, with parameters that grow by addition, not multiplication. But a concatenated window is <b>fixed in length, bound to positions, and cannot choose what matters</b>. Open question: how can a model use relationships between distant tokens, when which tokens matter changes every sentence?</>,
         ]}
       />
 
@@ -274,16 +324,10 @@ loss_C = train_context3(ids, V, ctx=200)
         <h3>The pre-2017 answer: read left to right and keep a summary</h3>
         <p><b>Recurrent neural networks</b> (RNNs, and their improved form, LSTMs) removed the fixed window. They read one token at a time and keep a running summary vector: new summary = f(old summary, new token). The same weights are used at every position, and in principle the summary can carry information any distance.</p>
         <p>They worked, and they ran into two flaws of their own:</p>
-        <div className="grid-2">
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>A fixed-size bottleneck</h4>
-            <p>Everything read so far must be squeezed into one vector of fixed size. By the time the model reaches “it”, “animal” has been overwritten many times. Distant details fade.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>Strictly sequential</h4>
-            <p>Step 500 needs the summary from step 499. You cannot compute the positions of a sequence in parallel. GPUs are fast because they do thousands of things at once, so training on long texts makes poor use of them.</p>
-          </div>
-        </div>
+        <ul>
+          <li><b>A fixed-size bottleneck.</b> Everything read so far must be squeezed into one vector of fixed size. By the time the model reaches “it”, “animal” has been overwritten many times. Distant details fade.</li>
+          <li><b>Strictly sequential.</b> Step 500 needs the summary from step 499. You cannot compute the positions of a sequence in parallel. GPUs are fast because they do thousands of things at once, so training on long texts makes poor use of them.</li>
+        </ul>
         <Callout kind="established">Both limitations are well documented in the research of that period, and they are the stated motivation for the architecture that replaced RNNs in 2017. (Recurrent ideas have not disappeared. Some current research architectures revisit them with new tricks. Every mainstream LLM today is built on the alternative you are about to meet.)</Callout>
         <h3>The question you should now be asking</h3>
         <Callout kind="idea">

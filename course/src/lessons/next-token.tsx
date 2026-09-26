@@ -19,9 +19,7 @@ export default function NextTokenLesson() {
         <Bars items={[{ label: 'mat', value: 0.41 }, { label: 'floor', value: 0.17 }, { label: 'chair', value: 0.09 }, { label: 'sofa', value: 0.08 }, { label: 'roof', value: 0.03 }, { label: 'everything else', value: 0.22, dim: true }]} max={1} />
         <p className="muted">(Illustrative numbers, not the output of a real model.)</p>
         <p>“mat” is likely, “roof” is possible, “because” is almost impossible. That list of strengths, one for <em>every</em> token in the vocabulary, is the only thing a language model ever produces.</p>
-        <Callout kind="idea">
-          The fundamental task of an LLM: <b>given the tokens so far, give a probability to every possible next token.</b> GPT-2 did this. The largest models today do this. The rest of the course is about doing it <em>better</em>.
-        </Callout>
+        <p>The fundamental task of an LLM: <b>given the tokens so far, give a probability to every possible next token.</b> GPT-2 did this. The largest models today do this. The rest of the course is about doing it <em>better</em>.</p>
         <p>In this lesson you build the smallest model that does this job, watch it write, and discover what “training” is really for.</p>
       </Why>
 
@@ -123,7 +121,7 @@ export default function NextTokenLesson() {
         </div>
         <p>Average that over all 1,478 predictions in the text and you get <b>1.7518</b>. That is the loss.</p>
         <p>Now raise e to that number: e<sup>1.7518</sup> = <b>5.76</b>. This second number is the <b>perplexity</b>, and it is the one people usually report, because it is easier to feel. It says: on average, the model is as unsure as someone choosing among about 6 equally likely characters.</p>
-        <Callout kind="idea">perplexity = e<sup>loss</sup>. When a paper or a leaderboard quotes “perplexity 5.76”, this is the calculation behind it.</Callout>
+        <p>Perplexity = e<sup>loss</sup>. When a paper or a leaderboard quotes “perplexity 5.76”, this is the calculation behind it.</p>
         <p>What would a model with no clue score? It would be choosing among all 27 characters. Its perplexity is 27 and its cross-entropy is ln 27 = 3.30. Ours is at 6 choices instead of 27. It has learned something.</p>
         <p>Two conventions, so other people’s numbers do not confuse you:</p>
         <ul>
@@ -164,12 +162,54 @@ export default function NextTokenLesson() {
 
       <CodeIt>
         <p>The whole count model from the repository is a handful of lines. First turn characters into integer IDs (a character-level tokenizer):</p>
-        <Code source="phase2-language/bigram_lm.py" title="Step 1: characters to ids">{`
+        <Code
+          source="phase2-language/bigram_lm.py"
+          title="Step 1: characters to ids"
+          setup={`import numpy as np
+rng = np.random.default_rng(7)                  # the seed of bigram_lm.py
+CORPUS = (
+    "the quick brown fox jumps over the lazy dog and the cat sleeps "
+    "in the warm sun while the dog barks at the mailman who walks "
+    "down the street every morning with letters for the people in "
+    "the town where the children play in the park near the river "
+    "that flows past the old mill and under the stone bridge to the "
+    "sea where the fishermen cast their nets in the early light of "
+    "dawn and sing the old songs of the water and the wind and the "
+    "long summer days that fade into the quiet evenings of autumn "
+) * 3
+text = CORPUS`}
+          show={`print(len(chars), "characters:", repr("".join(chars)))
+print("the first 10 ids:", ids[:10], "=", repr(CORPUS[:10]))`}
+        >{`
 chars = sorted(set(text))
 stoi = {c: i for i, c in enumerate(chars)}
 ids = [stoi[c] for c in CORPUS]
 `}</Code>
-        <Code source="phase2-language/bigram_lm.py" title="Step 2: count pairs, then turn each row into probabilities">{`
+        <Code
+          source="phase2-language/bigram_lm.py"
+          title="Step 2: count pairs, then turn each row into probabilities"
+          setup={`import numpy as np
+rng = np.random.default_rng(7)                  # the seed of bigram_lm.py
+CORPUS = (
+    "the quick brown fox jumps over the lazy dog and the cat sleeps "
+    "in the warm sun while the dog barks at the mailman who walks "
+    "down the street every morning with letters for the people in "
+    "the town where the children play in the park near the river "
+    "that flows past the old mill and under the stone bridge to the "
+    "sea where the fishermen cast their nets in the early light of "
+    "dawn and sing the old songs of the water and the wind and the "
+    "long summer days that fade into the quiet evenings of autumn "
+) * 3
+chars = sorted(set(CORPUS))
+stoi = {c: i for i, c in enumerate(chars)}
+itos = {i: c for i, c in enumerate(chars)}
+ids = [stoi[c] for c in CORPUS]
+V = len(chars)`}
+          show={`probs = count_model(ids, V)
+print("table shape:", probs.shape)
+print("P(h | t) =", round(probs[stoi["t"], stoi["h"]], 4))
+print("every row sums to 1:", np.allclose(probs.sum(axis=1), 1))`}
+        >{`
 def count_model(ids, V):
     counts = np.full((V, V), 0.01)    # tiny "smoothing" instead of 0
     for a, b in zip(ids, ids[1:]):    # the shifted pairs (x, y)
@@ -177,13 +217,68 @@ def count_model(ids, V):
     return counts / counts.sum(axis=1, keepdims=True)   # rows -> probabilities
 `}</Code>
         <p><code>zip(ids, ids[1:])</code> is the “slide the text by one” trick from above. Scoring is two lines:</p>
-        <Code source="phase2-language/bigram_lm.py" title="Step 3: average surprise">{`
+        <Code
+          source="phase2-language/bigram_lm.py"
+          title="Step 3: average surprise"
+          setup={`import numpy as np
+rng = np.random.default_rng(7)                  # the seed of bigram_lm.py
+CORPUS = (
+    "the quick brown fox jumps over the lazy dog and the cat sleeps "
+    "in the warm sun while the dog barks at the mailman who walks "
+    "down the street every morning with letters for the people in "
+    "the town where the children play in the park near the river "
+    "that flows past the old mill and under the stone bridge to the "
+    "sea where the fishermen cast their nets in the early light of "
+    "dawn and sing the old songs of the water and the wind and the "
+    "long summer days that fade into the quiet evenings of autumn "
+) * 3
+chars = sorted(set(CORPUS))
+stoi = {c: i for i, c in enumerate(chars)}
+itos = {i: c for i, c in enumerate(chars)}
+ids = [stoi[c] for c in CORPUS]
+V = len(chars)
+def count_model(ids, V):                        # step 2
+    counts = np.full((V, V), 0.01)
+    for a, b in zip(ids, ids[1:]):
+        counts[a, b] += 1
+    return counts / counts.sum(axis=1, keepdims=True)
+probs_table = count_model(ids, V)`}
+          show={`loss = cross_entropy_of_table(probs_table, np.array(ids))
+print(f"cross-entropy {loss:.4f}   perplexity {np.exp(loss):.2f}")`}
+        >{`
 def cross_entropy_of_table(probs_table, ids):
     p = probs_table[ids[:-1], ids[1:]]    # probability given to each actual next char
     return -np.log(p).mean()
 `}</Code>
         <p>And here is the loop you operated by hand in the playground:</p>
-        <Code source="phase2-language/bigram_lm.py" title="Step 4: generation">{`
+        <Code
+          source="phase2-language/bigram_lm.py"
+          title="Step 4: generation"
+          setup={`import numpy as np
+rng = np.random.default_rng(7)                  # the seed of bigram_lm.py
+CORPUS = (
+    "the quick brown fox jumps over the lazy dog and the cat sleeps "
+    "in the warm sun while the dog barks at the mailman who walks "
+    "down the street every morning with letters for the people in "
+    "the town where the children play in the park near the river "
+    "that flows past the old mill and under the stone bridge to the "
+    "sea where the fishermen cast their nets in the early light of "
+    "dawn and sing the old songs of the water and the wind and the "
+    "long summer days that fade into the quiet evenings of autumn "
+) * 3
+chars = sorted(set(CORPUS))
+stoi = {c: i for i, c in enumerate(chars)}
+itos = {i: c for i, c in enumerate(chars)}
+ids = [stoi[c] for c in CORPUS]
+V = len(chars)
+def count_model(ids, V):                        # step 2
+    counts = np.full((V, V), 0.01)
+    for a, b in zip(ids, ids[1:]):
+        counts[a, b] += 1
+    return counts / counts.sum(axis=1, keepdims=True)
+probs_table = count_model(ids, V)`}
+          show={`print(repr(generate(probs_table, itos, stoi["t"], n=80)))`}
+        >{`
 def generate(probs_table, itos, start_id, n=200):
     out, cur = [], start_id
     for _ in range(n):
@@ -199,7 +294,37 @@ MODEL A: count-table bigram (classical statistics)
 `}</Code>
         <h3>The punchline: train a neural network on the same task</h3>
         <p>The same file then builds the same predictor a second way, with everything from Parts 2 to 4: an <a href="#/lesson/embeddings">embedding lookup</a>, one linear layer, <G t="softmax">softmax</G>, cross-entropy, <G t="gradient-descent">gradient descent</G>. It starts from random numbers and knows nothing about counting.</p>
-        <Code source="phase2-language/bigram_lm.py" title="Model B: forward pass of the neural bigram">{`
+        <Code
+          source="phase2-language/bigram_lm.py"
+          title="Model B: forward pass of the neural bigram"
+          setup={`import numpy as np
+rng = np.random.default_rng(7)                  # the seed of bigram_lm.py
+CORPUS = (
+    "the quick brown fox jumps over the lazy dog and the cat sleeps "
+    "in the warm sun while the dog barks at the mailman who walks "
+    "down the street every morning with letters for the people in "
+    "the town where the children play in the park near the river "
+    "that flows past the old mill and under the stone bridge to the "
+    "sea where the fishermen cast their nets in the early light of "
+    "dawn and sing the old songs of the water and the wind and the "
+    "long summer days that fade into the quiet evenings of autumn "
+) * 3
+chars = sorted(set(CORPUS))
+stoi = {c: i for i, c in enumerate(chars)}
+itos = {i: c for i, c in enumerate(chars)}
+ids = [stoi[c] for c in CORPUS]
+V = len(chars)
+def softmax(z):
+    e = np.exp(z - z.max(axis=-1, keepdims=True))
+    return e / e.sum(axis=-1, keepdims=True)
+dim, batch = 24, 256
+E = 0.1 * rng.normal(size=(V, dim))             # random: nothing learned yet
+W = 0.1 * rng.normal(size=(dim, V))
+xs, ys = np.array(ids[:-1]), np.array(ids[1:])
+idx = rng.integers(0, len(xs), size=batch)
+xb, yb = xs[idx], ys[idx]`}
+          show={`print(f"loss before any training {loss:.4f}   ln(27) = {np.log(27):.4f}")`}
+        >{`
 emb = E[xb]                          # look up the current character's vector
 logits = emb @ W                     # one score per possible next character
 probs = softmax(logits)
@@ -217,9 +342,7 @@ MODEL B: neural bigram -- watch it CONVERGE TO MODEL A's loss
         <p>It starts at 3.31, which is ln 27 = 3.30: pure guessing.</p>
         <p>Scored on the whole text at the end, it reaches 1.7602, a hair above the count table’s 1.7518. It cannot do meaningfully better. The lowest score any one-character model can reach on this text is 1.7480, which is the count table without smoothing.</p>
         <p className="muted">(The losses printed during training are each measured on one random mini-batch of 256 characters. So they wobble, and one may dip slightly under 1.7518 by luck.)</p>
-        <Callout kind="idea">
-          Gradient descent <b>rediscovered the counting statistics</b>, without being told to count. For one character of context, the count table is (up to the tiny smoothing) the best possible answer, and training found its way to (almost) the same table. So “training” is a way of <em>finding these statistics</em>. It earns its keep in exactly the situations where you cannot build the table. The next lesson shows that this is nearly always.
-        </Callout>
+        <p>Gradient descent <b>rediscovered the counting statistics</b>, without being told to count. For one character of context, the count table is (up to the tiny smoothing) the best possible answer, and training found its way to (almost) the same table. So “training” is a way of <em>finding these statistics</em>. It earns its keep in exactly the situations where you cannot build the table. The next lesson shows that this is nearly always.</p>
         <DeepDive title="Why can nothing beat the count table here?">
           <p>If the only thing you may look at is one character, the best probabilities you can assign are the true frequencies with which each next character followed it. Cross-entropy is minimised exactly when the predicted distribution equals the observed one. The unsmoothed counts are that distribution, measured on the same text we score on. They score 1.7480. Our table gives up 0.004 of that to smoothing, as the price for never calling anything impossible.</p>
           <p>The neural bigram has enough capacity to represent any 27 × 27 table, so its optimum is that same unsmoothed table, and with unlimited training it would creep slightly below 1.7518 towards 1.7480. It stops short (1.7602) only because it was trained for a limited number of noisy mini-batch steps. Note also that both models are scored on their own training text here. Measuring on held-out text is the honest test, and we will do that when we train a GPT.</p>
@@ -361,7 +484,7 @@ MODEL B: neural bigram -- watch it CONVERGE TO MODEL A's loss
           real={<ul><li>Tokens are roughly 30,000 to 250,000 subwords</li><li>Sees thousands to millions of previous tokens</li><li>The model is a Transformer with billions of learned weights</li><li>Trillions of tokens of training text</li><li>Same loss: average −log P(actual next token)</li></ul>}
         />
         <Callout kind="established">The objective you just implemented, next-token cross-entropy on shifted text, is the <G t="pretraining">pretraining</G> objective of GPT-style models. The generation loop you clicked through is how they produce output. Chat behaviour is added later by further training, which we cover in <a href="#/lesson/training-pipeline">From raw text to assistant</a>, but it does not replace this loop.</Callout>
-        <Callout kind="dev">This explains several things you see as an API user. Output <b>streams</b> token by token because it is produced token by token. The same prompt can give <b>different answers</b> because each token is a random draw. And output tokens cost more than input tokens partly because each one needs its own pass through the model.</Callout>
+        <p>This explains several things you see as an API user. Output <b>streams</b> token by token because it is produced token by token. The same prompt can give <b>different answers</b> because each token is a random draw. And output tokens cost more than input tokens partly because each one needs its own pass through the model.</p>
         <Callout kind="model">“It just predicts the next token” is accurate about the <em>interface</em> and misleading about the <em>difficulty</em>. To predict the next token of a physics derivation well, a model must capture a great deal about physics. How much of that deserves the word “understanding” is debated. What is certain: all of it is learned in service of this one objective.</Callout>
         <p>So Dev was half right. It is autocomplete, run in a loop. Riya’s ticket gibberish and a chatbot’s fluent reply come from the same loop. What differs is how much of the text each prediction can see. That is what she tries to fix next.</p>
       </RealLLM>

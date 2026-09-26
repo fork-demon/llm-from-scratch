@@ -14,9 +14,7 @@ export default function DistillationLesson() {
         <p>Kabir shakes his head. “A small model learns less from that data on its own. Let the big one teach it.”</p>
         <p>Riya thinks of her tuition master in Mysuru. School gave her ticks and crosses. He would tap her notebook and say: “Option B is nearly right, you mixed up two formulas. Option D? Never.” She learned more from those margins than from any answer key.</p>
         <p>So what does a big model know that it can hand to a small one, beyond the right answer?</p>
-        <Callout kind="idea">
-          <b>Distillation</b> trains a small <em>student</em> model to imitate a big <em>teacher</em> model: either its full set of probabilities for the next token, or the text it writes. The teacher’s “nearly right” and “clearly wrong” are information. A plain answer key throws them away.
-        </Callout>
+        <p><b>Distillation</b> trains a small <em>student</em> model to imitate a big <em>teacher</em> model: either its full set of probabilities for the next token, or the text it writes. The teacher’s “nearly right” and “clearly wrong” are information. A plain answer key throws them away.</p>
       </Why>
 
       <Problem>
@@ -30,8 +28,7 @@ export default function DistillationLesson() {
           idea="Use the big model as the source of targets. Train the student to match the teacher’s probabilities (or the text the teacher writes), so each example carries the teacher’s judgement about every option."
           tradeoff="The student can only become as good as its teacher, including the teacher’s mistakes and blind spots. You also need to run the teacher over all the training data, which is expensive in its own right."
         />
-        <p>Dev tries one more angle. “Isn’t that a zip file for models? Compress the weights?”</p>
-        <p>Not quite. Distillation never copies the teacher’s weights. The student has its own architecture and its own weights, often a different shape entirely. It only copies the teacher’s <em>behaviour</em>, through training. (Shrinking the weights themselves is a different family of tricks, in <a href="#/lesson/making-models-cheaper">Making the model itself cheaper</a>.)</p>
+        <p>Dev tries one more angle. “Isn’t that a zip file for models?” Not quite. The student has its own architecture and its own weights, often a different shape entirely. It copies the teacher’s <em>behaviour</em>, through training, never its weights. (Shrinking the weights themselves is a different family of tricks, in <a href="#/lesson/making-models-cheaper">Making the model itself cheaper</a>.)</p>
       </Problem>
 
       <MentalModel>
@@ -52,42 +49,30 @@ export default function DistillationLesson() {
         <h3>Turning up the volume on small numbers: temperature</h3>
         <p>There is a catch. A confident teacher puts 99% on the top token. The interesting part, “sofa beats moon”, then hides in numbers like 0.3% versus 0.001%. In the loss, those barely register.</p>
         <p>You already know the fix from <a href="#/lesson/inference">Inference</a>: <G t="temperature">temperature</G>. Divide the teacher’s <G t="logits">logits</G> by a number T greater than 1 before the softmax. The ranking stays the same, but the distribution flattens, and the small probabilities become large enough to learn from.</p>
-        <Callout kind="model" label="Simplified mental model: temperature as a magnifying glass">
-          In sampling, temperature changes what the model <em>writes</em>. In distillation it changes what the student <em>sees</em>: a magnified view of the teacher’s low-probability opinions. The student is run at the same temperature during training, then at T = 1 when it is used.
-        </Callout>
+        <p>In sampling, temperature changes what the model <em>writes</em>. Here it changes what the student <em>sees</em>: a magnified view of the teacher’s low-probability opinions. The student is run at the same temperature during training, then at T = 1 when it is used.</p>
 
         <h3>Three ways to learn from a teacher</h3>
-        <div className="grid-3">
-          <div className="card">
-            <h4 style={{ fontSize: 16, marginBottom: 6 }}>1 · Match its probabilities</h4>
-            <p>At every position of the training text, the student is graded against the teacher’s full distribution. Called <b>logit distillation</b> or token-level distillation. Needs the teacher’s probabilities, so you must be able to run the teacher yourself.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 16, marginBottom: 6 }}>2 · Learn from text it wrote</h4>
-            <p>The teacher writes answers to many prompts. The student is fine-tuned on that text with ordinary <G t="sft">SFT</G>. Called <b>sequence-level distillation</b> (Kim and Rush, 2016). Works even when you only see the teacher’s text, through an API.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 16, marginBottom: 6 }}>3 · The student writes, the teacher grades</h4>
-            <p>The student writes its own answer. The teacher scores every token of it: “I would have given this token 40%, you gave it 90%”. Called <b>on-policy distillation</b>. The student learns from its own mistakes, not only from the teacher’s perfect examples.</p>
-          </div>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>name</th><th>what the student learns from</th><th>what you need</th></tr></thead>
+            <tbody>
+              <tr><td><b>Logit distillation</b> (token-level)</td><td>The teacher’s full distribution at every position of the training text.</td><td>The teacher’s probabilities, so you must be able to run it yourself.</td></tr>
+              <tr><td><b>Sequence-level distillation</b> (Kim and Rush, 2016)</td><td>Answers the teacher wrote, with ordinary <G t="sft">SFT</G>.</td><td>Only the teacher’s text, even through an API.</td></tr>
+              <tr><td><b>On-policy distillation</b></td><td>Its own answers, with the teacher scoring every token: “I would have given this token 40%, you gave it 90%”.</td><td>The teacher’s probabilities on the student’s text. The student learns from its own mistakes.</td></tr>
+            </tbody>
+          </table>
         </div>
-        <p>Option 2 is the one you will meet most. It has a name you have probably heard already: <b>synthetic data</b>.</p>
+        <p>The second is the one you will meet most. It has a name you have probably heard already: <b>synthetic data</b>.</p>
 
         <h3>When the teacher writes the textbook</h3>
         <p>A synthetic data pipeline is sequence-level distillation run as a factory:</p>
         <Flow horizontal steps={[{ label: 'Prompts', sub: 'collected or generated' }, { label: 'Teacher writes', sub: 'often several answers each' }, { label: 'Filter', sub: 'tests, checkers, a judge model' }, { label: 'Student trains', sub: 'ordinary SFT' }]} />
         <p>The filter is where most of the quality comes from. For maths, keep answers whose final number is right. For code, keep programs that pass tests. For everything else, a judge model scores the answers and the low scorers are dropped.</p>
-        <p>This is how a large share of today’s fine-tuning data is made. It is cheap, it scales, and it has real risks.</p>
-        <div className="grid-2">
-          <div className="card">
-            <h4 style={{ fontSize: 16, marginBottom: 6 }}>Model collapse</h4>
-            <p>Train a model on its own output, then train the next one on <em>that</em> output, and so on, with no fresh human data. Rare things disappear first: a phrase with 1% probability may not appear in the sample at all, and a model fitted to that sample gives it 0%. Each generation loses more of the tails, and the output drifts towards bland, repetitive text.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 16, marginBottom: 6 }}>Contamination and inherited errors</h4>
-            <p>If the teacher saw benchmark questions during its training, its synthetic data can quietly reproduce them, and the student then scores well on a test it has half memorised (<a href="#/lesson/evals">Evals</a> treats this problem in detail). The student also inherits the teacher’s wrong facts, biases and habits, now with no human in the loop to catch them.</p>
-          </div>
-        </div>
+        <p>This is how a large share of today’s fine-tuning data is made. It is cheap, it scales, and it has real risks:</p>
+        <ul>
+          <li><b>Model collapse.</b> Train a model on its own output, then the next one on <em>that</em> output, with no fresh human data. Rare things disappear first: a phrase with 1% probability may not appear in the sample at all, and a model fitted to that sample gives it 0%. Each generation loses more of the tails and drifts towards bland, repetitive text.</li>
+          <li><b>Contamination and inherited errors.</b> A teacher that saw benchmark questions can quietly reproduce them, so the student scores well on a test it has half memorised (see <a href="#/lesson/evals">Evals</a>). The student also inherits the teacher’s wrong facts, biases and habits, with no human in the loop to catch them.</li>
+        </ul>
         <Callout kind="research">
           Model collapse was shown in controlled experiments by Shumailov and colleagues (Nature, 2024) for models trained <em>repeatedly</em> on their own output with the real data <em>replaced</em>. Follow-up work (Gerstgrasser and colleagues, 2024) found that when synthetic data is <em>added</em> to the real data rather than replacing it, the degradation largely goes away. How much synthetic data is safe, and in what mix, is an open question that every lab answers empirically.
         </Callout>
@@ -181,7 +166,13 @@ export default function DistillationLesson() {
 
       <CodeIt>
         <p>No file in the repository implements distillation, so everything here is a sketch. It is the same algorithm as the lab, which is tested against these numbers. You can paste it into Python with NumPy and run it.</p>
-        <Code title="sketch: softmax with temperature, and KL">{`
+        <Code
+          title="sketch: softmax with temperature, and KL"
+          setup={`import numpy as np`}
+          show={`print("KL(p || q):", round(kl(np.array([.7, .2, .1]), np.array([.5, .3, .2])), 4))
+print("mat, sofa, moon at T = 1:", softmax([3, 1, -1]).round(3))
+print("mat, sofa, moon at T = 2:", softmax([3, 1, -1], T=2).round(3))`}
+        >{`
 def softmax(z, T=1.0):
     z = np.asarray(z, float) / T
     e = np.exp(z - z.max())
@@ -193,14 +184,54 @@ def kl(p, q):
 kl(np.array([.7, .2, .1]), np.array([.5, .3, .2]))   # 0.0851
 `}</Code>
         <p>One training step with soft targets. The student is six logits for one context, exactly as in the lab:</p>
-        <Code title="sketch: one distillation step">{`
+        <Code
+          title="sketch: one distillation step"
+          setup={`import numpy as np
+
+def softmax(z, T=1.0):
+    z = np.asarray(z, float) / T
+    e = np.exp(z - z.max())
+    return e / e.sum()
+
+def kl(p, q):
+    return float(np.sum(p * np.log(p / q)))
+
+teacher_logits = np.array([4.0, 2.2, 2.0, 1.6, 0.5, -2.0])   # the lab's teacher: mat, sofa, ...`}
+          show={`for T in (1, 4):
+    z = np.zeros(6)
+    for _ in range(20):
+        z = soft_step(z, teacher_logits, T)
+    print(f"T = {T}: KL after 20 soft steps = {kl(softmax(teacher_logits), softmax(z)):.4f}")
+print("teacher:", softmax(teacher_logits).round(3))
+print("student:", softmax(z).round(3))`}
+        >{`
 def soft_step(z, teacher_logits, T, lr=0.5):
     p = softmax(teacher_logits, T)   # soft targets
     q = softmax(z, T)                # student at the same T
     grad = T * (q - p)               # gradient of T^2 * KL(p || q)
     return z - lr * grad
 `}</Code>
-        <Code title="sketch: one hard-label step, for comparison">{`
+        <Code
+          title="sketch: one hard-label step, for comparison"
+          setup={`import numpy as np
+
+def softmax(z, T=1.0):
+    z = np.asarray(z, float) / T
+    e = np.exp(z - z.max())
+    return e / e.sum()
+
+def kl(p, q):
+    return float(np.sum(p * np.log(p / q)))
+
+teacher_logits = np.array([4.0, 2.2, 2.0, 1.6, 0.5, -2.0])   # the lab's teacher
+MAT = 0                                                       # the hard label`}
+          show={`z = np.zeros(6)
+for step in range(1, 201):
+    z = hard_step(z, MAT)
+    if step in (7, 200):
+        print(f"step {step}: KL = {kl(softmax(teacher_logits), softmax(z)):.3f}, student:", softmax(z).round(3))
+print("teacher:        ", softmax(teacher_logits).round(3))`}
+        >{`
 def hard_step(z, label, lr=0.5):
     q = softmax(z)
     grad = q.copy()
@@ -218,7 +249,31 @@ loss = alpha * loss_kd + (1 - alpha) * F.cross_entropy(student_logits_flat, targ
 `}</Code>
         <p><code>F.kl_div</code> expects the <em>student’s</em> log-probabilities first and the teacher’s second, which is the reverse of how KL(p ‖ q) is written. That ordering trips up many people.</p>
         <p>Sequence-level distillation needs no new loss at all. It is data generation followed by the fine-tuning you already know:</p>
-        <Code title="sketch: a synthetic data pipeline">{`
+        <Code
+          title="sketch: a synthetic data pipeline"
+          setup={`import random
+random.seed(0)
+
+# A made-up teacher that answers sums, and is wrong about one time in four.
+class Teacher:
+    def generate(self, prompt, n, temperature):
+        a, b = map(int, prompt.split("+"))
+        return [str(a + b + random.choice([0, 0, 0, 1])) for _ in range(n)]
+
+teacher = Teacher()
+prompts = ["2+3", "7+5", "12+30", "9+9"]
+
+def passes_checks(prompt, answer):          # the checker: is the sum right?
+    a, b = map(int, prompt.split("+"))
+    return int(answer) == a + b
+
+def sft(student, dataset):                  # stands in for the fine-tuning loop
+    print(f"training {student} on {len(dataset)} examples")
+
+student = "the small model"`}
+          show={`print("kept:", dataset)
+print(f"{len(dataset)} of {4 * len(prompts)} teacher answers survived the filter")`}
+        >{`
 dataset = []
 for prompt in prompts:
     for answer in teacher.generate(prompt, n=4, temperature=0.8):
@@ -227,7 +282,29 @@ for prompt in prompts:
 sft(student, dataset)                         # the loop from Fine-tuning
 `}</Code>
         <p>And on-policy distillation, in outline. The student writes, the teacher scores the student’s own tokens:</p>
-        <Code title="sketch: on-policy distillation">{`
+        <Code
+          title="sketch: on-policy distillation"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)
+TOKENS = ["mat", "sofa", "moon"]
+
+# Made-up models: one fixed next-token distribution each, the worked example's p and q.
+class Toy:
+    def __init__(self, probs):
+        self.probs = np.array(probs)
+    def generate(self, prompt, n=5000):
+        return list(rng.choice(len(TOKENS), size=n, p=self.probs))
+    def log_probs(self, prompt, answer):
+        return np.log(self.probs[answer])
+
+teacher = Toy([0.7, 0.2, 0.1])
+student = Toy([0.5, 0.3, 0.2])
+prompt = "The cat sat on the"`}
+          show={`print("student wrote:", [TOKENS[t] for t in answer[:8]], "...")
+print(f"estimate from its own {len(answer)} tokens: {loss:.4f}")
+p, q = teacher.probs, student.probs
+print(f"exact reverse KL(q || p):          {np.sum(q * np.log(q / p)):.4f}")`}
+        >{`
 answer = student.generate(prompt)
 s_logp = student.log_probs(prompt, answer)    # one number per token
 t_logp = teacher.log_probs(prompt, answer)    # same tokens, teacher's view
@@ -281,38 +358,6 @@ loss = (s_logp - t_logp).mean()               # estimate of reverse KL
         </Exercise>
 
         <Exercise
-          id="distillation-calc-collapse"
-          type="calculate"
-          title="Where do the rare words go?"
-          answer={{ value: 0.133, tolerance: 0.005 }}
-          answerLabel="chance the phrase never appears"
-          hints={[
-            'Each of the 100 samples independently misses the phrase with probability 1 − 0.02 = 0.98.',
-            'All 100 must miss it: multiply 0.98 by itself 100 times.',
-            '0.98¹⁰⁰ = e^(100 × ln 0.98) and ln 0.98 ≈ −0.0202.',
-          ]}
-          solution={<><p>0.98¹⁰⁰ ≈ <b>0.133</b>. About one time in seven, a phrase the model uses 2% of the time is completely absent from its own 100 samples.</p><p>A new model fitted only to those samples has no reason to produce it. Repeat for several generations and more rare things drop out each time, while nothing brings them back. That is the mechanism behind model collapse, and why keeping real human data in the mix matters.</p></>}
-        >
-          <p>A model uses a certain rare phrase in 2% of its answers. You sample 100 answers from it to build a training set for the next model. What is the probability that the phrase appears in <em>none</em> of them? (Three decimals.)</p>
-        </Exercise>
-
-        <Exercise
-          id="distillation-experiment-temperature"
-          type="experiment"
-          title="The coolest temperature that works"
-          answer={{ value: 2, tolerance: 0 }}
-          answerLabel="lowest T"
-          hints={[
-            'Select “soft targets” and read the last readout line, “first step with KL below 0.01 and staying there”.',
-            'Move T down from 4 in steps of 0.5 and watch that step number grow.',
-            'Check T = 2 and T = 1.5 carefully. One is under 30, one is not.',
-          ]}
-          solution={<><p><b>T = 2</b> reaches a KL below 0.01 at step 24. T = 1.5 needs 37 steps, and T = 1 needs 94.</p><p>Going above about T = 3 barely helps in this toy (18 or 19 steps), because once the small probabilities are loud enough there is nothing more to reveal. A real student with limited capacity can even be hurt by very high T, which is why practitioners tune it.</p></>}
-        >
-          <p>In the lab, what is the lowest temperature on the slider for which the soft-target student gets below a KL of 0.01 within 30 steps?</p>
-        </Exercise>
-
-        <Exercise
           id="distillation-debug-temperature"
           type="debug"
           title="The student that is never sure"
@@ -336,6 +381,43 @@ loss = F.kl_div(F.log_softmax(student_logits, dim=-1),
           prompt="Dev asks: “If the student ends up imitating the teacher, why not train it on the same internet text the teacher read? Why go through the teacher at all?” Answer him in three or four sentences, using the words hard label, soft target and temperature."
           modelAnswer={<p>The internet text gives hard labels: one next token per position, with every other token treated as equally wrong. The teacher has already learned, at great cost, how plausible every alternative is, and its soft targets hand that over with every single example: sofa is nearly right, moon is absurd. A small student learns faster and ends up better from those richer targets than from rediscovering all of it through hard labels. Temperature flattens the teacher’s distribution so its small probabilities are large enough to matter in the loss. The price is that the student inherits the teacher’s mistakes and cannot become better than it.</p>}
         />
+
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+            <Exercise
+              id="distillation-calc-collapse"
+              type="calculate"
+              title="Where do the rare words go?"
+              answer={{ value: 0.133, tolerance: 0.005 }}
+              answerLabel="chance the phrase never appears"
+              hints={[
+                'Each of the 100 samples independently misses the phrase with probability 1 − 0.02 = 0.98.',
+                'All 100 must miss it: multiply 0.98 by itself 100 times.',
+                '0.98¹⁰⁰ = e^(100 × ln 0.98) and ln 0.98 ≈ −0.0202.',
+              ]}
+              solution={<><p>0.98¹⁰⁰ ≈ <b>0.133</b>. About one time in seven, a phrase the model uses 2% of the time is completely absent from its own 100 samples.</p><p>A new model fitted only to those samples has no reason to produce it. Repeat for several generations and more rare things drop out each time, while nothing brings them back. That is the mechanism behind model collapse, and why keeping real human data in the mix matters.</p></>}
+            >
+              <p>A model uses a certain rare phrase in 2% of its answers. You sample 100 answers from it to build a training set for the next model. What is the probability that the phrase appears in <em>none</em> of them? (Three decimals.)</p>
+            </Exercise>
+
+            <Exercise
+              id="distillation-experiment-temperature"
+              type="experiment"
+              title="The coolest temperature that works"
+              answer={{ value: 2, tolerance: 0 }}
+              answerLabel="lowest T"
+              hints={[
+                'Select “soft targets” and read the last readout line, “first step with KL below 0.01 and staying there”.',
+                'Move T down from 4 in steps of 0.5 and watch that step number grow.',
+                'Check T = 2 and T = 1.5 carefully. One is under 30, one is not.',
+              ]}
+              solution={<><p><b>T = 2</b> reaches a KL below 0.01 at step 24. T = 1.5 needs 37 steps, and T = 1 needs 94.</p><p>Going above about T = 3 barely helps in this toy (18 or 19 steps), because once the small probabilities are loud enough there is nothing more to reveal. A real student with limited capacity can even be hurt by very high T, which is why practitioners tune it.</p></>}
+            >
+              <p>In the lab, what is the lowest temperature on the slider for which the soft-target student gets below a KL of 0.01 within 30 steps?</p>
+            </Exercise>
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -345,12 +427,6 @@ loss = F.kl_div(F.log_softmax(student_logits, dim=-1),
             options: ['The teacher’s weights', 'A ranking of every other token, so it learns which wrong answers are nearly right', 'A faster forward pass', 'A guarantee that the answer is correct'],
             answer: 1,
             explain: 'The “dark knowledge” is in the small probabilities. The weights are never copied.',
-          },
-          {
-            q: 'Why is temperature above 1 applied to the teacher’s logits during distillation?',
-            options: ['To make the teacher more accurate', 'To flatten the distribution so small probabilities become large enough to influence the loss, without changing their order', 'To make the student generate more creative text', 'To reduce the teacher’s memory use'],
-            answer: 1,
-            explain: 'Dividing logits by T keeps the ranking and shrinks the gaps. The student is trained at the same T and used at T = 1.',
           },
           {
             q: 'Riya fine-tunes a small model on 50,000 answers written by a big model through its API. Which kind of distillation is this?',
@@ -364,12 +440,6 @@ loss = F.kl_div(F.log_softmax(student_logits, dim=-1),
             answer: 1,
             explain: 'The effect appears when generated data replaces real data over several generations. Adding synthetic data to real data largely avoids it in published experiments.',
           },
-          {
-            q: 'What is the main idea of on-policy distillation?',
-            options: ['The teacher writes all the training data', 'The student writes its own answers and the teacher scores each of the student’s tokens, so it learns from the mistakes it actually makes', 'The student copies the teacher’s attention heads', 'Both models are trained from scratch together'],
-            answer: 1,
-            explain: 'Off-policy students only ever see perfect teacher text, and at inference meet their own errors for the first time. On-policy training closes that gap.',
-          },
         ]}
       />
 
@@ -378,8 +448,7 @@ loss = F.kl_div(F.log_softmax(student_logits, dim=-1),
           <><b>Distillation</b> trains a small student to imitate a big teacher’s behaviour, never its weights. The student can differ in size and shape.</>,
           <>A <b>hard label</b> names one right token. A <b>soft target</b> is the teacher’s whole distribution, and its small probabilities (the “dark knowledge”) say which wrong answers are nearly right.</>,
           <>Loss: <b>T² × KL(p(T) ‖ q(T))</b>, both at temperature T, often mixed with ordinary cross-entropy. <b>Temperature</b> above 1 makes the small probabilities loud enough to learn.</>,
-          <>Three flavours: match probabilities (logit), fine-tune on the teacher’s text (sequence-level, i.e. <b>synthetic data</b>), or let the student write and the teacher grade (<b>on-policy</b>).</>,
-          <>Synthetic data has real risks: <b>model collapse</b> when own outputs replace real data, <b>contamination</b> of benchmarks, and inherited errors. The student is capped by its teacher.</>,
+          <>Three flavours: match probabilities (logit), fine-tune on the teacher’s text (sequence-level, i.e. <b>synthetic data</b>), or let the student write and the teacher grade (<b>on-policy</b>). Synthetic data risks <b>model collapse</b> when own outputs replace real data, <b>contamination</b> and inherited errors. The student is capped by its teacher.</>,
         ]}
       />
 
@@ -389,23 +458,16 @@ loss = F.kl_div(F.log_softmax(student_logits, dim=-1),
           real={<ul><li>Billions of contexts and a vocabulary of 100,000 or more tokens</li><li>A student network with far fewer weights than the teacher, so it can only approximate it</li><li>Teacher probabilities computed (or stored, often only the top few per position) for trillions of tokens</li><li>Teacher-written datasets of hundreds of thousands to millions of examples, heavily filtered</li></ul>}
         />
         <Callout kind="established">
-          The idea predates LLMs: Buciluă, Caruana and Niculescu-Mizil compressed large ensembles into small models in 2006, and Hinton, Vinyals and Dean introduced the temperature form in 2015. DistilBERT (2019) applied it to Transformers.
+          The idea predates LLMs: Buciluă, Caruana and Niculescu-Mizil compressed large ensembles into small models in 2006, and Hinton, Vinyals and Dean introduced the temperature form in 2015. DistilBERT (2019) applied it to Transformers. Google’s Gemma 2 report (2024) says the 2B and 9B models were trained with distillation from a larger model instead of plain next-token prediction. Meta’s Llama 3.2 1B and 3B models (2024) used the logits of Llama 3.1 8B and 70B as token-level targets during pretraining.
           <br /><br />
-          Among current LLMs, several published reports describe it directly. Google’s Gemma 2 report (2024) says the 2B and 9B models were trained with distillation from a larger model instead of plain next-token prediction. Meta’s Llama 3.2 1B and 3B models (2024) used the logits of Llama 3.1 8B and 70B as token-level targets during pretraining.
-        </Callout>
-        <Callout kind="established" label="Established: distilling reasoning">
-          Some models write out long step-by-step working before they answer. These <b>reasoning models</b> get their own lesson in <a href="#/lesson/reasoning-models">Reasoning models</a>. DeepSeek-R1 (2025) is one, with 671 billion parameters in total (a mixture-of-experts model that uses about 37 billion per token).
-          <br /><br />
-          Its authors fine-tuned six much smaller open models (Qwen2.5 models from 1.5B to 32B, and Llama models of 8B and 70B) on about 800,000 examples written by R1, with SFT only and no reinforcement learning. They also ran large-scale reinforcement learning directly on a 32B base model for comparison. On the AIME 2024 maths benchmark the distilled 32B model scored 72.6% (pass@1) against 47.0% for the one trained by RL. The paper’s conclusion: for small models, distilling a stronger model beat running the expensive RL recipe on them directly, while pushing beyond the teacher still needs a stronger base model and RL.
+          It also works for <b>reasoning models</b>, which write out long step-by-step working before they answer (<a href="#/lesson/reasoning-models">Reasoning models</a>). DeepSeek-R1 (2025) has 671 billion parameters in total (a mixture-of-experts model that uses about 37 billion per token). Its authors fine-tuned six much smaller open models (Qwen2.5 models from 1.5B to 32B, and Llama models of 8B and 70B) on about 800,000 examples written by R1, with SFT only. On the AIME 2024 maths benchmark the distilled 32B model scored 72.6% (pass@1) against 47.0% for a 32B base model trained by large-scale RL directly. Their conclusion: for small models, distilling a stronger model beat the expensive RL recipe, while pushing beyond the teacher still needs a stronger base model and RL.
         </Callout>
         <Callout kind="research">
           Several things are still being worked out. <b>On-policy distillation</b> (student writes, teacher scores every token) is increasingly used for small models; the Qwen3 technical report (2025), for example, describes distilling from its larger models first off-policy and then on-policy, and reports this worked better than RL for its small models at a fraction of the compute.
           <br /><br />
           The risks of synthetic data are also active research. One 2025 study (Cloud and colleagues, “subliminal learning”) found that a student could pick up a teacher’s trait, such as a preference for owls, from teacher-written data that were only lists of numbers with no mention of the trait, when teacher and student shared the same base model. How much hidden behaviour travels through synthetic data in general is not known.
         </Callout>
-        <Callout kind="dev">
-          Before you distil from a commercial model, read its terms of service. Several major providers forbid using their outputs to train models that compete with theirs. Open-weight teachers usually come with their own licence, which may also say something about derived models.
-        </Callout>
+        <p>One practical warning: before you distil from a commercial model, read its terms of service. Several major providers forbid using their outputs to train models that compete with theirs. Open-weight teachers come with their own licence, which may also say something about derived models.</p>
         <p>By the end of the month the support team has a 3-billion-parameter model on their laptops. It answers the common tickets almost as well as the big one, and it gets the rare ones wrong in exactly the places the big one was unsure. Riya writes that down. The student is only ever as good as its teacher.</p>
       </RealLLM>
     </Lesson>

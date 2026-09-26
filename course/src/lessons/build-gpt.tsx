@@ -25,8 +25,7 @@ export default function BuildGptLesson() {
           <li>Softmax, sampling, the generation loop: <a href="#/lesson/softmax">built</a>, <a href="#/lesson/next-token">built</a>.</li>
         </ul>
         <p>There are <b>no new ideas</b> in this lesson. You bolt the parts together, and the result is a GPT. It has the same wiring as GPT-2, in about 100 lines of model code.</p>
-        <p>So the question for tonight is small and exact: <em>what happens to one token, from the moment it is typed to the moment the next one is chosen?</em></p>
-        <Callout kind="idea">The goal: follow one token from text to prediction and say, at every step, what shape the data has and which lesson built that step.</Callout>
+        <p>So the question for tonight is small and exact: <em>what happens to one token, from the moment it is typed to the moment the next one is chosen?</em> At every step you should be able to say what shape the data has and which lesson built that step.</p>
       </Why>
 
       <Problem title="What is still missing?">
@@ -65,7 +64,15 @@ export default function BuildGptLesson() {
         />
         <h3>A GPT is these 6 numbers</h3>
         <p>Riya scrolls to the top of the file and laughs. This is the entire configuration of the model. In its wiring, GPT-2 is the same code with bigger numbers.</p>
-        <Code source="phase3-transformers/tiny_gpt.py" title="Config">{`
+        <Code
+          source="phase3-transformers/tiny_gpt.py"
+          title="Config"
+          show={`Config.vocab_size = 65     # the 65 characters of the Shakespeare text
+V, C, D, N = Config.vocab_size, Config.context_len, Config.n_embd, Config.n_layer
+params = V * D + C * D + N * (12 * D * D + 13 * D) + 2 * D   # the count worked out below
+print(f"params {params:,}  ({params / 1e6:.2f}M)")
+print("numbers per head:", D // Config.n_head)`}
+        >{`
 class Config:
     context_len = 64     # max tokens the model can see (GPT-2: 1024)
     n_embd = 128         # embedding dimension           (GPT-2: 768)
@@ -92,11 +99,7 @@ class Config:
             </tbody>
           </table>
         </div>
-        <Callout kind="analogy">
-          Assembling a GPT is like wiring up a pipeline of services you have already written and unit-tested. The only new work is checking that each output type matches the next input type.
-          <br /><br />
-          Where the analogy stops: these “services” have no hand-written logic. Every one of them is a bag of numbers, and all of them will be tuned <em>jointly</em> by one loss at the very end of the pipeline.
-        </Callout>
+        <p>Assembling a GPT is like wiring up services you have already written and tested: the new work is checking that each output shape matches the next input. Unlike services, these have no hand-written logic. Each is a bag of numbers, and all of them are tuned <em>jointly</em> by one loss at the very end.</p>
       </MentalModel>
 
       <TryIt title="Trace one token, then count the parameters">
@@ -222,7 +225,8 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
         <h3>Why the crop?</h3>
         <p><code>idx[:, -self.cfg.context_len:]</code> keeps only the last 64 tokens. It has to. <code>pos_emb</code> has exactly 64 rows, so slot 64 does not exist, and the causal mask was built for 64×64.</p>
         <p>Anything older than the <G t="context-window">context window</G> is gone. The model does not “forget” it gradually. It never sees it at all.</p>
-        <Callout kind="dev">Notice the waste. To produce token 50, the loop re-runs the model on tokens 0…49, although their vectors have not changed: the causal mask guarantees it. Caching that work is the <G t="kv-cache">KV cache</G>, two lessons from now.<br /><br />One catch, and it comes from the crop. That guarantee holds only while the whole sequence fits in the window (T ≤ 64). Once the window starts to slide, every kept token moves to a new slot, gets a different position vector, and so every old vector really does change.</Callout>
+        <p>Notice the waste. To produce token 50, the loop re-runs the model on tokens 0…49, although their vectors have not changed: the causal mask guarantees it. Caching that work is the <G t="kv-cache">KV cache</G>, two lessons from now.</p>
+        <p>One catch, and it comes from the crop. That guarantee holds only while the whole sequence fits in the window (T ≤ 64). Once the window starts to slide, every kept token moves to a new slot, gets a different position vector, and so every old vector really does change.</p>
       </CodeIt>
 
       <BreakIt>
@@ -287,25 +291,30 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
           <p>You call the repo’s model (vocab_size 65, n_embd 128) on a single sequence of 5 characters: <code>logits, _ = model(idx)</code> with <code>idx.shape == (1, 5)</code>. What is <code>logits.shape</code>?</p>
         </Exercise>
 
-        <Exercise
-          id="build-gpt-implement"
-          type="implement"
-          title="Run it, then turn the knobs"
-          hints={[
-            'From phase3-transformers run: python tiny_gpt.py --quick. The first line printed is “vocab 65, params 0.81M, device …”.',
-            'One block is 12D² + 13D = 198,272 parameters at D = 128. Two more blocks add 396,544.',
-            'For n_embd = 256 recompute everything: embeddings (65 + 64) × 256, four blocks of 12 × 256² + 13 × 256, final LayerNorm 512.',
-          ]}
-          solution={<><p><code>n_layer = 6</code>: 809,856 + 2 × 198,272 = 1,206,400, printed as <b>1.21M</b>. Depth adds parameters linearly.</p><p><code>n_embd = 256</code> (with 4 layers): 33,024 + 4 × 789,760 + 512 = 3,192,576, printed as <b>3.19M</b>. Doubling the width roughly <em>quadruples</em> the model, because of the D² terms. If you try <code>n_embd = 100</code> with 4 heads it still runs (100 / 4 = 25); <code>n_embd = 130</code> crashes in the head split, because 130 is not divisible by 4.</p><p>The quick run ends with Shakespeare-flavoured gibberish. That is expected after 300 steps; what training does to those 0.81M numbers is the subject of the next lesson.</p></>}
-        >
-          <p>Run <code>python tiny_gpt.py --quick</code> and find the line that reports the parameter count. Then, in <code>Config</code>, set <code>n_layer = 6</code>. Before running: what will the count be? Put it back, set <code>n_embd = 256</code>, and predict again.</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="build-gpt-implement"
+            type="implement"
+            title="Run it, then turn the knobs"
+            hints={[
+              'From phase3-transformers run: python tiny_gpt.py --quick. The first line printed is “vocab 65, params 0.81M, device …”.',
+              'One block is 12D² + 13D = 198,272 parameters at D = 128. Two more blocks add 396,544.',
+              'For n_embd = 256 recompute everything: embeddings (65 + 64) × 256, four blocks of 12 × 256² + 13 × 256, final LayerNorm 512.',
+            ]}
+            solution={<><p><code>n_layer = 6</code>: 809,856 + 2 × 198,272 = 1,206,400, printed as <b>1.21M</b>. Depth adds parameters linearly.</p><p><code>n_embd = 256</code> (with 4 layers): 33,024 + 4 × 789,760 + 512 = 3,192,576, printed as <b>3.19M</b>. Doubling the width roughly <em>quadruples</em> the model, because of the D² terms. If you try <code>n_embd = 100</code> with 4 heads it still runs (100 / 4 = 25); <code>n_embd = 130</code> crashes in the head split, because 130 is not divisible by 4.</p><p>The quick run ends with Shakespeare-flavoured gibberish. That is expected after 300 steps; what training does to those 0.81M numbers is the subject of the next lesson.</p></>}
+          >
+            <p>Run <code>python tiny_gpt.py --quick</code> and find the line that reports the parameter count. Then, in <code>Config</code>, set <code>n_layer = 6</code>. Before running: what will the count be? Put it back, set <code>n_embd = 256</code>, and predict again.</p>
+          </Exercise>
 
-        <ExplainBack
-          id="build-gpt-explain"
-          prompt="Someone says: “PyTorch is where the real magic happens; the NumPy code was just a toy.” Explain what PyTorch actually adds to what you wrote by hand, and what it does not."
-          modelAnswer={<p>PyTorch automates two chores. While the forward pass runs, it records each operation and keeps the intermediate values, which I did by hand with a cache. When I call loss.backward(), it walks that recording in reverse and applies the same chain-rule steps I wrote by hand in the backprop lesson, giving a gradient for every parameter. It also runs the matrix maths on a GPU. It adds no new mathematics: the embedding lookup, attention, MLP, LayerNorm, softmax and cross-entropy in tiny_gpt.py compute exactly what the NumPy versions compute. The “intelligence” is not in the framework. It is in the numbers that training puts into the matrices.</p>}
-        />
+          <ExplainBack
+            id="build-gpt-explain"
+            prompt="Someone says: “PyTorch is where the real magic happens; the NumPy code was just a toy.” Explain what PyTorch actually adds to what you wrote by hand, and what it does not."
+            modelAnswer={<p>PyTorch automates two chores. While the forward pass runs, it records each operation and keeps the intermediate values, which I did by hand with a cache. When I call loss.backward(), it walks that recording in reverse and applies the same chain-rule steps I wrote by hand in the backprop lesson, giving a gradient for every parameter. It also runs the matrix maths on a GPU. It adds no new mathematics: the embedding lookup, attention, MLP, LayerNorm, softmax and cross-entropy in tiny_gpt.py compute exactly what the NumPy versions compute. The “intelligence” is not in the framework. It is in the numbers that training puts into the matrices.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -328,27 +337,13 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
             answer: 3,
             explain: 'Per block the MLP has 8D² against attention’s 4D². Over 12 blocks: about 57M (MLP), 28M (attention), 39M (token embeddings).',
           },
-          {
-            q: 'What does weight tying mean?',
-            options: ['All N blocks share one set of weights, so the model stores a single block and applies it N times', 'The output head reuses the token-embedding table (transposed), so a logit is the dot product of the output vector with a token’s embedding', 'Wq and Wk are forced to be equal', 'Weights are frozen during training'],
-            answer: 1,
-            explain: 'One (V, D) table does both jobs: id → vector at the bottom, vector → scores at the top.',
-          },
-          {
-            q: 'You double n_head from 4 to 8 and change nothing else. What happens to the parameter count?',
-            options: ['It doubles', 'It grows by 4D² per block, because every new head needs its own Wq, Wk, Wv and Wo', 'Nothing: heads split the D numbers, so each head just becomes thinner', 'It halves'],
-            answer: 2,
-            explain: 'Wq, Wk, Wv, Wo stay D×D. Only the per-head width D / n_head changes, from 32 to 16.',
-          },
         ]}
       />
 
       <Remember
         items={[
-          <>GPT = tokenizer → <b>token + position embeddings</b> → <b>N Transformer blocks</b> → final LayerNorm → <b>linear head</b> → logits → softmax → sample → append → repeat.</>,
-          <>Shapes tell the story: <b>(T) → (T, D) → … → (T, D) → (T, V)</b>. Generation uses only the last row of the logits.</>,
+          <>GPT = tokenizer → <b>token + position embeddings</b> → <b>N Transformer blocks</b> → final LayerNorm → <b>linear head</b> → logits → softmax → sample → append → repeat. Shapes: <b>(T) → (T, D) → … → (T, D) → (T, V)</b>, and generation uses only the last row.</>,
           <>A GPT is a handful of config numbers. GPT-2 is the same code with bigger ones. Parameters ≈ <b>12 · N · D²</b> plus embeddings; most live in the MLPs.</>,
-          <><b>Weight tying</b>: the head reuses the embedding table, so a logit is “output vector · token embedding”.</>,
           <>The model can only see <b>context_len</b> tokens. Older tokens are cropped away and have no influence.</>,
           <>PyTorch automates two things you did by hand: recording the forward pass and replaying the backward rules. An untrained GPT is a correct pipeline filled with the wrong numbers.</>,
         ]}
@@ -380,7 +375,7 @@ def generate(self, idx, max_new_tokens, temperature=1.0):
         <p>Below is GPT-2 small itself, with the weights OpenAI trained, running in your browser. Every stage is a box you built in this part, and each one names the lesson that built it. It also has <a href="#/gpt2">a page of its own</a>, with more room.</p>
         <Gpt2Explainer />
         <p>Same wiring as Riya’s file. The difference is the numbers inside, and those come only from training.</p>
-        <Callout kind="note" label="One difference: where the weights start">The wiring matches; the starting numbers do not. <code>tiny_gpt.py</code> keeps PyTorch’s defaults, which fill the embedding table with numbers of size about 1. GPT-2 starts every weight small (standard deviation 0.02) and shrinks the layers that write into the residual stream by a further 1/√(2N) for N blocks. You will see in the next lesson why that choice matters on the very first step.</Callout>
+        <p>One difference: the wiring matches, but the starting numbers do not. <code>tiny_gpt.py</code> keeps PyTorch’s defaults, which fill the embedding table with numbers of size about 1. GPT-2 starts every weight small (standard deviation 0.02) and shrinks the layers that write into the residual stream by a further 1/√(2N) for N blocks. You will see in the next lesson why that choice matters on the very first step.</p>
         <Callout kind="note">The last column differs in the details of almost every box, but not in the wiring diagram. Each of those changes (RoPE, RMSNorm, SwiGLU, grouped-query attention, mixture of experts) is explained in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>. For closed models such as GPT-4, Claude and Gemini, architecture details are not public.</Callout>
         <p>Riya runs the file one last time before leaving. It prints <span className="mono">params 0.81M</span> and a line of gibberish. Correct pipeline, wrong numbers. Tomorrow night: training.</p>
       </RealLLM>

@@ -120,23 +120,83 @@ export default function AttentionLesson() {
 
       <CodeIt>
         <p>We will build it one line at a time. <code>x</code> holds one row per token, shape <code>(T, D)</code>.</p>
-        <Code title="Step 1: three views of every token">{`
+        <Code
+          title="Step 1: three views of every token"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)
+tokens = ["the", "river", "bank"]
+T, D = 3, 4
+x = rng.normal(size=(T, D))                                         # one row per token
+Wq, Wk, Wv = (rng.normal(size=(D, D)) for _ in range(3))           # learned in a real model`}
+          show={`print("x:", x.shape, " Q:", Q.shape, " K:", K.shape, " V:", V.shape)
+print("the query of 'bank':", Q[2].round(2))`}
+        >{`
 Q = x @ Wq      # (T, D)  what each token is looking for
 K = x @ Wk      # (T, D)  what each token can be matched on
 V = x @ Wv      # (T, D)  what each token passes along
 `}</Code>
         <p><code>Wq</code>, <code>Wk</code>, <code>Wv</code> are <G t="parameters">parameters</G>: they start random and are learned by <G t="gradient-descent">gradient descent</G>, like every other weight.</p>
-        <Code title="Step 2: how well does every query match every key?">{`
+        <Code
+          title="Step 2: how well does every query match every key?"
+          setup={`import numpy as np
+tokens = ["the", "river", "bank"]
+D = 4
+# the numbers from the worked example: only the query of "bank" is filled in
+Q = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [2, 2, 0, 0]], dtype=float)
+K = np.array([[0, 0, 0, 0], [2, 0, 0, 0], [1, 1, 0, 0]], dtype=float)`}
+          show={`print("scores:", scores.shape)
+print("row of 'bank' (the, river, bank):", scores[2])`}
+        >{`
 scores = Q @ K.T / np.sqrt(D)    # (T, T)  cell (i, j): how much token i cares about token j
 `}</Code>
-        <Code title="Step 3: scores become mixing weights">{`
+        <Code
+          title="Step 3: scores become mixing weights"
+          setup={`import numpy as np
+def softmax(z, axis=-1):
+    z = z - z.max(axis=axis, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=axis, keepdims=True)
+
+# the scaled scores from step 2 (row 2 is "bank" looking at the, river, bank)
+scores = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 2.0, 2.0]])`}
+          show={`print("weights of 'bank':", weights[2].round(2))
+print("every row sums to:", weights.sum(axis=-1))`}
+        >{`
 weights = softmax(scores)        # (T, T)  every row sums to 1
 `}</Code>
-        <Code title="Step 4: blend the values">{`
+        <Code
+          title="Step 4: blend the values"
+          setup={`import numpy as np
+# the weights from step 3; row 2 is "bank"
+e2 = np.exp(2.0)
+weights = np.array([[1/3, 1/3, 1/3], [1/3, 1/3, 1/3], [1 / (1 + 2 * e2), e2 / (1 + 2 * e2), e2 / (1 + 2 * e2)]])
+# values as (watery, financial): the = [0, 0], river = [1, 0], bank = [0.5, 0.5]
+V = np.array([[0.0, 0.0], [1.0, 0.0], [0.5, 0.5]])`}
+          show={`print("'bank' before: [0.5, 0.5]   after:", out[2].round(2))`}
+        >{`
 out = weights @ V                # (T, D)  each token = weighted blend of values
 `}</Code>
         <p>Put together, this is the function from the repository, unchanged:</p>
-        <Code source="phase3-transformers/attention_numpy.py" title="single-head self-attention">{`
+        <Code
+          source="phase3-transformers/attention_numpy.py"
+          title="single-head self-attention"
+          setup={`import numpy as np
+def softmax(z, axis=-1):
+    z = z - z.max(axis=axis, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=axis, keepdims=True)
+
+rng = np.random.default_rng(0)
+x = rng.normal(size=(3, 4))                    # "the", "river", "bank"
+Wq, Wk, Wv = (rng.normal(size=(4, 4)) / 2 for _ in range(3))`}
+          show={`out, weights = attention(x, Wq, Wk, Wv)
+print("weights (rows = who looks):")
+print(weights.round(2))
+out, weights = attention(x, Wq, Wk, Wv, causal=True)
+print("with causal=True:")
+print(weights.round(2))
+print("out:", out.shape)`}
+        >{`
 def attention(x, Wq, Wk, Wv, causal=False):
     T, D = x.shape
     Q = x @ Wq
@@ -152,7 +212,7 @@ def attention(x, Wq, Wk, Wv, causal=False):
     out = weights @ V
     return out, weights
 `}</Code>
-        <Callout kind="dev">Notice what is <em>not</em> here: no loop over tokens. All T² comparisons happen in one matrix multiply. That is why Transformers train fast on GPUs where RNNs could not.</Callout>
+        <p>Notice what is <em>not</em> here: no loop over tokens. All T² comparisons happen in one matrix multiply. That is why Transformers train fast on GPUs where RNNs could not.</p>
         <RepoRunner path="phase3-transformers/attention_numpy.py" title="Run attention_numpy.py in your browser">
           <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
         </RepoRunner>
@@ -204,7 +264,12 @@ def attention(x, Wq, Wk, Wv, causal=False):
           solution={<><p><code>axis=0</code> normalises each <em>column</em>. We need each <em>row</em> (each looking token) to sum to 1, so it must be <code>axis=-1</code> (or <code>axis=1</code>).</p><p>This bug is nasty because nothing crashes: shapes are all still (T, T). It also quietly leaks information from later tokens even with a causal mask. A quick <code>assert np.allclose(weights.sum(-1), 1)</code> catches it.</p></>}
         >
           <p>A colleague wrote this and the model trains badly. What is wrong?</p>
-          <Code>{`
+          <Code
+            setup={`import numpy as np
+scores = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 2.0, 2.0]])
+V = np.array([[0.0, 0.0], [1.0, 0.0], [0.5, 0.5]])`}
+            show={`print("each row sums to:", weights.sum(axis=-1).round(2))`}
+          >{`
 e = np.exp(scores - scores.max())
 weights = e / e.sum(axis=0, keepdims=True)
 out = weights @ V

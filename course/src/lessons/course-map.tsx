@@ -64,9 +64,7 @@ export default function CourseMapLesson() {
         <p>The course opens that machine one part at a time, until nothing in it is a black box. Then it builds the things people put <em>around</em> the machine: retrieval, fine-tuning and agents.</p>
         <p>That is {LESSONS.length} lessons in {PARTS.length} parts, roughly {totalHours} hours, including a hands-on capstone.</p>
         <p>This lesson is Kabir’s whiteboard, made clickable. It takes a few minutes, and it will save you from the most common way people get lost in this subject.</p>
-        <Callout kind="idea">
-          Every lesson answers one question that the previous lesson left open. If you always know <b>which question you are currently answering</b>, you cannot get lost.
-        </Callout>
+        <p>Every lesson answers one question that the previous lesson left open. If you always know <b>which question you are currently answering</b>, you cannot get lost.</p>
       </Why>
 
       <Problem title="How people get lost learning LLMs">

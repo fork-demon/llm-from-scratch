@@ -19,9 +19,7 @@ export default function AgentsLesson() {
         <p>We will answer with a smaller question from the repo, because it needs two different tools:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 21 }}>“What is 23 × 7 plus the number of engineers on our oncall rotation?”</div>
         <p>The rotation size is in a company document, not in the weights. And a next-token predictor has no exact calculator inside. It produces digits the way it produces any other tokens, by predicting what is likely, so on larger numbers it can be confidently wrong.</p>
-        <Callout kind="idea">
-          Part 9’s question, one last time: <b>what exactly changes?</b> RAG changed the prompt. Fine-tuning changed the weights. An agent changes <b>neither</b>. What changes is the ordinary code <em>around</em> the model: you put the model inside a loop.
-        </Callout>
+        <p>Part 9’s question, one last time: <b>what exactly changes?</b> RAG changed the prompt. Fine-tuning changed the weights. An agent changes <b>neither</b>. What changes is the ordinary code <em>around</em> the model: you put the model inside a loop.</p>
       </Why>
 
       <Problem>
@@ -87,7 +85,7 @@ export default function AgentsLesson() {
         </div>
         <p>A step that is right 19 times out of 20 sounds excellent. Ten of them in a row fail 40% of the time.</p>
         <p>This one piece of arithmetic explains most of the gap between agent demos (short, chosen) and agent products (long, arbitrary).</p>
-        <Callout kind="model">Independence is a simplification. Real agents sometimes notice and repair a mistake (the error message comes back as a RESULT), which helps. They also build on a wrong intermediate result as if it were true, which hurts. The direction of the effect is solid: longer chains are less reliable.</Callout>
+        <p>Independence is a simplification. Real agents sometimes notice and repair a mistake (the error message comes back as a RESULT), which helps. They also build on a wrong intermediate result as if it were true, which hurts. The direction of the effect is solid: longer chains are less reliable.</p>
       </Numbers>
 
       <TheMath>
@@ -106,7 +104,25 @@ export default function AgentsLesson() {
 
       <CodeIt>
         <p>Riya opens <code>mini_agent.py</code> expecting something clever. It is under 200 lines of Python she could have written in her first job. A tool is a plain function plus a one-line description. The registry is a dictionary:</p>
-        <Code source="phase5-agents/mini_agent.py" title="1. the tool registry">{`
+        <Code
+          source="phase5-agents/mini_agent.py"
+          title="1. the tool registry"
+          setup={`import re, json
+def calculator(expression: str) -> str:       # from mini_agent.py
+    if not re.fullmatch(r"[0-9+\\-*/(). ]+", expression):
+        return "ERROR: only arithmetic allowed"
+    return str(eval(expression, {"__builtins__": {}}))
+DOCS = {"oncall": "The oncall rotation has 4 engineers: primary, secondary, two shadows.",
+        "expense": "Engineers may expense 500 dollars per year for learning materials."}
+def search_docs(query: str) -> str:            # toy retrieval: a key word in the query
+    for key, text in DOCS.items():
+        if key in query.lower():
+            return text
+    return "No documents found."`}
+          show={`print(TOOLS["search_docs"]["fn"](query="oncall rotation"))
+print(TOOLS["calculator"]["fn"](expression="23*7 + 4"))
+print(TOOLS["calculator"]["fn"](expression="__import__('os')"))`}
+        >{`
 TOOLS = {
     "calculator": {"fn": calculator,
                    "desc": "evaluates arithmetic. args: {\\"expression\\": str}"},
@@ -115,7 +131,15 @@ TOOLS = {
 }
 `}</Code>
         <p>The system prompt is <em>generated from</em> the registry. This is the only way the model ever learns that tools exist: it reads about them.</p>
-        <Code source="phase5-agents/mini_agent.py" title="2. tell the model the convention">{`
+        <Code
+          source="phase5-agents/mini_agent.py"
+          title="2. tell the model the convention"
+          setup={`TOOLS = {   # the registry from step 1 (only the descriptions matter here)
+    "calculator": {"desc": 'evaluates arithmetic. args: {"expression": str}'},
+    "search_docs": {"desc": 'finds internal documents. args: {"query": str}'},
+}`}
+          show={`print(SYSTEM_PROMPT)`}
+        >{`
 SYSTEM_PROMPT = (
     "Answer the user's question. You may use tools.\\n"
     "To use a tool reply EXACTLY:\\n"
@@ -128,7 +152,14 @@ SYSTEM_PROMPT = (
         <p>The <code>Thought:</code> line comes from a prompting pattern called <b>ReAct</b>, short for “reasoning and acting” (Yao et al., 2022). The model writes a thought, then an action, then reads the result, then thinks again.</p>
         <p>It works for a reason you already know from <a href="#/lesson/reasoning-models">Reasoning models</a>. Every token is conditioned on the ones before it, so a thought written on the page steers the tool call that comes next.</p>
         <p>The other half of the convention is the parser. Two regular expressions:</p>
-        <Code source="phase5-agents/mini_agent.py" title="3. parse the model's text">{`
+        <Code
+          source="phase5-agents/mini_agent.py"
+          title="3. parse the model's text"
+          setup={`import re, json`}
+          show={`print(parse_action('Thought: I need the rotation size.\\nTOOL: search_docs\\nARGS: {"query": "oncall rotation"}'))
+print(parse_action("Thought: I have everything I need.\\nANSWER: 165"))
+print(parse_action("Sure! The answer is probably 165."))   # no format at all`}
+        >{`
 def parse_action(text: str):
     ans = re.search(r"ANSWER:\\s*(.+)", text, re.S)
     if ans:
@@ -139,7 +170,62 @@ def parse_action(text: str):
     return ("answer", text.strip())          # malformed -> treat as final
 `}</Code>
         <p>Now the loop. Read it as observe → decide → act → observe:</p>
-        <Code source="phase5-agents/mini_agent.py" title="4. the ReAct loop (memory management and printing removed)">{`
+        <Code
+          source="phase5-agents/mini_agent.py"
+          title="4. the ReAct loop (memory management and printing removed)"
+          setup={`import re, json
+def calculator(expression: str) -> str:       # from mini_agent.py
+    if not re.fullmatch(r"[0-9+\\-*/(). ]+", expression):
+        return "ERROR: only arithmetic allowed"
+    return str(eval(expression, {"__builtins__": {}}))
+DOCS = {"oncall": "The oncall rotation has 4 engineers: primary, secondary, two shadows.",
+        "expense": "Engineers may expense 500 dollars per year for learning materials."}
+def search_docs(query: str) -> str:            # toy retrieval: a key word in the query
+    for key, text in DOCS.items():
+        if key in query.lower():
+            return text
+    return "No documents found."
+TOOLS = {
+    "calculator": {"fn": calculator,
+                   "desc": "evaluates arithmetic. args: {\\"expression\\": str}"},
+    "search_docs": {"fn": search_docs,
+                    "desc": "finds internal documents. args: {\\"query\\": str}"},
+}
+SYSTEM_PROMPT = (
+    "Answer the user's question. You may use tools.\\n"
+    "To use a tool reply EXACTLY:\\n"
+    "Thought: <why>\\nTOOL: <name>\\nARGS: <json>\\n"
+    "When you have the answer reply:\\nThought: <why>\\nANSWER: <final answer>\\n\\n"
+    "Available tools:\\n"
+    + "\\n".join(f"- {n}: {t['desc']}" for n, t in TOOLS.items())
+)
+def parse_action(text: str):
+    ans = re.search(r"ANSWER:\\s*(.+)", text, re.S)
+    if ans:
+        return ("answer", ans.group(1).strip())
+    tool = re.search(r"TOOL:\\s*(\\w+)\\s*ARGS:\\s*(\\{.*?\\})", text, re.S)
+    if tool:
+        return ("tool", (tool.group(1), json.loads(tool.group(2))))
+    return ("answer", text.strip())
+def scripted_model(context: str) -> str:      # the repo's stand-in "LLM": a few if statements
+    recent = context[-2000:]
+    question = re.search(r"USER QUESTION: (.+)", context).group(1)
+    if "oncall" in question and "RESULT:" not in recent:
+        return 'Thought: I need the oncall rotation size before computing.\\nTOOL: search_docs\\nARGS: {"query": "oncall rotation"}'
+    if "4 engineers" in recent and "TOOL: calculator" not in recent:
+        return 'Thought: The rotation has 4 engineers. Now compute 23*7 + 4.\\nTOOL: calculator\\nARGS: {"expression": "23*7 + 4"}'
+    m = re.findall(r"RESULT: (\\d+)", recent)
+    if m:
+        return f"Thought: I have everything I need.\\nANSWER: {m[-1]} -- that's 23*7 (161) plus the 4 oncall engineers."
+    return "Thought: I can answer directly.\\nANSWER: I don't know."`}
+          show={`def logged(context):                          # scripted_model, printing what it "says"
+    text = scripted_model(context)
+    print(f"model call ({len(context)} characters in):", text.splitlines()[-1])
+    return text
+q = "What is 23*7 plus the number of engineers on the oncall rotation?"
+print("FINAL:", run_agent(q, model=logged))
+print("with max_steps=2:", run_agent(q, max_steps=2))`}
+        >{`
 def run_agent(question, model=scripted_model, max_steps=6):
     scratchpad = []
     for step in range(1, max_steps + 1):
@@ -160,9 +246,21 @@ def run_agent(question, model=scripted_model, max_steps=6):
 
     return "(step budget exhausted -- see exercise 2)"   # stopping condition 2
 `}</Code>
-        <Callout kind="dev">That is the whole architecture. The model is an argument: <code>model=scripted_model</code>. Pass a function that calls a real LLM API instead and not one other line changes. An “agent framework” is this file with more edge cases handled.</Callout>
+        <p>That is the whole architecture. The model is an argument: <code>model=scripted_model</code>. Pass a function that calls a real LLM API instead and not one other line changes. An “agent framework” is this file with more edge cases handled.</p>
         <p>The full file adds one more thing at the top of the loop, which is all that “agent memory” means:</p>
-        <Code source="phase5-agents/mini_agent.py" title="5. memory = deciding what stays in the context">{`
+        <Code
+          source="phase5-agents/mini_agent.py"
+          title="5. memory = deciding what stays in the context"
+          setup={`import re
+def summarize_scratchpad(steps):       # from mini_agent.py: real systems ask the LLM to write this
+    tools_used = re.findall(r"TOOL: (\\w+)", "\\n".join(steps))
+    return f"[SUMMARY of {len(steps)} earlier steps: used tools {tools_used}]"
+scratchpad = [f"Thought: step {i}\\nTOOL: search_docs\\nARGS: {{}}\\nRESULT: a long document ..." for i in range(1, 5)]
+context_budget = 150   # characters, tiny so the summary kicks in`}
+          show={`print(len(transcript), "characters > budget, so the scratchpad became:")
+for entry in scratchpad:
+    print(" ", entry.splitlines()[0])`}
+        >{`
 transcript = "\\n".join(scratchpad)
 if len(transcript) > context_budget and len(scratchpad) > 2:
     scratchpad = [summarize_scratchpad(scratchpad[:-2])] + scratchpad[-2:]
@@ -175,15 +273,15 @@ if len(transcript) > context_budget and len(scratchpad) > 2:
           <table className="plain">
             <thead><tr><th>Feature</th><th>What is added to the loop</th></tr></thead>
             <tbody>
-              <tr><td><b>Structured tool calling</b> (“function calling” in LLM APIs)</td><td>The same convention, formalised. You send each tool’s name, description and a JSON schema of its arguments as data. The provider formats them into the prompt, the model has been fine-tuned on that format, and the API hands you back a parsed tool request instead of raw text. Some providers also restrict sampling so that only tokens that keep the JSON valid can be chosen. You still run the tool. You still send the result back.</td></tr>
+              <tr><td><b>Structured tool calling</b> (“function calling” in LLM APIs)</td><td>The same convention, formalised. You send each tool’s name, description and a JSON schema of its arguments as data; the model has been fine-tuned on that format, and the API hands you back a parsed tool request instead of raw text. You still run the tool and send the result back.</td></tr>
               <tr><td><b>RAG agents</b></td><td>Retrieval becomes one more entry in the registry. In the last lesson <em>your code</em> always searched before calling the model. Here the model’s text decides whether to search, what for, and whether to search again. <code>search_docs</code> above is a (toy) example.</td></tr>
               <tr><td><b>Planning</b></td><td>Ask the model to write a numbered plan first, and keep that plan in the context. There is no planning module. A plan is more text that later tokens are conditioned on.</td></tr>
-              <tr><td><b>Memory</b></td><td>There is no memory. The model is stateless between calls. “Memory” is only what your loop puts back into the context: the scratchpad (working memory), a summary of older steps, or text fetched from an external store (often a vector database of past interactions, which is RAG pointed at the agent’s own history).</td></tr>
+              <tr><td><b>Memory</b></td><td>The model is stateless between calls. “Memory” is only what your loop puts back into the context: the scratchpad, a summary of older steps, or text fetched from an external store (often RAG pointed at the agent’s own history).</td></tr>
               <tr><td><b>Multi-agent systems</b></td><td>Several of these loops, each with a different system prompt and tool set (“researcher”, “reviewer”), passing text to each other. It is still text in, text out.</td></tr>
             </tbody>
           </table>
         </div>
-        <Callout kind="warn">Be honest about multi-agent designs. Each extra loop multiplies model calls and cost, every hand-off between agents loses context (the receiver sees only the text it was sent), and errors now compound across agents as well as across steps. They can help when subtasks are truly independent or need separate context windows. Often a single loop with good tools is simpler, cheaper and more reliable. Start there.</Callout>
+        <p>Be honest about multi-agent designs. Each extra loop multiplies model calls and cost, every hand-off loses context (the receiver sees only the text it was sent), and errors compound across agents as well as across steps. They can help when subtasks are truly independent. Often a single loop with good tools is simpler, cheaper and more reliable. Start there.</p>
         <DeepDive title="What does a structured tool definition look like?">
           <p>The exact field names differ between providers, so treat this as the general shape and not any one vendor’s API. Compare it with the <code>desc</code> strings in the registry above: same information, machine-readable.</p>
           <Code lang="json" title="a tool described as data (illustrative)">{`
@@ -281,21 +379,26 @@ def run_agent(question, model):
 `}</Code>
         </Exercise>
 
-        <Exercise
-          id="agents-implement-tool"
-          type="implement"
-          title="Add a tool to the real agent"
-          hints={['A tool is three things: a function that returns a string, one entry in TOOLS with a desc, and (because the model here is scripted) a rule in scripted_model that asks for it.', 'Add import datetime at the top, then def today() -> str: return datetime.date.today().isoformat(). Register it as "today": {"fn": today, "desc": "returns today\'s date. args: {}"}. With empty args {}, fn(**args) calls today().', 'In scripted_model, above the generic RESULT: (\\d+) rule (which would otherwise grab the year): if "date" in question and "RESULT:" not in recent: return "Thought: I need the date.\\nTOOL: today\\nARGS: {}". Then add a rule that answers once a RESULT that looks like a date is present. Finally set q = "What is the date today?" in main().']}
-          solution={<p>Run <code>python phase5-agents/mini_agent.py</code> with <code>q</code> in <code>main()</code> set to your question and you will see the new tool in the printed system prompt without having edited the prompt: it is built from the registry. You did not touch <code>run_agent</code> or <code>parse_action</code> at all. That is the point: adding a capability to an agent means adding a function and a description. With a real model you would skip the scripted rule as well, since the model decides from the description alone, which is why tool descriptions deserve as much care as any prompt.</p>}
-        >
-          <p>Open <code>phase5-agents/mini_agent.py</code>. Add a tool <code>today</code> that returns the current date, and make the agent answer “What is the date today?”. Before you start: which of the four parts (registry, system prompt, parser, loop) will you need to edit?</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="agents-implement-tool"
+            type="implement"
+            title="Add a tool to the real agent"
+            hints={['A tool is three things: a function that returns a string, one entry in TOOLS with a desc, and (because the model here is scripted) a rule in scripted_model that asks for it.', 'Add import datetime at the top, then def today() -> str: return datetime.date.today().isoformat(). Register it as "today": {"fn": today, "desc": "returns today\'s date. args: {}"}. With empty args {}, fn(**args) calls today().', 'In scripted_model, above the generic RESULT: (\\d+) rule (which would otherwise grab the year): if "date" in question and "RESULT:" not in recent: return "Thought: I need the date.\\nTOOL: today\\nARGS: {}". Then add a rule that answers once a RESULT that looks like a date is present. Finally set q = "What is the date today?" in main().']}
+            solution={<p>Run <code>python phase5-agents/mini_agent.py</code> with <code>q</code> in <code>main()</code> set to your question and you will see the new tool in the printed system prompt without having edited the prompt: it is built from the registry. You did not touch <code>run_agent</code> or <code>parse_action</code> at all. That is the point: adding a capability to an agent means adding a function and a description. With a real model you would skip the scripted rule as well, since the model decides from the description alone, which is why tool descriptions deserve as much care as any prompt.</p>}
+          >
+            <p>Open <code>phase5-agents/mini_agent.py</code>. Add a tool <code>today</code> that returns the current date, and make the agent answer “What is the date today?”. Before you start: which of the four parts (registry, system prompt, parser, loop) will you need to edit?</p>
+          </Exercise>
 
-        <ExplainBack
-          id="agents-explain"
-          prompt="A friend says: “These AI agents are scary, the model can now run code and send emails on its own.” Explain what is actually happening when an LLM “uses a tool”, and where the real risk is."
-          modelAnswer={<p>The model cannot run anything. It only produces text. Developers tell it, in the prompt, a format for requesting a tool, and their own program watches the output for that format, runs the matching function, and pastes the result back into the model’s input before calling it again. So an agent is a loop written in ordinary code, with the model choosing the next step by writing text. The risk is real but it lives in that code: whatever tools the developer wires up can be triggered by whatever text ends up steering the model, including text hidden in a web page or email that the agent reads. Models are trained to prefer the developer’s instructions over text a tool returns, but that is a habit, not a wall, and a clever enough sentence can get past it. The protection is ordinary engineering: limited permissions, validation, step and spend limits, and a human approving anything irreversible.</p>}
-        />
+          <ExplainBack
+            id="agents-explain"
+            prompt="A friend says: “These AI agents are scary, the model can now run code and send emails on its own.” Explain what is actually happening when an LLM “uses a tool”, and where the real risk is."
+            modelAnswer={<p>The model cannot run anything. It only produces text. Developers tell it, in the prompt, a format for requesting a tool, and their own program watches the output for that format, runs the matching function, and pastes the result back into the model’s input before calling it again. So an agent is a loop written in ordinary code, with the model choosing the next step by writing text. The risk is real but it lives in that code: whatever tools the developer wires up can be triggered by whatever text ends up steering the model, including text hidden in a web page or email that the agent reads. Models are trained to prefer the developer’s instructions over text a tool returns, but that is a habit, not a wall, and a clever enough sentence can get past it. The protection is ordinary engineering: limited permissions, validation, step and spend limits, and a human approving anything irreversible.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -305,12 +408,6 @@ def run_agent(question, model):
             options: ['It executes the calculator inside one of its layers', 'It emits text in an agreed format; separate code parses that text and runs the function', 'It sends a network request to the tool', 'It switches to a special tool-use mode with different weights'],
             answer: 1,
             explain: 'The model’s only output is next-token probabilities. Everything that happens in the world is done by the surrounding program.',
-          },
-          {
-            q: 'How does the model know the result of a tool call?',
-            options: ['The tool writes into the model’s memory', 'Your code appends the result to the context, and the model is called again with that longer context', 'The weights are updated with the result', 'It does not need to: it predicted the result already'],
-            answer: 1,
-            explain: 'Same mechanism as RAG: information reaches the model by being in the prompt. The model is stateless between calls.',
           },
           {
             q: 'Why does every production agent have a step budget?',
@@ -324,12 +421,6 @@ def run_agent(question, model):
             answer: 1,
             explain: 'This is prompt injection. Role tokens and instruction-hierarchy training help, but they are learned behaviour. The dependable mitigations are in the surrounding system: least-privilege tools, sanitising, approval gates. None is complete.',
           },
-          {
-            q: 'What does an agent’s “memory” consist of?',
-            options: ['A persistent hidden state inside the Transformer', 'The KV cache, which survives between conversations', 'Whatever text the loop chooses to put back into the context: recent steps, summaries, or text fetched from an external store', 'Weights that are fine-tuned after every step'],
-            answer: 2,
-            explain: 'There is no memory in the model. Remembering is a context-management decision made by your code.',
-          },
         ]}
       />
 
@@ -337,8 +428,7 @@ def run_agent(question, model):
         items={[
           <><b>What changes: not the weights, not the model. The code around it.</b> An agent is a loop that you write.</>,
           <>An LLM only ever emits text. <b>“Using a tool”</b> = the model writes a request in an agreed format; <b>your code</b> parses it, runs the function, and appends the RESULT to the context.</>,
-          <>The loop: <b>observe → decide → act → observe</b>, until <code>ANSWER:</code> or the <b>step budget</b>. Structured tool calling, RAG agents, planning, memory and multi-agent systems are all small additions to this loop.</>,
-          <><b>There is no memory</b>, only what you put back into the context.</>,
+          <>The loop: <b>observe → decide → act → observe</b>, until <code>ANSWER:</code> or the <b>step budget</b>. Structured tool calling, RAG agents, planning, memory and multi-agent systems are all small additions to this loop. <b>There is no memory</b>, only what you put back into the context.</>,
           <>Agents fail by <b>compounding errors</b> (0.95¹⁰ ≈ 0.60), full contexts, hallucinated arguments, <b>prompt injection</b> and runaway loops. The guardrails are ordinary engineering: budgets, validation, least privilege, human approval.</>,
         ]}
       />
@@ -349,7 +439,7 @@ def run_agent(question, model):
           toy={<ul><li>A scripted stand-in model: a few <code>if</code> statements</li><li>Two tools, a regex parser, a plain-text format</li><li>Three iterations, a 3,500-character context budget</li><li>One pattern-matching sanitiser</li></ul>}
           real={<ul><li>A real LLM, fine-tuned to follow a tool-calling format</li><li>Dozens of tools described by JSON schemas; the API returns parsed tool requests</li><li>Tens to hundreds of iterations, with summarisation and external stores</li><li>Sandboxed execution, permission systems, logging of every step, human approval for risky actions</li></ul>}
         />
-        <Callout kind="established">Coding assistants, “deep research” tools and computer-use systems are this loop. What differs is the quality of the model in the “decide” step, the tools, and the amount of engineering around failure. The model is still the next-token predictor you built in Part 7.</Callout>
+        <p>Coding assistants, “deep research” tools and computer-use systems are this loop. What differs is the quality of the model in the “decide” step, the tools, and the amount of engineering around failure. The model is still the next-token predictor you built in Part 7.</p>
         <Callout kind="research">How to make long-running agents reliable, how to evaluate them, and how to defend against prompt injection are open problems. Models are increasingly trained with reinforcement learning on multi-step tool-use tasks (see <a href="#/lesson/reasoning-models">Reasoning models</a>), which improves the “decide” step, and does not change the architecture of the loop.</Callout>
 
         <h3>Part 9 in one table: what changes?</h3>

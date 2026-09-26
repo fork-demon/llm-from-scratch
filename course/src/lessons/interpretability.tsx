@@ -1,6 +1,6 @@
 import { TrainedGptExplorer } from '../interactive/TrainedGptExplorer'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
-import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
+import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal } from '../components/ui'
 import { Code } from '../components/Code'
 import { Exercise, ExplainBack } from '../components/exercise'
 import { ClaimSorter } from '../interactive/ClaimSorter'
@@ -23,43 +23,30 @@ export default function InterpretabilityLesson() {
       <Why>
         <p className="lede">Friday, 8 p.m. The office is almost empty. Riya has downloaded GPT-2 small, a real public model with three times as many layers as the GPT she built.</p>
         <p>She types “The cat sat on the” and it answers “floor”. Fine. But she wants more than the answer. She has printed the tensors: 768 numbers per token, after each of its 12 layers. Pages of them.</p>
-        <p>Kabir stops at her desk on his way out, sees the wall of decimals and sits down.</p>
-        <p>“I can see every number,” Riya says. “So why can’t I see what it’s thinking?”</p>
+        <p>Kabir stops on his way out, sees the wall of decimals and sits down. “I can see every number,” Riya says. “So why can’t I see what it’s thinking?”</p>
         <p>“Good question. Some of it we can read now. A lot of it we can’t. Let me show you which is which.”</p>
-        <Callout kind="idea">
-          Every number inside a model is visible. That is not the hard part. The hard part is <b>translation</b>: finding which patterns in those numbers stand for which ideas, and proving that the model actually uses them. That field is called <b>interpretability</b>.
-        </Callout>
+        <p>Every number inside a model is visible. The hard part is <b>translation</b>: finding which patterns in those numbers stand for which ideas, and proving that the model actually uses them. That field is called <b>interpretability</b>.</p>
       </Why>
 
       <Problem title="The problem: visible is not readable">
         <p>You met this in <a href="#/lesson/why-llms-know">Why LLMs know things</a>: there is no table of facts inside, only weights and <G t="activation">activations</G>. So the natural first plan is to look at the activations one neuron at a time and ask what each one means.</p>
-        <p>Researchers did this for years. Some neurons are clean. Many are not. One neuron in a small language model studied by Anthropic in 2023 fired for academic citations, English dialogue, HTTP requests and Korean text. There is no single meaning to write on its label.</p>
+        <p>Researchers did this for years. Some neurons are clean; many are not. One neuron in a small model studied by Anthropic in 2023 fired for academic citations, English dialogue, HTTP requests and Korean text. No single meaning fits its label.</p>
         <Term
           name="Polysemantic neuron"
           plain={<>A neuron that responds to several unrelated things. Its activation alone does not tell you which one is present.</>}
           example={<>The neuron above: citations, dialogue, web requests and Korean, all on one number.</>}
           formal={<>A unit whose activation is high for inputs from several semantically unrelated clusters. The opposite, a unit that responds to one concept, is called <em>monosemantic</em>.</>}
         />
-        <WhyExists
-          problem="We want to know what a model represents and how it computes an answer."
-          naive="Label each neuron by what makes it fire most, then read the network neuron by neuron."
-          fails="Many neurons are polysemantic: one number carries several unrelated ideas, and one idea is spread over many numbers."
-          idea="Stop treating neurons as the unit. Treat directions in activation space as the unit (features), find them with tools built for the job, and test them by intervening: change the activation and see if the behaviour changes."
-          tradeoff="The tools are approximate. They explain part of a model’s behaviour on some prompts, not all of it, and each explanation has to be checked."
-        />
-        <p>Dev, who has been listening from the door: “Why not ask the model? It explains its reasoning all the time.” Hold on to that. The end of this lesson shows why that explanation is not the same as a look inside.</p>
+        <p>Dev, listening from the door: “Why not ask the model? It explains its reasoning all the time.” Hold on to that. The end of this lesson shows why that is not a look inside.</p>
       </Problem>
 
       <MentalModel>
         <h3>1. The residual stream is a shared workspace</h3>
-        <p>Recall the <a href="#/lesson/transformer-block">Transformer block</a>: every block <em>adds</em> its output to the token’s vector, <code>x = x + attn(x)</code>, then <code>x = x + mlp(x)</code>. The running vector that everything adds into is the <G t="residual">residual stream</G>.</p>
-        <Callout kind="dev">
-          Think of the residual stream as a <b>shared bus</b> (or a shared whiteboard) that every layer reads from and writes to. No layer replaces it; each adds a message. Later layers can read what earlier ones wrote. This framing comes from Anthropic’s 2021 “Mathematical Framework for Transformer Circuits”, and it is exact about the arithmetic: the final vector really is the embedding plus the sum of every block’s output.
-        </Callout>
+        <p>In a <a href="#/lesson/transformer-block">Transformer block</a>, every block <em>adds</em> its output to the token’s vector: <code>x = x + attn(x)</code>, then <code>x = x + mlp(x)</code>. That running vector is the <G t="residual">residual stream</G>.</p>
+        <p>Think of it as a <b>shared bus</b>: no layer replaces it, each adds a message that later layers can read. The framing comes from Anthropic’s 2021 “Mathematical Framework for Transformer Circuits”, and the arithmetic is exact: the final vector is the embedding plus the sum of every block’s output.</p>
 
         <h3>2. The logit lens: read the workspace early</h3>
-        <p>If the stream is one shared vector, you can take it at <em>any</em> layer and push it through the model’s final norm and output matrix, as if the model stopped there. This trick (from a 2020 blog post) is called the <b>logit lens</b>.</p>
-        <p>Here is a real run on GPT-2 small (12 layers, 768 numbers per token) with our running example, “The cat sat on the”. For each layer: the token the lens would predict, its probability, and where the final answer “ floor” ranks.</p>
+        <p>Since the stream is one shared vector, you can take it at <em>any</em> layer and push it through the model’s final norm and output matrix, as if the model stopped there. This trick (from a 2020 blog post) is the <b>logit lens</b>. Here is a real run on GPT-2 small (12 layers, 768 numbers per token) with “The cat sat on the”:</p>
         <div className="table-scroll">
           <table className="plain mono" style={{ fontSize: 13.5 }}>
             <thead><tr><th>after layer</th><th>top token</th><th>its probability</th><th>rank of “ floor”</th></tr></thead>
@@ -68,19 +55,14 @@ export default function InterpretabilityLesson() {
             </tbody>
           </table>
         </div>
-        <p>Early layers produce a confident but generic guess (“the same”). Around layer 6 to 8, the right kind of answer rises: “ floor”, then “ ground”, then “ floor” again. In the last layer the model spreads its bets (floor 7.6%, bed 6.5%, couch 5.4%, ground 5.2%). You can watch the prediction form.</p>
-        <Callout kind="model">
-          The logit lens is a useful approximation, not a readout of intent. It assumes middle layers speak the same “language” as the last one. For GPT-2 that works reasonably well; for some other models the early readings are gibberish. A trained variant (the tuned lens, 2023) learns a small translator per layer and is more reliable.
-        </Callout>
-        <p>You can try the logit lens yourself on a small trained model. This is the course’s tiny GPT, trained on Shakespeare. Type a prompt and open the layer-by-layer table. Its head scores are also here: look for which heads behave like previous-token heads, and notice what this small model does <em>not</em> have.</p>
+        <p>Early layers give a confident, generic guess (“the same”). Around layers 6 to 8 the right kind of answer rises: “ floor”, then “ ground”, then “ floor” again. The last layer spreads its bets (floor 7.6%, bed 6.5%, couch 5.4%, ground 5.2%). You can watch the prediction form.</p>
+        <p>The logit lens is an approximation, not a readout of intent: it assumes middle layers speak the output’s “language”. True enough for GPT-2, gibberish for some other models. The tuned lens (2023) learns a small translator per layer and is more reliable.</p>
+        <p>Try it on the course’s tiny Shakespeare GPT: type a prompt and open the layer-by-layer table. Its head scores are here too: look for previous-token heads, and notice what this small model does <em>not</em> have.</p>
         <TrainedGptExplorer />
 
         <h3>3. Some attention heads have readable jobs</h3>
-        <p>Look at the attention pattern of individual heads and a few jump out. A <b>previous-token head</b> always looks one position back. An <b>induction head</b> does something cleverer: if the text contains “Paisa Pal … Paisa”, it looks at what followed the earlier “Paisa” and pushes the model to predict “Pal” again.</p>
-        <Callout kind="established">
-          Induction heads were described by Olsson et al. (Anthropic, 2022). They are built from two heads working together (a previous-token head feeding an induction head), they appear fairly suddenly early in training, and their appearance coincides with a jump in the model’s ability to use its context. The evidence is strongest in small attention-only models; in large models it is partly correlational.
-        </Callout>
-        <p>Heads like these are the clearest cases. Most heads in a large model do not have a one-line job description.</p>
+        <p>A few heads jump out. A <b>previous-token head</b> always looks one position back. An <b>induction head</b> is cleverer: if the text contains “Paisa Pal … Paisa”, it looks at what followed the earlier “Paisa” and pushes the model to predict “Pal” again.</p>
+        <p>Induction heads (Olsson et al., Anthropic, 2022) are a previous-token head feeding an induction head. They appear fairly suddenly early in training, together with a jump in the model’s use of context. The evidence is strongest in small attention-only models, partly correlational in large ones. Most heads in a large model have no one-line job description.</p>
 
         <h3>4. Features and superposition</h3>
         <p>If single neurons are not the unit of meaning, what is? The current best answer is <b>directions</b>.</p>
@@ -90,68 +72,56 @@ export default function InterpretabilityLesson() {
           example={<>A “this text is in French” direction, or a “Golden Gate Bridge” direction, in the middle of a model.</>}
           formal={<>A vector d such that the projection a · d of an activation a tracks the presence of one concept, and that the model’s later computation uses.</>}
         />
-        <p>There is a catch. A model seems to track far more features than it has dimensions. How do you fit many directions into few numbers?</p>
+        <p>The catch: a model seems to track far more features than it has dimensions. How do many directions fit into few numbers?</p>
         <Term
           name="Superposition"
           plain={<>Storing more features than there are dimensions, by giving them directions that are <em>almost</em> perpendicular. It works when features are rarely active at the same time, so their small overlaps rarely collide.</>}
           example={<>In the lab below: 5 features in 2 numbers, arranged as a pentagon.</>}
           formal={<>Elhage et al. (2022), “Toy Models of Superposition”: when features are sparse, a model with m dimensions learns to represent n &gt; m features, accepting some interference, and cleans the interference up with a ReLU and a negative bias.</>}
         />
-        <Callout kind="analogy">
-          Think of a crowded bus in Bengaluru. Forty seats, sixty regular passengers. It works because they are never all on board at once. Superposition is the model overbooking its dimensions the same way.
-          <br /><br />
-          Where the analogy stops: a passenger either has a seat or does not. A feature always has a direction, and when two overlapping features are active together, each one’s reading is a little wrong. That error is the price.
-        </Callout>
+        <p>Picture a Bengaluru bus with forty seats and sixty regulars: it works because they are never all on board at once. Where the picture stops: when two overlapping features <em>are</em> active together, each reading is a little wrong. That error is the price.</p>
         <Callout kind="established">
           Superposition in toy models is demonstrated and well understood; you will reproduce it in a minute. That large language models use superposition heavily is widely believed and fits much evidence (polysemantic neurons, the success of the dictionary methods below), but there is no complete proof for any large model.
         </Callout>
 
         <h3>5. Sparse autoencoders: un-mixing the features</h3>
-        <p>If features are overlapping directions, can we find them? A <b>sparse autoencoder</b> (SAE) is a second, small network trained on a model’s activations. It must rebuild each activation from a very large list of candidate directions, using only a few of them at a time. The directions it learns are called features.</p>
-        <Callout kind="established">
-          In “Towards Monosemanticity” (2023), Anthropic trained SAEs on a one-layer model with 512 MLP neurons, with dictionaries from 512 up to 131,072 features. Most features were far easier to interpret than the neurons: Arabic script, DNA sequences, base64, legal language. In “Scaling Monosemanticity” (2024) they trained SAEs with about 1, 4 and 34 million features on the middle of Claude 3 Sonnet. Features were found for cities, people, code bugs, sycophantic praise and deception, many of them responding to the same concept in several languages and in images.
-        </Callout>
-        <p>The famous demo: one feature responded to the Golden Gate Bridge (the words, descriptions, photos). Researchers <b>clamped it to a high value</b> during generation. The model, briefly released as “Golden Gate Claude” for a day, brought the bridge into almost every answer and even described itself as the bridge. Turning a feature up changed behaviour, which is evidence that the model really uses that direction.</p>
+        <p>Can we find those directions? A <b>sparse autoencoder</b> (SAE) is a second, small network trained on a model’s activations. It must rebuild each activation from a very large list of candidate directions, using only a few at a time. The directions it learns are called features.</p>
+        <p>In “Towards Monosemanticity” (2023), Anthropic trained SAEs on a one-layer model with 512 MLP neurons, with dictionaries from 512 up to 131,072 features. Most features were far easier to interpret than the neurons: Arabic script, DNA sequences, base64, legal language. “Scaling Monosemanticity” (2024) used about 1, 4 and 34 million features on the middle of Claude 3 Sonnet, and found features for cities, people, code bugs, sycophantic praise and deception, many working across languages and in images.</p>
+        <p>The famous demo: a Golden Gate Bridge feature was <b>clamped to a high value</b> during generation. The model, released for a day as “Golden Gate Claude”, brought the bridge into almost every answer and even described itself as the bridge. Turning a feature up changed behaviour: evidence that the model really uses that direction.</p>
         <Callout kind="research">
-          SAEs are powerful and imperfect. They do not reconstruct the activations exactly, and the part they miss can matter. The features you get depend on the dictionary size (a “bird” feature may split into several with a bigger dictionary). Some teams have reported that for practical tasks such as detecting harmful intent, a plain linear probe (next section) worked better than SAE features. Whether SAE features are the model’s “true” units or a convenient basis is debated.
+          SAEs are powerful and imperfect. They do not reconstruct activations exactly, and the missing part can matter. The features depend on dictionary size (a “bird” feature may split into several). Some teams found a plain linear probe (next section) beat SAE features for tasks such as detecting harmful intent. Whether SAE features are the model’s “true” units or a convenient basis is debated.
         </Callout>
 
         <h3>6. Testing by intervening: patching, probes, steering</h3>
-        <p>Correlation is not enough: a feature that lights up for bridges might not be <em>used</em>. Three families of tools test this.</p>
-        <div className="grid-3">
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>Activation patching</h4>
-            <p>Run a “clean” prompt and a “corrupted” one that changes the answer. Copy one activation from the clean run into the corrupted run. If the right answer comes back, that activation carries the information. A 2022 study used this to map a circuit of 26 attention heads in GPT-2 small that picks the right name in sentences like “When Mary and John went to the store, John gave a drink to …”.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>Probes</h4>
-            <p>Train a small classifier (often one linear layer) to predict a property from the activations. If it succeeds, the information is there in readable form. A GPT trained only on Othello moves turned out to hold the board state in its activations, readable by a probe. A probe shows information is <em>present</em>, not that the model uses it.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>Steering vectors</h4>
-            <p>Take the difference between the activations for two contrasting prompts (say, “Love” and “Hate”), and add it during generation. The output shifts in that direction. A 2024 study found that refusing harmful requests in several chat models is largely controlled by one direction: remove it and the model stops refusing.</p>
-          </div>
+        <p>A feature that lights up for bridges might not be <em>used</em>. Three families of tools test this.</p>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>Tool</th><th>How it works</th><th>Best-known result</th></tr></thead>
+            <tbody>
+              <tr><td>Activation patching</td><td>Run a “clean” prompt and a “corrupted” one that changes the answer. Copy one activation from the clean run into the corrupted run. If the right answer comes back, that activation carries the information.</td><td>A 2022 circuit of 26 attention heads in GPT-2 small that picks the right name in “When Mary and John went to the store, John gave a drink to …”.</td></tr>
+              <tr><td>Probes</td><td>Train a small classifier (often one linear layer) to predict a property from the activations. Success shows the information is <em>present</em>, not that the model uses it.</td><td>A GPT trained only on Othello moves holds the board state in its activations.</td></tr>
+              <tr><td>Steering vectors</td><td>Take the difference between activations for two contrasting prompts (say, “Love” and “Hate”) and add it during generation. The output shifts that way.</td><td>A 2024 study: refusing harmful requests in several chat models is largely one direction. Remove it and the model stops refusing.</td></tr>
+            </tbody>
+          </table>
         </div>
 
         <h3>7. Circuit tracing: following one answer through the model</h3>
-        <p>In 2025 Anthropic published <b>attribution graphs</b>. They replace a model’s MLPs with a more interpretable stand-in (a “cross-layer transcoder” made of features), then trace, for one prompt, which features pushed which others toward the final token.</p>
+        <p>In 2025 Anthropic published <b>attribution graphs</b>: replace a model’s MLPs with a more interpretable stand-in made of features (a “cross-layer transcoder”), then trace, for one prompt, which features pushed which others toward the final token.</p>
         <p>Asked for “the capital of the state containing Dallas”, Claude 3.5 Haiku showed an internal “Texas” step before “Austin”: a two-hop path, done inside one forward pass. Writing a rhyming couplet, it picked the rhyme word <em>before</em> writing the line that ends in it: evidence of planning ahead.</p>
         <Callout kind="research">
-          These are explanations of a <em>replacement</em> model that imitates the real one, with “error” terms for what it cannot capture. The authors report that the method gave satisfying insight on only a fraction of the prompts they tried, and the graphs take hours of expert reading. It is a microscope, not an X-ray of everything. The tools were later open-sourced for open models.
+          These explain a <em>replacement</em> model that imitates the real one, with “error” terms for what it cannot capture. The authors report satisfying insight on only a fraction of the prompts they tried, and each graph takes hours of expert reading: a microscope, not an X-ray of everything. The tools were later open-sourced for open models.
         </Callout>
       </MentalModel>
 
       <TryIt title="Watch superposition happen">
-        <p>This is the toy model from “Toy Models of Superposition”, trained live in your browser with the same <G t="gradient-descent">gradient descent</G> you built in Part 2. Five features must squeeze through two numbers.</p>
+        <p>The toy model from “Toy Models of Superposition”, trained live with the <G t="gradient-descent">gradient descent</G> you built in Part 2. Five features must squeeze through two numbers.</p>
         <ol>
           <li>Press <b>Dense</b>, then <b>Train</b>. How many arrows end up long?</li>
           <li>Press <b>Sparse</b>, then <b>Train</b>. Now how many? What shape?</li>
           <li>In the sparse model, use the probe: switch on f1 alone and look at which other outputs light up.</li>
         </ol>
         <SuperpositionLab />
-        <Callout kind="model">
-          Two dimensions and five features, trained on synthetic data. Real models have thousands of dimensions and (probably) millions of features, learned from text. The toy shows the <em>mechanism</em> (sparsity makes overlap worth it, ReLU and bias clean up the interference), not the scale.
-        </Callout>
+        <p className="muted">A simplified model: it shows the <em>mechanism</em> (sparsity makes overlap worth it, ReLU and bias clean up the interference), not the scale of a real model.</p>
       </TryIt>
 
       <Numbers>
@@ -167,7 +137,7 @@ export default function InterpretabilityLesson() {
             </tbody>
           </table>
         </div>
-        <p>Feature 1 comes back at 1.03. The far pair is cut to exactly zero by the ReLU. The neighbours leak 0.14 each: that is <b>interference</b>, the price of five features in two dimensions. The lab’s probe shows the same values (1.06, 0.14, 0.14, 0, 0), since the trained arrows are not perfectly equal.</p>
+        <p>Feature 1 comes back at 1.03. The far pair is cut to exactly zero by the ReLU. The neighbours leak 0.14 each: that is <b>interference</b>, the price of five features in two dimensions. The lab’s probe shows nearly the same values (1.06, 0.14, 0.14, 0, 0): the trained arrows are not perfectly equal, so feature 1 comes back a little higher.</p>
         <p>Without the negative bias the neighbour leak would be 0.39, nearly three times worse. The bias is what makes the overlap affordable.</p>
         <h3>Why sparsity decides</h3>
         <p>Measured loss on fresh data, same model size, same training:</p>
@@ -181,7 +151,7 @@ export default function InterpretabilityLesson() {
             </tbody>
           </table>
         </div>
-        <p>When every feature is always on, any overlap causes interference on every example, so the model keeps two clean directions and predicts the other three by their average (their bias settles near 0.5). When features are rarely on together, interference is rare, and keeping all five pays. Across 12 seeds at S = 0.95, 7 runs found the pentagon and 5 got stuck in the higher-loss square: gradient descent finds <em>a</em> good arrangement, not always the best one.</p>
+        <p>When every feature is always on, any overlap interferes on every example, so the model keeps two clean directions and predicts the other three by their average (bias near 0.5). When features are rarely on together, keeping all five pays. Across 12 seeds at S = 0.95, 7 runs found the pentagon and 5 got stuck in the higher-loss square: gradient descent finds <em>a</em> good arrangement, not always the best.</p>
       </Numbers>
 
       <TheMath>
@@ -228,8 +198,13 @@ export default function InterpretabilityLesson() {
       </TheMath>
 
       <CodeIt title="Let’s code it: the toy model and a real logit lens">
-        <p>No repository file goes with this lesson, so here are two short sketches. Both were run: the first gives a pentagon (lengths 1.12 to 1.14, biases −0.23 to −0.25), the second printed the GPT-2 table above.</p>
-        <Code title="The toy model: data and forward pass">{`
+        <p>No repository file goes with this lesson, so here are short sketches. Both were run: the toy gives a pentagon (lengths 1.12 to 1.14, biases −0.23 to −0.25), and the logit lens printed the GPT-2 table above.</p>
+        <Code
+          title="The toy model: data and forward pass"
+          show={`print("fraction of features that are on:", (x > 0).mean().round(3), " (S = 0.95, so about 0.05)")
+print("x:", x.shape, " h:", h.shape, " out:", out.shape)
+print("loss before any training:", loss.round(4))`}
+        >{`
 import numpy as np
 rng = np.random.default_rng(1)
 n, m, S, lr, B = 5, 2, 0.95, 0.1, 256
@@ -243,7 +218,28 @@ pre = h @ W + b                 # (B, 5)   read each feature back
 out = np.maximum(pre, 0)        # ReLU
 loss = np.mean(np.sum(I * (out - x) ** 2, axis=1))
 `}</Code>
-        <Code title="One step of plain gradient descent (repeat 6,000 times)">{`
+        <Code
+          title="One step of plain gradient descent (repeat 6,000 times)"
+          setup={`import numpy as np
+rng = np.random.default_rng(1)
+n, m, S, lr, B = 5, 2, 0.95, 0.1, 256
+I = 0.9 ** np.arange(n)
+W = rng.normal(0, 0.3, (m, n))
+b = np.zeros(n)
+x = rng.random((B, n)) * (rng.random((B, n)) > S)
+h = x @ W.T
+pre = h @ W + b
+out = np.maximum(pre, 0)`}
+          show={`for step in range(6000):             # the same forward pass and step, on fresh batches
+    x = rng.random((B, n)) * (rng.random((B, n)) > S)
+    h = x @ W.T; pre = h @ W + b; out = np.maximum(pre, 0)
+    d = 2 / B * I * (out - x) * (pre > 0)
+    W -= lr * (h.T @ d + (W @ d.T) @ x); b -= lr * d.sum(axis=0)
+print("arrow lengths:", np.linalg.norm(W, axis=0).round(2))
+print("biases:       ", b.round(2))
+angles = np.sort(np.degrees(np.arctan2(W[1], W[0])))
+print("gaps between neighbouring arrows (degrees):", np.diff(np.append(angles, angles[0] + 360)).round(0))`}
+        >{`
 d = 2 / B * I * (out - x) * (pre > 0)    # dLoss/dpre
 dW = h.T @ d + (W @ d.T) @ x             # W is used twice: to squeeze and to read back
 db = d.sum(axis=0)
@@ -260,19 +256,16 @@ for layer, h in enumerate(out.hidden_states):
     probs = model.lm_head(x).softmax(-1)
     print(layer, tok.decode(probs.argmax()), round(probs.max().item(), 3))
 `}</Code>
-        <Callout kind="dev">
-          Interpretability code is mostly instrumentation: hooks that record or overwrite intermediate values, then a comparison. If you have added tracing to a service, or replayed one request with one field changed, you already know the shape of activation patching.
-        </Callout>
+        <p>Interpretability code is mostly instrumentation: hooks that record or overwrite intermediate values, then a comparison. If you have added tracing to a service, or replayed one request with one field changed, you already know the shape of activation patching.</p>
       </CodeIt>
 
       <BreakIt>
         <p>Predict first, then check in the lab.</p>
         <ul>
-          <li><b>Dense, importance decay 1.00.</b> All features equally important and always on. Which two win? (No clean answer: training ends in a messy in-between arrangement with no clear winners. Importance differences are what made the dense result tidy.)</li>
+          <li><b>Dense, importance decay 1.00.</b> All features equally important and always on. Which two win? (No clean answer: training ends in a messy in-between arrangement. Importance differences made the dense result tidy.)</li>
           <li><b>Seed 2, sparse.</b> A square: four features in two opposite pairs, one feature dropped. Compare the loss with seed 1. Same data, same model, worse answer: a local minimum.</li>
           <li><b>Seed 1, raise S slowly from 0.5.</b> At 0.80 you get a square with f3 missing; at 0.82, a pentagon. The switch is abrupt: the paper calls it a phase change.</li>
           <li><b>Importance decay 0.5, sparse.</b> The least important feature now costs more to keep than it is worth. Does the pentagon survive? (With seed 1, no: it falls back to a square.)</li>
-          <li><b>Probe a dense model.</b> Switch on f3. The output for f3 barely changes from its usual 0.5: that feature has no direction, so the model always predicts its average.</li>
         </ul>
       </BreakIt>
 
@@ -309,21 +302,6 @@ for layer, h in enumerate(out.hidden_states):
         </Exercise>
 
         <Exercise
-          id="interpretability-sae"
-          type="calculate"
-          title="How big is the dictionary?"
-          answer={{ value: 256, tolerance: 0 }}
-          answerLabel="times more features than neurons"
-          hints={[
-            'Divide the number of dictionary features by the number of neurons.',
-            '131,072 / 512 = ?',
-          ]}
-          solution={<><p>131,072 / 512 = <b>256</b>.</p><p>The SAE describes a 512-number activation using a vocabulary 256 times larger, and each individual activation is explained with only a handful of those features switched on. That combination (huge dictionary, few active at once) is the whole trick, and it is the same bet superposition makes in reverse.</p></>}
-        >
-          <p>In “Towards Monosemanticity”, the largest dictionary had 131,072 features, trained on a layer of 512 MLP neurons. How many times more features than neurons is that?</p>
-        </Exercise>
-
-        <Exercise
           id="interpretability-probe"
           type="debug"
           title="“We found the honesty direction”"
@@ -349,11 +327,31 @@ for layer, h in enumerate(out.hidden_states):
           ]}
         />
 
-        <ExplainBack
-          id="interpretability-explain"
-          prompt="Dev says: “We don’t need interpretability. Reasoning models write out their chain of thought, so we can read exactly why they answered.” Explain, in plain words, why the written reasoning is not the same as a look inside."
-          modelAnswer={<p>The chain of thought is more output text. It is produced by the same next-token machinery as the answer, and it is shaped by training to look like good reasoning. Nothing forces it to be a faithful report of the computation that actually produced the answer. Experiments show the gap: when researchers slipped a hint into a question and the model used it, reasoning models often did not mention the hint in their written reasoning (in one 2025 study, Claude 3.7 Sonnet mentioned it about a quarter of the time and DeepSeek R1 about 39%). Earlier work found models giving plausible explanations for answers that were really driven by a bias in the prompt. So the written reasoning is useful evidence, often informative, but it is a claim by the model about itself. Interpretability tries to check the claim from the inside: which internal features and paths actually drove the answer.</p>}
-        />
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="interpretability-sae"
+            type="calculate"
+            title="How big is the dictionary?"
+            answer={{ value: 256, tolerance: 0 }}
+            answerLabel="times more features than neurons"
+            hints={[
+              'Divide the number of dictionary features by the number of neurons.',
+              '131,072 / 512 = ?',
+            ]}
+            solution={<><p>131,072 / 512 = <b>256</b>.</p><p>The SAE describes a 512-number activation using a vocabulary 256 times larger, and each individual activation is explained with only a handful of those features switched on. That combination (huge dictionary, few active at once) is the whole trick, and it is the same bet superposition makes in reverse.</p></>}
+          >
+            <p>In “Towards Monosemanticity”, the largest dictionary had 131,072 features, trained on a layer of 512 MLP neurons. How many times more features than neurons is that?</p>
+          </Exercise>
+
+          <ExplainBack
+            id="interpretability-explain"
+            prompt="Dev says: “We don’t need interpretability. Reasoning models write out their chain of thought, so we can read exactly why they answered.” Explain, in plain words, why the written reasoning is not the same as a look inside."
+            modelAnswer={<p>The chain of thought is more output text. It is produced by the same next-token machinery as the answer, and it is shaped by training to look like good reasoning. Nothing forces it to be a faithful report of the computation that actually produced the answer. Experiments show the gap: when researchers slipped a hint into a question and the model used it, reasoning models often did not mention the hint in their written reasoning (in one 2025 study, Claude 3.7 Sonnet mentioned it about a quarter of the time and DeepSeek R1 about 39%). Earlier work found models giving plausible explanations for answers that were really driven by a bias in the prompt. So the written reasoning is useful evidence, often informative, but it is a claim by the model about itself. Interpretability tries to check the claim from the inside: which internal features and paths actually drove the answer.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -365,22 +363,10 @@ for layer, h in enumerate(out.hidden_states):
             explain: 'The unit of meaning seems to be a direction, not a single coordinate. Superposition is one explanation for why.',
           },
           {
-            q: 'In the toy model, what makes the 5-feature pentagon better than keeping only 2 features?',
-            options: ['A bigger learning rate', 'Features that are rarely active together, so their overlaps rarely cause errors', 'Dense data', 'Removing the ReLU'],
-            answer: 1,
-            explain: 'With sparse features, interference is rare and the ReLU plus negative bias clean up most of it. With dense data, the 2-feature solution wins.',
-          },
-          {
             q: 'What does a sparse autoencoder do?',
             options: ['Compresses the model to make it faster', 'Rebuilds each activation from a very large dictionary of directions, using only a few at a time, so each direction tends to mean one thing', 'Removes features the model does not need', 'Trains the model to be more honest'],
             answer: 1,
             explain: 'It is a tool for reading, trained on the model’s activations. The model itself is unchanged.',
-          },
-          {
-            q: 'A probe predicts “is this sentence about sports?” from layer 10 with 98% accuracy. What have you shown?',
-            options: ['The model uses a sports feature to choose its next token', 'The information is present in layer 10 in a linearly readable form', 'Layer 10 is the sports layer', 'The model understands sports'],
-            answer: 1,
-            explain: 'Present, not necessarily used. Showing use needs an intervention such as patching or steering.',
           },
           {
             q: 'Why is a model’s written chain of thought not a reliable window into its computation?',
@@ -393,8 +379,7 @@ for layer, h in enumerate(out.hidden_states):
 
       <Remember
         items={[
-          <><b>Visible is not readable.</b> Every activation can be printed; the work is finding which directions mean what, and proving the model uses them.</>,
-          <>The <b>residual stream</b> is a shared vector every layer adds to. That is why the <b>logit lens</b> can read a rough prediction at any layer.</>,
+          <><b>Visible is not readable.</b> Every activation can be printed (and the <b>logit lens</b> reads a rough prediction from the residual stream at any layer); the work is finding which directions mean what, and proving the model uses them.</>,
           <><b>Superposition</b>: with sparse features, a model can store more features than dimensions as almost-perpendicular directions, paying a little interference (the toy pentagon).</>,
           <><b>Sparse autoencoders</b> un-mix activations into many more interpretable features (Golden Gate Bridge). <b>Patching, probes and steering</b> test whether a direction is present and used.</>,
           <>Limits: attribution graphs explain some prompts, partially. No one can yet fully read a large model, and a <b>chain of thought is a claim</b>, not a trace.</>,
@@ -407,11 +392,9 @@ for layer, h in enumerate(out.hidden_states):
           toy={<ul><li>5 features in 2 dimensions, chosen by us</li><li>Synthetic data with known sparsity</li><li>You can see the true answer (the pentagon) and check it by hand</li><li>Trains in under a second</li></ul>}
           real={<ul><li>Unknown number of features in thousands of dimensions per layer, across dozens of layers</li><li>Features must be discovered, not listed; SAEs with millions of entries</li><li>No ground truth: every interpretation needs an intervention to test it</li><li>SAE training and circuit tracing need large compute and expert time</li></ul>}
         />
-        <Callout kind="established">
-          Real, reproducible results exist: induction heads in small models, the name-finding circuit in GPT-2 small, linear board-state probes in Othello-GPT, SAE features that steer behaviour when clamped, and a refusal direction in chat models. Open tools and pretrained SAEs (for example Gemma Scope for Google’s Gemma 2 models) let anyone repeat parts of this work.
-        </Callout>
+        <p>Real, reproducible results exist: induction heads in small models, the name-finding circuit in GPT-2 small, board-state probes in Othello-GPT, SAE features that steer behaviour when clamped, and a refusal direction in chat models. Open tools and pretrained SAEs (for example Gemma Scope for Google’s Gemma 2 models) let anyone repeat parts of this work.</p>
         <Callout kind="research">
-          What we cannot yet do: give a complete, checked account of how any frontier model produces a given answer; list everything a model represents; or certify that a model does <em>not</em> have some hidden behaviour. Safety teams use interpretability as one source of evidence among several (evaluations, red-teaming), not as proof. As of 2026 this is one of the most active research areas in the field, and the methods in this lesson are likely to be refined or replaced.
+          What we cannot yet do: give a complete, checked account of how any frontier model produces a given answer; list everything a model represents; or certify that a model does <em>not</em> have some hidden behaviour. Safety teams use interpretability as one source of evidence among several (evaluations, red-teaming), not as proof. As of 2026 it is one of the most active research areas, and these methods are likely to be refined or replaced.
         </Callout>
         <p>Kabir closes the laptop. “So. The numbers are all there. We can read some words of the language. Not the book yet.” Riya looks at her printout again. It still looks like decimals, but now she knows what kind of thing she is looking for.</p>
       </RealLLM>

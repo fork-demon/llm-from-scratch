@@ -25,13 +25,8 @@ export default function WhyLlmsKnowLesson() {
           </div>
         </div>
         <p>These look like opposite behaviours: knowing and inventing. This lesson argues they are <em>the same mechanism</em>, working on well-covered and on thinly-covered ground. The refund policy is the second card, wearing a Paisa Pal badge.</p>
-        <Callout kind="idea">
-          A trained model is a fixed set of numbers plus a fixed recipe of arithmetic. Everything it “knows” must be somewhere in those numbers. Understanding how makes both its knowledge and its mistakes unsurprising.
-        </Callout>
-        <p>This part of the course is also where certainty runs out. From here on, every important claim carries one of three labels:</p>
-        <Callout kind="established">A mechanism that is well understood, or a measurement that has been repeated many times.</Callout>
-        <Callout kind="model">A simplification that helps you think, and is not literally true.</Callout>
-        <Callout kind="research">Something researchers are still working out, or actively disagree about.</Callout>
+        <p>A trained model is a fixed set of numbers plus a fixed recipe of arithmetic. Everything it “knows” must be somewhere in those numbers.</p>
+        <p>This part of the course is also where certainty runs out. From here on, every important claim carries one of three labels: <b>established</b> (well understood, or measured many times), <b>model</b> (a simplification that helps you think, not literally true) and <b>research</b> (still being worked out, or actively disputed).</p>
       </Why>
 
       <Problem title="The problem: there is nothing inside to look things up in">
@@ -54,47 +49,26 @@ export default function WhyLlmsKnowLesson() {
 
       <MentalModel title="A mental model: knowledge as learned tendencies">
         <p>Training leaves three kinds of trace in the weights. They are points on one scale, not separate systems.</p>
-        <div className="grid-3">
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>Verbatim memorisation</h4>
-            <p>Text seen <em>many</em> times can be reproduced word for word: famous quotes, licence boilerplate, well-known poems.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>Learned patterns</h4>
-            <p>“Capital of X is Y”, how a citation is formatted, how a Python function starts. Seen in thousands of variations, stored as a reusable shape.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>Generalisation</h4>
-            <p>Applying those patterns to text never seen before. This is most of what a model does: almost every prompt you type is new.</p>
-          </div>
-        </div>
-        <Callout kind="established">
-          Models do memorise some training text verbatim, and researchers have extracted it. Measured trends: memorisation rises with how often a passage was repeated in the training data, and with model size. You created the extreme case yourself if you ever over-trained <code>tiny_gpt.py</code> on a tiny corpus: training loss keeps falling while <G t="validation-loss">validation loss</G> rises.
-        </Callout>
-        <Callout kind="analogy">
-          Think of the weights as a <b>lossy compression</b> of the training text, like a JPEG of a library. Frequently repeated content survives almost exactly. Rare content is blurred into “something of roughly this shape”. When you zoom in on a blurred region, the decoder still draws sharp-looking pixels.
-          <br /><br />
-          Where the analogy stops: a JPEG can only give back the picture it compressed. A language model recombines patterns into sentences that never existed, which is why it is useful, and why its inventions look exactly like its recollections.
-        </Callout>
+        <ul>
+          <li><b>Verbatim memorisation.</b> Text seen <em>many</em> times can be reproduced word for word: famous quotes, licence boilerplate, well-known poems.</li>
+          <li><b>Learned patterns.</b> “Capital of X is Y”, how a citation is formatted, how a Python function starts. Seen in thousands of variations, stored as a reusable shape.</li>
+          <li><b>Generalisation.</b> Applying those patterns to text never seen before. This is most of what a model does: almost every prompt you type is new.</li>
+        </ul>
+        <p>Memorisation is established: researchers have extracted verbatim training text, and it rises with how often a passage was repeated and with model size. You created the extreme case yourself if you ever over-trained <code>tiny_gpt.py</code> on a tiny corpus: training loss keeps falling while <G t="validation-loss">validation loss</G> rises.</p>
+        <p>A useful picture: the weights are a <b>lossy compression</b> of the training text, like a JPEG of a library. Repeated content survives almost exactly; rare content is blurred, and zooming into a blur still draws sharp-looking pixels. The analogy stops here: a JPEG only gives back what it compressed, while a model recombines patterns into sentences that never existed. That is why it is useful, and why its inventions look exactly like its recollections.</p>
         <h3>Which part of the Transformer does what?</h3>
-        <p>You have built all three components. Here is what is currently understood about their role in recalling a fact. Notice how the confidence drops from left to right.</p>
-        <div className="grid-3">
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}><G t="embedding">Embeddings</G></h4>
-            <p>Token-level features: which token this is and what kind of thing it tends to be. “France” sits near other countries. That is a feature of a token, not yet a statement about the world.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}><G t="attention">Attention</G></h4>
-            <p>Moves information between positions. To complete “The capital of France is”, the last position must gather “France” and “capital of” from earlier positions. Attention is the only component that can do that.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}><G t="ffn">MLP / feed-forward</G></h4>
-            <p>Transforms each token’s vector on its own, with most of the block’s parameters. Evidence points to MLP layers in the middle blocks being heavily involved in recalling associations such as France → Paris.</p>
-          </div>
+        <p>You have built all three components. Here is what is currently understood about their role in recalling a fact. Notice how the confidence drops from top to bottom.</p>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>Component</th><th>Role in recalling a fact</th></tr></thead>
+            <tbody>
+              <tr><td><G t="embedding">Embeddings</G></td><td>Token-level features: which token this is and what kind of thing it tends to be. “France” sits near other countries, a feature of a token, not yet a statement about the world.</td></tr>
+              <tr><td><G t="attention">Attention</G></td><td>Moves information between positions. To complete “The capital of France is”, the last position must gather “France” and “capital of” from earlier positions. Only attention can do that.</td></tr>
+              <tr><td><G t="ffn">MLP / feed-forward</G></td><td>Transforms each token’s vector on its own, with most of the block’s parameters. Evidence points to middle-block MLPs being heavily involved in recalling associations such as France → Paris.</td></tr>
+            </tbody>
+          </table>
         </div>
-        <Callout kind="model" label="Simplified mental model: the MLP as a soft key-value memory">
-          Read the MLP’s first matrix as a bank of pattern detectors (“does this vector look like <em>France + capital-of</em>?”) and its second matrix as what each detector writes back (“push the vector toward <em>Paris</em>”). Detect, gate with the non-linearity, write. This reading comes from interpretability research and explains part of what MLP layers do. It is a lens, not a wiring diagram: most detectors respond to many unrelated things.
-        </Callout>
+        <p>A simplified mental model (a lens, not a wiring diagram): read the MLP as a <b>soft key-value memory</b>. Its first matrix is a bank of pattern detectors (“does this vector look like <em>France + capital-of</em>?”), its second is what each detector writes back (“push toward <em>Paris</em>”). Detect, gate, write. It explains part of what MLP layers do; most detectors respond to many unrelated things.</p>
         <Callout kind="research">
           Experiments that trace and edit facts (the best known is ROME, 2022) found that MLP layers in middle blocks, at the position of the subject’s last token, matter a great deal for factual recall, and that changing one MLP matrix can make a model say “The Eiffel Tower is in Rome”. But later work found that <em>where</em> tracing locates a fact does not reliably predict <em>where</em> editing works best, edits often fail to carry over to implications of the fact, and attention layers take part in extracting the attribute. So the careful statement is: <b>MLP layers are heavily involved in recalling factual associations. Facts are not cleanly stored in one place.</b>
         </Callout>
@@ -112,9 +86,7 @@ export default function WhyLlmsKnowLesson() {
       <TryIt title="Go looking for a fact">
         <p>Talk is cheap. Here is the smallest model that can “know” something: one weight matrix, trained in your browser by the same <G t="gradient-descent">gradient descent</G> and <G t="cross-entropy">cross-entropy</G> you already know. Do the four tabs in order, and predict before each one.</p>
         <KnowledgeLab />
-        <Callout kind="model">
-          This toy has one linear layer and 8 facts. A real LLM has billions of weights, non-linear layers and attention. What carries over is the <em>kind</em> of storage: shared weights, graceful degradation, and an output that is always a full probability distribution. What does not carry over: real models are not this easy to inspect.
-        </Callout>
+        <p className="muted">A simplified model: one linear layer and 8 facts. What carries over to a real LLM is the <em>kind</em> of storage: shared weights, graceful degradation, and an output that is always a full probability distribution. Real models are not this easy to inspect.</p>
       </TryIt>
 
       <Numbers>
@@ -138,9 +110,7 @@ export default function WhyLlmsKnowLesson() {
           <li><b>There is no built-in “I do not know” signal.</b> The model can emit the <em>words</em> “I do not know” only when those words are the likely continuation. In most training text, a question is followed by an answer.</li>
           <li><b>Training rewards fluent continuation.</b> <G t="pretraining">Pretraining</G> loss is lower when the output looks like the training text. For well-covered facts, looking right and being right coincide. For thinly covered ones, they come apart, and the loss barely notices.</li>
         </ol>
-        <Callout kind="established">
-          A <G t="hallucination">hallucination</G> is not a malfunction. It is the generalisation machinery doing its normal job (produce the most plausible continuation) in a region where plausible and true differ. In the lab, “Austria → Berlin” came from exactly the same arithmetic as “France → Paris”.
-        </Callout>
+        <p>So a <G t="hallucination">hallucination</G> is not a malfunction. It is the generalisation machinery doing its normal job (produce the most plausible continuation) where plausible and true differ. In the lab, “Austria → Berlin” came from exactly the same arithmetic as “France → Paris”.</p>
         <h3>Where the parameters are</h3>
         <p>Second calculation: where are the parameters in the model you built? Take one block of <code>tiny_gpt.py</code> with <code>n_embd = 128</code>.</p>
         <div className="table-scroll">
@@ -173,9 +143,7 @@ export default function WhyLlmsKnowLesson() {
           L(N) ≈ L<sub>∞</sub> + A / N<sup>α</sup>
         </Equation>
         <p>Read it like this: multiply the parameters by 10 and the removable part of the loss is multiplied by 10<sup>−α</sup>. With the 2020 study’s α = 0.076 that is 0.84: about 16% lower, every time, for every factor of 10. Small per step, but <em>predictable</em>, which is why labs could justify very large training runs before running them.</p>
-        <Callout kind="established">
-          The scaling laws themselves are empirical and have been reproduced many times: loss falls smoothly as a power law in parameters, data and compute, as long as none of the three is the bottleneck. A follow-up (“Chinchilla”, 2022) showed that parameters and training tokens should grow together, around 20 tokens per parameter for a compute-optimal run.
-        </Callout>
+        <p>The scaling laws themselves are established: empirical, and reproduced many times. Loss falls smoothly as a power law in parameters, data and compute, as long as none of the three is the bottleneck. A follow-up (“Chinchilla”, 2022) showed that parameters and training tokens should grow together, around 20 tokens per parameter for a compute-optimal run.</p>
         <Callout kind="research">
           <b>Why</b> loss follows a power law is not settled. One intuition: language has a long tail of ever rarer patterns and facts, and each factor of 10 buys the next slice of the tail. That is suggestive, not proven. Also open: “emergent abilities”. Some skills seem to appear suddenly at a certain scale. At least part of that is a measurement effect: a pass/fail metric can jump while the underlying probability of the right answer improves smoothly. Whether any abilities are truly discontinuous is debated.
         </Callout>
@@ -269,19 +237,6 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
           <p>A colleague proposes: “Our chatbot invents product codes. Set <code>temperature=0</code> so it stops being creative, and the hallucinations will go away.” What is wrong with this reasoning? What would it fix, and what not?</p>
         </Exercise>
 
-        <Exercise
-          id="why-llms-know-modify"
-          type="modify"
-          title="Ask your Shakespeare model about France"
-          hints={[
-            'In main(), generation starts from start = torch.zeros((1, 1), ...). Replace it with your encoded prompt.',
-            'start = torch.tensor([[stoi[c] for c in "The capital of France is "]], device=device). Every character of that prompt occurs in the Shakespeare text, so stoi has it.',
-          ]}
-          solution={<p>It continues fluently, in vaguely Shakespearean character soup, and never says “unknown” or stops. Your model has no knowledge of capitals at all, and nothing in the forward pass or the sampling loop can express that. A production LLM differs in how much it knows, not in this mechanism.</p>}
-        >
-          <p>Train <code>tiny_gpt.py</code> (the <code>--quick</code> run is enough). Then change the final sample so that generation starts from the prompt <code>"The capital of France is "</code> instead of a single zero token. Before you run it: will the model refuse, stop, or continue?</p>
-        </Exercise>
-
         <ClaimSorter
           id="why-llms-know-sort"
           claims={[
@@ -295,11 +250,29 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
           ]}
         />
 
-        <ExplainBack
-          id="why-llms-know-explain"
-          prompt="A non-technical manager asks: “Why does the AI sometimes make things up, and why can’t the vendor just fix that bug?” Answer in plain words, without the terms softmax, logits or parameters."
-          modelAnswer={<p>The system does not look facts up. It has learned, from an enormous amount of text, what a good continuation of any piece of text looks like, and it always produces the most fitting continuation it can. For topics it saw often, the most fitting continuation is the true one. For topics it barely saw, the most fitting continuation is something that merely looks right: the right format, the right tone, invented details. Nothing inside it separates those two cases, because both come out of the same process. So it is not a bug in one place that can be patched. It can be reduced a lot, by giving the system the relevant documents at question time, by letting it use tools, and by training it to say when it is unsure, but each of those lowers the rate rather than removing the cause.</p>}
-        />
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="why-llms-know-modify"
+            type="modify"
+            title="Ask your Shakespeare model about France"
+            hints={[
+              'In main(), generation starts from start = torch.zeros((1, 1), ...). Replace it with your encoded prompt.',
+              'start = torch.tensor([[stoi[c] for c in "The capital of France is "]], device=device). Every character of that prompt occurs in the Shakespeare text, so stoi has it.',
+            ]}
+            solution={<p>It continues fluently, in vaguely Shakespearean character soup, and never says “unknown” or stops. Your model has no knowledge of capitals at all, and nothing in the forward pass or the sampling loop can express that. A production LLM differs in how much it knows, not in this mechanism.</p>}
+          >
+            <p>Train <code>tiny_gpt.py</code> (the <code>--quick</code> run is enough). Then change the final sample so that generation starts from the prompt <code>"The capital of France is "</code> instead of a single zero token. Before you run it: will the model refuse, stop, or continue?</p>
+          </Exercise>
+
+          <ExplainBack
+            id="why-llms-know-explain"
+            prompt="A non-technical manager asks: “Why does the AI sometimes make things up, and why can’t the vendor just fix that bug?” Answer in plain words, without the terms softmax, logits or parameters."
+            modelAnswer={<p>The system does not look facts up. It has learned, from an enormous amount of text, what a good continuation of any piece of text looks like, and it always produces the most fitting continuation it can. For topics it saw often, the most fitting continuation is the true one. For topics it barely saw, the most fitting continuation is something that merely looks right: the right format, the right tone, invented details. Nothing inside it separates those two cases, because both come out of the same process. So it is not a bug in one place that can be patched. It can be reduced a lot, by giving the system the relevant documents at question time, by letting it use tools, and by training it to say when it is unsure, but each of those lowers the rate rather than removing the cause.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -317,22 +290,10 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
             explain: 'Distributed storage degrades gradually. A table of records would lose exactly the rows you deleted and nothing else.',
           },
           {
-            q: 'Which is the most careful statement about where factual knowledge sits in a Transformer?',
-            options: ['Facts are stored in the feed-forward layers', 'Facts are stored in the embedding table', 'Facts are stored in attention heads', 'MLP layers in middle blocks appear heavily involved in recalling associations, but facts are distributed and overlapping, and the details are debated'],
-            answer: 3,
-            explain: 'The evidence for MLP involvement is real. “Stored in one place” is more than the evidence supports.',
-          },
-          {
             q: 'Why is hallucination called structural?',
             options: ['Because models are trained on fiction', 'Because the architecture always outputs a distribution over plausible tokens, has no built-in “unknown” signal, and was trained for plausible continuation', 'Because of random sampling: at temperature 0 it would disappear', 'Because the context window is too short'],
             answer: 1,
             explain: 'The same mechanism yields true answers on well-covered ground and plausible inventions on thin ground. Greedy decoding does not change that.',
-          },
-          {
-            q: 'What do scaling laws actually establish?',
-            options: ['That bigger models are conscious of more facts', 'Why neural networks generalise', 'An empirical regularity: loss falls smoothly and predictably as a power law in parameters, data and compute', 'That new abilities always appear suddenly at fixed sizes'],
-            answer: 2,
-            explain: 'The curve is measured and reliable. The explanation for it, and the nature of “emergent” abilities, are open questions.',
           },
         ]}
       />
@@ -340,8 +301,7 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
       <Remember
         items={[
           <><b>Only parameters persist.</b> No documents, no database, no index inside the model. Knowledge is a side effect of learning to predict the next token.</>,
-          <>Knowledge is <b>distributed</b>: one fact touches many weights, one weight serves many facts. Hence gradual degradation, no way to list what is known, and no clean single-fact update.</>,
-          <>Roles, as currently understood: <b>embeddings</b> carry token features, <b>attention</b> moves information between positions, <b>MLP layers</b> (especially in middle blocks) are heavily involved in recall. “Facts live in the FFN” is a simplification.</>,
+          <>Knowledge is <b>distributed</b>: one fact touches many weights, one weight serves many facts. Hence gradual degradation, no way to list what is known, and no clean single-fact update. MLP layers are heavily involved in recall, but “facts live in the FFN” is a simplification.</>,
           <><b>Hallucination is structural</b>: always a distribution, no “I do not know” signal, trained for fluent continuation. Retrieval, tools and training to abstain reduce it. None removes it.</>,
           <><b>Scaling laws are established as measurements</b> (loss falls as a power law). <em>Why</em> they hold and what “emergence” really is are active research.</>,
         ]}
@@ -364,11 +324,8 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
             </tbody>
           </table>
         </div>
-        <Callout kind="research">
-          How well models “know what they know” is an open question. Studies find that a model’s internal probabilities carry real information about whether its answer is correct, but imperfectly, and less so on unfamiliar topics. There is also an argument that common benchmarks make things worse by scoring a confident guess above an honest “I do not know”.
-        </Callout>
-        <Callout kind="established">This is why production systems put <a href="#/lesson/rag">retrieval</a> and <a href="#/lesson/agents">tools</a> <em>around</em> the model for anything that must be current, exact or auditable, and why <a href="#/lesson/fine-tuning">fine-tuning</a> is a good way to change behaviour and a poor way to install facts. The knowledge cut-off of a model follows from the same point: the weights stopped changing when training ended.</Callout>
-        <Callout kind="research">Reading the weights directly is the job of interpretability research. It has striking results in places and is far from a complete account; treat any “neuron for Paris” diagram as an illustration. What can and cannot be read today is the subject of <a href="#/lesson/interpretability">Looking inside the model</a>.</Callout>
+        <p>How well models “know what they know” is still research: a model’s internal probabilities carry real but imperfect information about whether its answer is correct, less so on unfamiliar topics, and common benchmarks may make things worse by scoring a confident guess above an honest “I do not know”.</p>
+        <p>This is why production systems put <a href="#/lesson/rag">retrieval</a> and <a href="#/lesson/agents">tools</a> <em>around</em> the model for anything that must be current, exact or auditable, and why <a href="#/lesson/fine-tuning">fine-tuning</a> is a good way to change behaviour and a poor way to install facts. A model’s knowledge cut-off follows from the same point: the weights stopped changing when training ended. Reading the weights directly is the job of interpretability research, the subject of <a href="#/lesson/interpretability">Looking inside the model</a>; treat any “neuron for Paris” diagram as an illustration.</p>
         <p>Riya writes back to the support team: the bot did not look anything up, so it cannot be trusted with policy until it is given the real policy documents. Dev, to his credit, is the first to ask how.</p>
       </RealLLM>
     </Lesson>

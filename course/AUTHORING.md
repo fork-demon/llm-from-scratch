@@ -153,3 +153,50 @@ tests, 2 to 3 hints, explanation, and the repo `source` file the function comes 
 - **Diagnostics** (`components/Diagnostic.tsx`, data in `data/diagnostics.ts`): a few questions at the top of a
   part's first lesson that tell an experienced learner what to skip. Each question names the lesson that teaches it.
 - **Progress export and import** lives on the home page; storage keys are `llm-fp-*`.
+
+## Keeping lessons lean (2026 edit pass)
+
+The reference is `src/lessons/reasoning-models.tsx` (trimmed by a third with nothing of substance lost).
+Lessons show one section at a time, so every section should earn its place.
+
+- **Target:** the core path of a lesson is about 3,000 to 3,800 words (`npx vite-node scripts/lessonTimes.ts`
+  prints words and minutes per lesson; do not use `--write`, the maintainer runs it once at the end).
+- **Callouts:** at most 4 per lesson. Keep the ones that carry an honesty label that matters (established vs
+  research) or a developer connection that genuinely helps. Fold the rest into plain sentences or cut them.
+- **Why + Problem:** when the Problem section only restates the Why, merge its essential facts into `<Why>` and
+  delete `<Problem>` (and its `<WhyExists>` box). Keep `<Problem>` when it carries its own substantial idea.
+- **Repetition:** grids of near-identical cards (5-row "technique" cards, three cards saying one thing) become one
+  compact table or a short list. Say each thing once.
+- **Exercises:** 3 or 4 core exercises (always keep every `<CodeExercise>`). Move the rest, unchanged and with the
+  same ids, into
+  `<details className="deep"><summary>More practice (optional)</summary><div className="details-body">…</div></details>`
+  at the end of `<Exercises>`. Never delete or rename an exercise id (learners' progress is keyed on it).
+- **Check yourself:** 3 questions (keep the ones that test understanding, drop ones an exercise already covers).
+  **Remember:** 3 to 4 items. **BeforeMovingOn:** leave its questions alone (they are the part checkpoint).
+- **Never change** a number, a worked example, an exercise answer, an interactive, a glossary link, a lesson link or
+  the story cast. Keep the story voice (STORY.md), no em dashes, no emoji.
+
+## Making code blocks runnable ("Try it")
+
+Lesson `<Code>` blocks are excerpts. A block gets a **Try it** button (it opens in the Python playground) only
+when it can run: give it `setup` (small made-up inputs it needs) and/or `show` (code that prints the result),
+or `standalone` if it already runs and prints. The playground runs `setup`, then the excerpt unchanged, then `show`.
+
+    <Code
+      title="Step 2: scores"
+      setup={`import numpy as np
+    Q = np.array([[1.0, 0.0], [0.0, 1.0]])
+    K = np.array([[1.0, 0.0], [1.0, 1.0]])
+    D = 2`}
+      show={`print(scores.round(2))`}
+    >{`
+    scores = Q @ K.T / np.sqrt(D)
+    `}</Code>
+
+- NumPy and the standard library only (that is what the browser has). Blocks that need PyTorch, Hugging Face or a
+  network, and blocks that are pseudocode or a fragment of a class body that cannot stand alone, get no props.
+- Setup data should be tiny, deterministic (`np.random.default_rng(0)`) and, where natural, the lesson's own running
+  example (“the river bank”, “The cat sat on the”, the numbers used in the text).
+- `show` should print something that teaches: a shape, a probability, the value the lesson talks about.
+- `src/components/tryIt.test.tsx` runs every such program in real Python and fails if one errors or prints nothing:
+  `npx vitest run src/components/tryIt.test.tsx`.

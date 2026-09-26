@@ -18,9 +18,7 @@ export default function EmbeddingsLesson() {
         <p>She messages Kabir: “The IDs are just names, na? So how will the model ever know a cat is like a dog?” His reply comes two stations later: “It won’t. Not yet. Tomorrow we give every token a place on a map.”</p>
         <p>Here is the problem in plain terms. The IDs were handed out in the order the tokenizer happened to create them. An ID is like a primary key in a database. It tells you <em>which</em> row you have. It tells you nothing about what the row is <em>like</em>.</p>
         <p>And “what is this token like?” is exactly what a model needs. A model that cannot tell that cats and dogs are similar must learn every fact about them twice.</p>
-        <Callout kind="idea">
-          An <b>embedding</b> is a way of representing something using numbers so that useful relationships can be learned. Each token gets not one number but a whole list of numbers, a <G t="vector">vector</G>, and similar tokens end up with similar vectors.
-        </Callout>
+        <p>An <b>embedding</b> is a way of representing something using numbers so that useful relationships can be learned. Each token gets not one number but a whole list of numbers, a <G t="vector">vector</G>, and similar tokens end up with similar vectors.</p>
       </Why>
 
       <Problem title="The problem: an ID is a name, not a quantity">
@@ -79,7 +77,7 @@ export default function EmbeddingsLesson() {
         <h3>Nobody assigns the coordinates</h3>
         <p>So who decides that “cat” gets <em>these</em> numbers? Nobody. They start random and are <b>learned</b>, using the loop you already know: predict, measure the <G t="loss">loss</G>, nudge the numbers downhill.</p>
         <p>But predict <em>what</em>? You cannot write a loss for “put similar words together” without already knowing which words are similar. The trick, from a 2013 method called <b>word2vec</b>, is to train on a <b>fake task</b> whose cheapest solution requires good geometry:</p>
-        <Callout kind="idea">The fake task, known as <b>skip-gram</b>: <b>given a word, predict a word that appeared near it.</b> Nobody cares about the predictions. We keep the vectors that the task forced into shape.</Callout>
+        <p>The fake task, known as <b>skip-gram</b>: <b>given a word, predict a word that appeared near it.</b> Nobody cares about the predictions. We keep the vectors that the task forced into shape.</p>
         <p>Why does that work? In the training sentences, “cat” and “dog” keep the same company: <em>feed the ___</em>, <em>my pet ___</em>, <em>the ___ chased</em>. So the model must make nearly the same predictions for both.</p>
         <p>But the only thing it knows about a word is its vector. The cheapest way to make the same predictions from two vectors is to make the two vectors alike. Gradient descent always takes the cheap way.</p>
         <p>Watch it happen. This trains real vectors in your browser, from random numbers:</p>
@@ -160,7 +158,16 @@ export default function EmbeddingsLesson() {
 
       <CodeIt>
         <p>The repository file trains these vectors in NumPy. First the data. Every word is paired with each neighbour up to 2 positions away:</p>
-        <Code source="phase2-language/tiny_word2vec.py" title="Step 1: (centre, neighbour) training pairs">{`
+        <Code
+          source="phase2-language/tiny_word2vec.py"
+          title="Step 1: (centre, neighbour) training pairs"
+          setup={`sentences = ["feed the cat some fish"]
+words = sorted({w for s in sentences for w in s.split()})
+stoi = {w: i for i, w in enumerate(words)}
+window = 2
+pairs = []`}
+          show={`print("pairs with centre 'cat':", [(words[c], words[n]) for c, n in pairs if words[c] == "cat"])`}
+        >{`
 for s in sentences:
     toks = [stoi[w] for w in s.split()]
     for i, center in enumerate(toks):
@@ -169,17 +176,59 @@ for s in sentences:
                 pairs.append((center, toks[j]))   # (center, one context word)
 `}</Code>
         <p>“feed the cat some fish” yields (cat, feed), (cat, the), (cat, some), (cat, fish), and so on for each word. No human labelled anything. The text labels itself.</p>
-        <Code title="Step 2: two random matrices">{`
+        <Code
+          title="Step 2: two random matrices"
+          setup={`import numpy as np
+rng = np.random.default_rng(1)
+V, dim = 70, 32                       # the file: 70 words, 32 numbers each`}
+          show={`print("E:", E.shape, "  W:", W.shape)
+print("row of E for word 0 (random for now):", E[0, :5].round(3), "...")`}
+        >{`
 E = 0.1 * rng.normal(size=(V, dim))   # the embedding matrix: THE product
 W = 0.1 * rng.normal(size=(dim, V))   # output layer: scaffolding, discarded later
 `}</Code>
-        <Code title="Step 3: forward pass. The lookup really is an index">{`
+        <Code
+          title="Step 3: forward pass. The lookup really is an index"
+          setup={`import numpy as np
+rng = np.random.default_rng(1)                   # the seed of tiny_word2vec.py
+def softmax(z):
+    e = np.exp(z - z.max(axis=1, keepdims=True))
+    return e / e.sum(axis=1, keepdims=True)
+words = ["the", "cat", "dog", "feed", "fish", "car"]   # a 6-word vocabulary
+V, dim = len(words), 4                           # 4 numbers per word (the file uses 32)
+E = 0.1 * rng.normal(size=(V, dim))
+W = 0.1 * rng.normal(size=(dim, V))
+centers = np.array([1, 1, 2])                    # a batch of 3 pairs: (cat, feed), (cat, fish), (dog, feed)
+contexts = np.array([3, 4, 3])`}
+          show={`print("emb:", emb.shape, " logits:", logits.shape, " probs:", probs.shape)
+print("P(neighbour | cat), untrained:", dict(zip(words, probs[0].round(3).tolist())))`}
+        >{`
 emb = E[centers]                       # (batch, dim)  the lookup
 logits = emb @ W                       # (batch, V)    one score per word
 probs = softmax(logits)
 `}</Code>
         <p>(<G t="logits">Logits</G> are the raw scores before softmax.) The backward pass uses exactly the rules from <a href="#/lesson/backprop">Backpropagation</a>. The gradient of softmax plus cross-entropy is “probabilities minus the one-hot target”:</p>
-        <Code source="phase2-language/tiny_word2vec.py" title="Step 4: backward pass and update">{`
+        <Code
+          source="phase2-language/tiny_word2vec.py"
+          title="Step 4: backward pass and update"
+          setup={`import numpy as np
+rng = np.random.default_rng(1)                   # the seed of tiny_word2vec.py
+def softmax(z):
+    e = np.exp(z - z.max(axis=1, keepdims=True))
+    return e / e.sum(axis=1, keepdims=True)
+words = ["the", "cat", "dog", "feed", "fish", "car"]   # a 6-word vocabulary
+V, dim = len(words), 4                           # 4 numbers per word (the file uses 32)
+E = 0.1 * rng.normal(size=(V, dim))
+W = 0.1 * rng.normal(size=(dim, V))
+centers = np.array([1, 1, 2])                    # a batch of 3 pairs: (cat, feed), (cat, fish), (dog, feed)
+contexts = np.array([3, 4, 3])
+batch, lr = 3, 0.5
+emb = E[centers]
+probs = softmax(emb @ W)
+E_before = E.copy()`}
+          show={`moved = [words[i] for i in range(V) if not np.allclose(E[i], E_before[i])]
+print("rows of E that moved:", moved)`}
+        >{`
 d_logits = probs.copy()
 d_logits[np.arange(batch), contexts] -= 1      # probs - one_hot
 d_logits /= batch
@@ -203,9 +252,7 @@ vocab: 70 words, 9840 training pairs
     computer -> laptop (0.59), software (0.57), wrote (0.54), update (0.53)
 analogy dog - cat + fish  ->  ['fish', 'beans', 'hungry', 'loudly']
 `}</Code>
-        <Callout kind="established" label="Honest results">
-          Look closely. “cat” found “dog” and “computer” found “laptop”. But cat’s third neighbour is “day”, and the analogy came back as noise. With 28 short sentences, that is what you get. The quality of the geometry grows with the amount of text. The original word2vec vectors were trained on roughly 100 billion words.
-        </Callout>
+        <p>Look closely. “cat” found “dog” and “computer” found “laptop”. But cat’s third neighbour is “day”, and the analogy came back as noise. With 28 short sentences, that is what you get. The quality of the geometry grows with the amount of text. The original word2vec vectors were trained on roughly 100 billion words.</p>
         <RepoRunner path="phase2-language/tiny_word2vec.py" title="Run tiny_word2vec.py in your browser">
           <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
         </RepoRunner>
@@ -256,7 +303,19 @@ sims = E @ q / (np.linalg.norm(E, axis=1) * np.linalg.norm(q) + 1e-9)
 `}</Code><p>The small <code>1e-9</code> avoids dividing by zero. The real function also skips the first result, which is always the query word itself.</p></>}
         >
           <p>A colleague writes a nearest-neighbour search over trained embeddings. For almost every query, the top results are the same few very frequent words. What is wrong?</p>
-          <Code>{`
+          <Code
+            setup={`import numpy as np
+words = ["the", "cat", "dog", "fish", "computer", "laptop"]
+stoi = {w: i for i, w in enumerate(words)}
+E = np.array([[ 2.5,  2.0,  2.5],     # "the": updated very often in training
+              [ 1.0,  0.9, -0.2],     # cat
+              [ 0.9,  1.0, -0.1],     # dog
+              [ 0.8,  0.4, -0.3],     # fish
+              [-0.3,  0.1,  1.0],     # computer
+              [-0.2,  0.2,  0.9]])    # laptop`}
+            show={`for w in ["cat", "fish", "computer"]:
+    print(w, "->", nearest(words, stoi, E, w))`}
+          >{`
 def nearest(words, stoi, E, query, k=4):
     q = E[stoi[query]]
     sims = E @ q
@@ -265,6 +324,9 @@ def nearest(words, stoi, E, query, k=4):
 `}</Code>
         </Exercise>
 
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
         <Exercise
           id="embeddings-modify-dim"
           type="modify"
@@ -280,6 +342,8 @@ def nearest(words, stoi, E, query, k=4):
           prompt="Nothing in the training code rewards “cat” and “dog” for being close. Explain, in your own words, why they end up close anyway."
           modelAnswer={<p>The model is trained to predict which words appear near a given word, and the only thing it knows about the given word is its embedding row. “cat” and “dog” appear in almost the same contexts, so the model needs to produce almost the same predictions for both. Everything after the lookup is shared, so the easiest way to get the same output is to have nearly the same input, meaning nearly the same vector. Gradient descent finds that solution because it lowers the loss. Similarity is a side effect of a prediction task, not something anyone programmed.</p>}
         />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -291,22 +355,10 @@ def nearest(words, stoi, E, query, k=4):
             explain: 'An ID is a name, like a primary key. Arithmetic on names is meaningless.',
           },
           {
-            q: 'Mechanically, what does an embedding layer do with token ID 464?',
-            options: ['Runs a small neural network on the number 464', 'Converts 464 to binary', 'Returns row 464 of a learned matrix', 'Looks the word up in a dictionary of definitions'],
-            answer: 2,
-            explain: 'It is an array index. It equals multiplying a one-hot vector by the matrix, which is why it can be trained like any other layer.',
-          },
-          {
             q: 'Who decides the coordinates of “cat” in a real model?',
             options: ['Linguists label the most important dimensions', 'They are copied from a dictionary', 'The tokenizer assigns them', 'Nobody: they start random and gradient descent moves them to reduce a prediction loss'],
             answer: 3,
             explain: 'Words used in similar contexts need similar predictions, and the cheapest way to get those is similar vectors.',
-          },
-          {
-            q: 'Why do real models use thousands of dimensions rather than 2 or 3?',
-            options: ['So that humans can label each dimension', 'Words are similar in many independent ways at once, and each needs its own room to vary', 'Because GPUs cannot handle small vectors', 'To make the 2D picture more accurate'],
-            answer: 1,
-            explain: 'Gender, royalty, animal-ness, part of speech, formality, topic… Two numbers cannot hold them all, as the dim = 2 experiment showed.',
           },
           {
             q: 'A word2vec-style table gives “bank” one vector. What is the problem?',
@@ -319,8 +371,7 @@ def nearest(words, stoi, E, query, k=4):
 
       <Remember
         items={[
-          <>A token ID is a <b>name, not a quantity</b>. Doing arithmetic on it is meaningless.</>,
-          <>An embedding layer is a <b>lookup table</b>: <span className="mono">E[token_id]</span>, one learned row per token. It equals one-hot × matrix, so it trains like any other layer.</>,
+          <>A token ID is a <b>name, not a quantity</b>, so an embedding layer is a <b>lookup table</b>: <span className="mono">E[token_id]</span>, one learned row per token. It equals one-hot × matrix, so it trains like any other layer.</>,
           <><b>Nobody assigns the coordinates.</b> They are learned from a prediction task. Tokens used in similar contexts are pushed toward similar vectors.</>,
           <>Similarity is measured with the <b>dot product / cosine</b>. Real spaces have hundreds to thousands of dimensions because words are alike in many independent ways. <b>The 2D picture is only a teaching model.</b></>,
           <>A lookup gives <b>one static vector per token</b>, whatever the sentence. “bank” exposes the flaw. The fix is coming.</>,
@@ -340,14 +391,14 @@ x = self.tok_emb(idx) + self.pos_emb(pos)                 # look up every token 
           toy={<ul><li>70 words, 32 numbers each</li><li>Trained separately, on a fake task (predict a neighbouring word)</li><li>28 sentences</li><li>The output matrix W is thrown away</li></ul>}
           real={<ul><li>50,000 to 200,000 tokens, 768 to 16,384 numbers each</li><li>No separate step: the table is trained <em>jointly</em> with every other layer, on next-token prediction</li><li>Trillions of tokens of text</li><li>The same table is often reused at the top of the model to score the next token. That trick is called weight tying, and you will build it in <a href="#/lesson/build-gpt">Build a GPT</a></li></ul>}
         />
-        <Callout kind="established">The mechanism is the same: rows of a matrix, looked up by token ID, shaped by gradients from a prediction task. Modern LLMs do not run word2vec. They do not need to, because next-token prediction shapes the table in the same way.</Callout>
+        <p>The mechanism is the same: rows of a matrix, looked up by token ID, shaped by gradients from a prediction task. Modern LLMs do not run word2vec. They do not need to, because next-token prediction shapes the table in the same way.</p>
         <Callout kind="model" label="About the famous arithmetic">
           “king − man + woman ≈ queen” is real but oversold. It is <b>approximate</b>: the result lands <em>near</em> queen, and standard evaluations exclude the three input words from the candidates (otherwise the nearest word is often just “king”). The well-known examples are the ones that worked. Many analogies fail. Treat it as evidence that some directions carry consistent meaning, not as a reasoning engine.
         </Callout>
         <Callout kind="established" label="Embeddings inherit the training text, including its biases">
           The same geometry that captures “king is to queen as man is to woman” also captured, in word2vec trained on news text, “man is to computer programmer as woman is to homemaker” (Bolukbasi et al., 2016). Embeddings reflect how words are used in the corpus. They are a mirror of text, not of truth.
         </Callout>
-        <Callout kind="dev">You will meet “embedding models” again when we build <a href="#/lesson/rag">retrieval (RAG)</a>. Those produce one vector for a whole sentence or document, so that search becomes nearest-neighbour lookup. Same idea, bigger unit. Token embeddings (this lesson) are an internal layer of the LLM. Sentence embeddings are a separate model’s output.</Callout>
+        <p>You will meet “embedding models” again when we build <a href="#/lesson/rag">retrieval (RAG)</a>. Those produce one vector for a whole sentence or document, so that search becomes nearest-neighbour lookup. Same idea, bigger unit. Token embeddings (this lesson) are an internal layer of the LLM. Sentence embeddings are a separate model’s output.</p>
         <h3>The loose end: one vector per token is not enough</h3>
         <p>Where did you put “bank”? Any single spot is wrong. In “the river bank” it should sit with water. In “the money bank” it should sit with finance. A lookup table cannot see the sentence, so “bank” gets one vector: an awkward average that is wrong in every actual sentence.</p>
         <p>What we need is a way for a token’s vector to be <em>adjusted by the tokens around it</em>. That mechanism is the centre of this course, and we will get there in Part 6. First, we need a model that actually predicts something.</p>

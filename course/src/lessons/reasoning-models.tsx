@@ -138,7 +138,24 @@ for _ in range(max_new_tokens):
 `}</Code>
         <p>The last line is the working memory: whatever was just written is part of the input next time. A reasoning trace uses this loop exactly as it is, with a bigger <code>max_new_tokens</code>.</p>
         <p>The sampling strategies are a few lines wrapped <em>around</em> the model. These are sketches, not files in the repository: <code>sample</code> runs the loop and decodes the text, and <code>final_answer</code> pulls the last line out of a trace.</p>
-        <Code title="Sketch: self-consistency (majority vote)">{`
+        <Code
+          title="Sketch: self-consistency (majority vote)"
+          setup={`import random
+from collections import Counter
+rng = random.Random(2)            # try other seeds: some runs go wrong
+# A fake model for "What is 17 x 24?": right (408) 40% of the time,
+# otherwise one of four wrong answers, 15% each (the lesson's p = 0.4, m = 4)
+ANSWERS, PROBS = ["408", "398", "418", "388", "428"], [0.4, 0.15, 0.15, 0.15, 0.15]
+def sample(prompt, temperature):
+    ans = ANSWERS[0] if temperature == 0 else rng.choices(ANSWERS, PROBS)[0]
+    return f"17 x 24 = 17 x 20 + 17 x 4 = ...\\nAnswer: {ans}"
+def final_answer(trace):
+    return trace.splitlines()[-1].removeprefix("Answer: ")
+prompt = "What is 17 x 24?"
+N = 15`}
+          show={`print("votes:", dict(Counter(answers)))
+print("majority answer:", best, "(right answer: 408)")`}
+        >{`
 from collections import Counter
 
 answers = []
@@ -148,7 +165,27 @@ for _ in range(N):                          # N independent attempts
 
 best = Counter(answers).most_common(1)[0][0]
 `}</Code>
-        <Code title="Sketch: best-of-N with a verifier">{`
+        <Code
+          title="Sketch: best-of-N with a verifier"
+          setup={`import random
+from collections import Counter
+rng = random.Random(2)            # try other seeds: some runs go wrong
+# A fake model for "What is 17 x 24?": right (408) 40% of the time,
+# otherwise one of four wrong answers, 15% each (the lesson's p = 0.4, m = 4)
+ANSWERS, PROBS = ["408", "398", "418", "388", "428"], [0.4, 0.15, 0.15, 0.15, 0.15]
+def sample(prompt, temperature):
+    ans = ANSWERS[0] if temperature == 0 else rng.choices(ANSWERS, PROBS)[0]
+    return f"17 x 24 = 17 x 20 + 17 x 4 = ...\\nAnswer: {ans}"
+def final_answer(trace):
+    return trace.splitlines()[-1].removeprefix("Answer: ")
+prompt = "What is 17 x 24?"
+N = 3
+def passes_tests(trace):          # a perfect checker, like unit tests
+    return final_answer(trace) == "408"`}
+          show={`print("attempts:", [final_answer(c) for c in candidates])
+print("accepted:", len(accepted), " returned:", final_answer(best))
+print("chance at least one of 3 is right: 1 - 0.6**3 =", round(1 - 0.6**3, 3))`}
+        >{`
 candidates = [sample(prompt, temperature=0.8) for _ in range(N)]
 accepted = [c for c in candidates if passes_tests(c)]   # the verifier
 best = accepted[0] if accepted else candidates[0]

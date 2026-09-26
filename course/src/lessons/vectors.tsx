@@ -23,9 +23,7 @@ export default function VectorsLesson() {
           <div className="card"><span className="chip acc">similarity search</span><p style={{ marginTop: 8 }}>“Which stored document matches this question?” Same score, different lists.</p></div>
           <div className="card"><span className="chip acc">next-word scores</span><p style={{ marginTop: 8 }}>“How well does each possible next word fit here?” One agreement score per word.</p></div>
         </div>
-        <Callout kind="idea">
-          All three are the same tiny operation, called the <b>dot product</b>. This lesson is about that one operation. There are only four maths ideas in this whole course, and this is the one you will meet most often.
-        </Callout>
+        <p>All three are the same tiny operation, called the <b>dot product</b>. This lesson is about that one operation. There are only four maths ideas in this whole course, and this is the one you will meet most often.</p>
         <p className="muted">This is not a maths course. We only pick up a tool when the LLM needs it, and every tool comes with a picture and an experiment before it gets a formula.</p>
       </Why>
 
@@ -154,20 +152,36 @@ export default function VectorsLesson() {
 
       <CodeIt>
         <p>For Riya, this is the comfortable part. The dot product is a loop you could write in your sleep:</p>
-        <Code title="the long way">{`
+        <Code
+          title="the long way"
+          setup={`a = [2, 1, 3]
+b = [4, 0, 2]`}
+          show={`print("a . b =", total)`}
+        >{`
 total = 0
 for i in range(len(a)):
     total += a[i] * b[i]
 `}</Code>
         <p>NumPy spells the same thing with the <code>@</code> operator. This is from the repository, including the check that the hand calculation is right:</p>
-        <Code source="phase1-foundations/math_primer.py" title="dot product: by hand vs NumPy">{`
+        <Code
+          source="phase1-foundations/math_primer.py"
+          title="dot product: by hand vs NumPy"
+          setup={`import numpy as np`}
+          show={`print("by hand:", by_hand, "  NumPy:", a @ b)`}
+        >{`
 a = np.array([2, 1, 3])
 b = np.array([4, 0, 2])
 by_hand = 2 * 4 + 1 * 0 + 3 * 2                       # = 14
 assert a @ b == by_hand == 14
 `}</Code>
         <p>The similarity meter, with the same cat / dog / truck numbers you worked out above:</p>
-        <Code source="phase1-foundations/math_primer.py" title="agreement, then agreement with lengths divided out">{`
+        <Code
+          source="phase1-foundations/math_primer.py"
+          title="agreement, then agreement with lengths divided out"
+          setup={`import numpy as np`}
+          show={`print(f"cat . dog   = {cat @ dog:+.2f}   cosine = {cosine(cat, dog):+.3f}")
+print(f"cat . truck = {cat @ truck:+.2f}   cosine = {cosine(cat, truck):+.3f}")`}
+        >{`
 cat = np.array([0.9, 0.8, -0.5])
 dog = np.array([0.8, 0.9, -0.4])
 truck = np.array([-0.6, -0.8, 0.9])
@@ -312,7 +326,7 @@ def cosine(x, y):
           </ul>
         </Callout>
         <Callout kind="model">“Each slot is a feature like comedy or romance” is a simplification to build intuition. In trained models, meaning is spread across many slots at once. You will look at real learned vectors in <a href="#/lesson/embeddings">Embeddings</a>.</Callout>
-        <Callout kind="established">Keep the two meters apart: the dot product is not the cosine. Attention and the output layer use the raw dot product, so there a vector’s length does count, and the model is free to use it.</Callout>
+        <p>Keep the two meters apart: the dot product is not the cosine. Attention and the output layer use the raw dot product, so there a vector’s length does count, and the model is free to use it.</p>
         <p>Dividing the lengths out is a choice. Similarity search often makes it; attention does not.</p>
         <p>As for Friday night: Riya and Dev’s agreement score came out negative. They watched separate films, on separate laptops, in the same room.</p>
       </RealLLM>

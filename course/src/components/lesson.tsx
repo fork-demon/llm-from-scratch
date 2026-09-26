@@ -14,7 +14,7 @@
 //  <Remember>     11 What you should remember
 //  <RealLLM>      12 Where this appears in a real LLM
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { LESSONS, LLM_TREE, lessonById, sourceUrl, type FlatLesson, type TreeNode } from '../data/curriculum'
+import { LESSONS, LLM_TREE, REPO_URL, lessonById, sourceUrl, type FlatLesson, type TreeNode } from '../data/curriculum'
 import { completeLesson, updateProgress, useProgress } from '../lib/progress'
 import { Quiz, type QuizQuestion } from './exercise'
 import { ErrorBoundary } from './ErrorBoundary'
@@ -262,12 +262,21 @@ const Chevron = ({ dir }: { dir: 'left' | 'right' }) => (
   </svg>
 )
 
-function SectionPager({ sections, active, go }: { sections: SectionInfo[]; active: string | null; go: (id: string, how?: { scroll?: boolean; focus?: boolean }) => void }) {
+/** A pre-filled GitHub issue: the one feedback channel that needs no server and reaches the author. */
+const feedbackUrl = (lesson: string, section: SectionInfo) => {
+  const title = `Unclear: ${lesson} / ${section.short}`
+  const body = `Lesson: ${lesson}\nSection: ${section.title}\nLink: https://marqa.tech/#/lesson/${lesson}/${section.id}\n\nWhat was unclear or wrong?\n\n`
+  return `${REPO_URL}/issues/new?labels=${encodeURIComponent('learner feedback')}&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`
+}
+
+function SectionPager({ lessonId, sections, active, go }: { lessonId: string; sections: SectionInfo[]; active: string | null; go: (id: string, how?: { scroll?: boolean; focus?: boolean }) => void }) {
   const i = sections.findIndex((s) => s.id === active)
   if (i < 0 || sections.length < 2) return null
   const prev = sections[i - 1]
   const next = sections[i + 1]
   return (
+    <>
+    <p className="lesson-feedback">Was something here unclear or wrong? <a href={feedbackUrl(lessonId, sections[i])} target="_blank" rel="noreferrer">Tell us about this section</a>.</p>
     <nav className="lesson-pager" aria-label="Previous and next section">
       {prev
         ? <button className="lesson-pager-back" onClick={() => go(prev.id, { focus: true })} aria-keyshortcuts="ArrowLeft"><Chevron dir="left" />{prev.short}</button>
@@ -278,6 +287,7 @@ function SectionPager({ sections, active, go }: { sections: SectionInfo[]; activ
         </button>
       )}
     </nav>
+    </>
   )
 }
 
@@ -340,7 +350,7 @@ export function Lesson({ id, children }: { id: string; children: ReactNode }) {
         <div ref={body} className="lesson-body">
           <ErrorBoundary what={`the “${lesson.title}” lesson`}>{children}</ErrorBoundary>
         </div>
-        <SectionPager sections={sections} active={active} go={go} />
+        <SectionPager lessonId={id} sections={sections} active={active} go={go} />
 
         {atEnd && (
           <footer className="lesson-foot">

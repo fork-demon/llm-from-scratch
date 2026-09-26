@@ -20,9 +20,7 @@ export default function RagLesson() {
         <p>The honest answer is in <code>oncall.md</code> on the wiki: five minutes. The model has never seen that file. It was not in the training data, so it is not in the weights.</p>
         <p>You know from <a href="#/lesson/why-llms-know">Why LLMs know things</a> what happens next. The model has no “I have no record of this” mechanism. It produces the most plausible continuation: “Typically within 15 minutes”. Fluent, confident, wrong.</p>
         <p>The same gap appears for anything <b>private</b> (your documents), anything <b>recent</b> (after training stopped), and anything <b>rare</b> (seen too few times to be stored reliably).</p>
-        <Callout kind="idea">
-          Part 9 asks one question three times: <b>what exactly changes?</b> In this lesson the answer is: <b>only the prompt</b>. The model and its weights stay exactly as they are. We look the answer up ourselves and paste it in front of the question.
-        </Callout>
+        <p>Part 9 asks one question three times: <b>what exactly changes?</b> In this lesson the answer is <b>only the prompt</b>. The weights stay exactly as they are. We look the answer up ourselves and paste it in front of the question.</p>
       </Why>
 
       <Problem>
@@ -149,7 +147,15 @@ export default function RagLesson() {
 
       <CodeIt>
         <p>The pipeline from the playground, in the order the data flows. First, cutting text into overlapping windows of sentences:</p>
-        <Code source="phase4-modern-llms/mini_rag.py" title="1. chunking">{`
+        <Code
+          source="phase4-modern-llms/mini_rag.py"
+          title="1. chunking"
+          setup={`text = ("The oncall rotation changes every Monday at 10am. "
+        "Primary oncall must acknowledge pages within five minutes. "
+        "Secondary oncall is paged if the primary does not respond.")   # from oncall.md`}
+          show={`for c in chunk(text, "oncall.md"):
+    print(c["pos"], c["text"])`}
+        >{`
 def chunk(text, source, sentences_per_chunk=2, overlap=1):
     sents = [s.strip() + "." for s in text.split(".") if s.strip()]
     chunks, i = [], 0
@@ -162,7 +168,53 @@ def chunk(text, source, sentences_per_chunk=2, overlap=1):
 `}</Code>
         <p>It is string splitting. There is no elegant theory of chunking, only heuristics, and it has an outsized effect on quality.</p>
         <p>Second, the embedder. The core is four lines: add up each known word’s rarity weight, leak a little weight onto words that tend to appear alongside, scale to length 1.</p>
-        <Code source="phase4-modern-llms/mini_rag.py" title="2. embedding (inside build_embedder)">{`
+        <Code
+          source="phase4-modern-llms/mini_rag.py"
+          title="2. embedding (inside build_embedder)"
+          setup={`import numpy as np
+def tokenize(text):
+    return text.lower().replace(".", "").replace(",", "").split()
+# The lesson's wiki (CORPUS in mini_rag.py), cut the way chunk() does: 2 sentences, 1 of overlap
+docs = {
+    "onboarding.md": "New engineers get laptop access on day one. The onboarding buddy is assigned by the team lead. "
+        "All new hires must complete security training within two weeks. Production access requires completing "
+        "the incident response course. The engineering handbook lives in the internal wiki.",
+    "deploy-policy.md": "Deployments to production happen through the CI pipeline only. Manual deploys are forbidden "
+        "except during a declared incident. Every deploy requires two approvals on the pull request. Rollbacks are "
+        "triggered from the deploy dashboard. Deploy freezes apply during the last week of each quarter.",
+    "oncall.md": "The oncall rotation changes every Monday at 10am. Primary oncall must acknowledge pages within five "
+        "minutes. Secondary oncall is paged if the primary does not respond. After an incident the oncall engineer "
+        "writes the postmortem. Postmortems are blameless and due within three business days.",
+    "expenses.md": "Engineers may expense up to 500 dollars per year for learning materials. Conference travel requires "
+        "manager approval in advance. Receipts must be submitted within thirty days of purchase. Home office "
+        "equipment is budgeted separately at 1000 dollars.",
+}
+chunks = []
+for src, d in docs.items():
+    s = [x.strip() + "." for x in d.split(".") if x.strip()]
+    chunks += [{"text": " ".join(s[i:i + 2]), "source": src} for i in range(len(s))]
+texts = [c["text"] for c in chunks]
+# The rest of build_embedder: vocabulary, rarity weights (idf), co-occurrence C
+vocab = sorted({w for t in texts for w in tokenize(t)})
+stoi = {w: i for i, w in enumerate(vocab)}
+Vn, smooth = len(vocab), 0.3
+df = np.array([sum(w in tokenize(t) for t in texts) for w in vocab])
+idf = np.log(len(texts) / df)
+C = np.zeros((Vn, Vn))
+for t in texts:
+    ws = [stoi[w] for w in tokenize(t)]
+    for a in ws:
+        for b in ws:
+            if a != b:
+                C[a, b] += 1
+C = C / (C.sum(axis=1, keepdims=True) + 1e-9)`}
+          show={`q = embed("how quickly must I acknowledge pages")
+print(len(chunks), "chunks, vectors of", Vn, "numbers; question vector length:", round(float(np.linalg.norm(q)), 3))
+for w in ["the", "oncall", "pages", "laptop"]:   # the rarity table in Numbers
+    print(f"weight of {w!r}: {idf[stoi[w]]:.2f}")
+for c in sorted(chunks, key=lambda c: -float(embed(c["text"]) @ q))[:3]:
+    print(round(float(embed(c["text"]) @ q), 2), c["source"], c["text"][:55])`}
+        >{`
 def embed(text):
     v = np.zeros(Vn)                        # one slot per vocabulary word
     for w in tokenize(text):
@@ -171,16 +223,38 @@ def embed(text):
     v = v + smooth * (v @ C)                # bleed onto co-occurring words
     return v / (np.linalg.norm(v) + 1e-9)   # length 1: dot product == cosine
 `}</Code>
-        <Callout kind="warn">This embedder is deliberately crude. It matches <em>strings</em>, not meanings. A real system replaces this one function with a Transformer encoder. Every other line of the file stays the same, which is why it is worth studying.</Callout>
+        <p>This embedder is deliberately crude: it matches <em>strings</em>, not meanings. A real system replaces this one function with a Transformer encoder, and every other line of the file stays the same.</p>
         <p>Third, the store. Exact search is the matrix multiply you know:</p>
-        <Code source="phase4-modern-llms/mini_rag.py" title="3. vector store">{`
+        <Code
+          source="phase4-modern-llms/mini_rag.py"
+          title="3. vector store"
+          setup={`import numpy as np
+from types import SimpleNamespace
+unit = lambda v: np.array(v, float) / np.linalg.norm(v)
+# The Numbers section, vocabulary [pages, acknowledge, budget]; stored vectors have length 1
+self = SimpleNamespace(vecs=[unit([2, 1, 0]), unit([0, 1, 2])],
+                       chunks=["chunk about paging", "chunk about expenses"])
+qvec = unit([1, 1, 0])`}
+          show={`for text, sim in search(self, qvec, k=2):
+    print(f"{sim:.2f}  {text}")`}
+        >{`
 def search(self, qvec, k=3):
     sims = np.array(self.vecs) @ qvec        # every similarity at once
     order = np.argsort(-sims)[:k]            # best k
     return [(self.chunks[i], float(sims[i])) for i in order]
 `}</Code>
         <p>Fourth, the step that gives RAG its name. It is an f-string:</p>
-        <Code source="phase4-modern-llms/mini_rag.py" title="4. prompt assembly">{`
+        <Code
+          source="phase4-modern-llms/mini_rag.py"
+          title="4. prompt assembly"
+          setup={`question = "how quickly must I acknowledge pages"
+retrieved = [   # the top 3 that search() returns for this question in mini_rag.py
+    ({"source": "oncall.md", "text": "The oncall rotation changes every Monday at 10am. Primary oncall must acknowledge pages within five minutes."}, 0.47),
+    ({"source": "oncall.md", "text": "Primary oncall must acknowledge pages within five minutes. Secondary oncall is paged if the primary does not respond."}, 0.45),
+    ({"source": "oncall.md", "text": "Secondary oncall is paged if the primary does not respond. After an incident the oncall engineer writes the postmortem."}, 0.09),
+]`}
+          show={`print(assemble_prompt(question, retrieved))`}
+        >{`
 def assemble_prompt(question, retrieved):
     ctx = "\\n".join(f"[{i+1}] ({c['source']}) {c['text']}"
                     for i, (c, _) in enumerate(retrieved))
@@ -191,7 +265,59 @@ def assemble_prompt(question, retrieved):
     )
 `}</Code>
         <p>Finally the “LLM”. To run offline, the file uses a stand-in that can only quote: it returns the retrieved sentence most similar to the question, or refuses if the best similarity is under 0.35.</p>
-        <Code source="phase4-modern-llms/mini_rag.py" title="5. the extractive stand-in (shortened)">{`
+        <Code
+          source="phase4-modern-llms/mini_rag.py"
+          title="5. the extractive stand-in (shortened)"
+          setup={`import numpy as np
+def tokenize(text):
+    return text.lower().replace(".", "").replace(",", "").split()
+# The lesson's wiki (CORPUS in mini_rag.py), cut the way chunk() does: 2 sentences, 1 of overlap
+docs = {
+    "onboarding.md": "New engineers get laptop access on day one. The onboarding buddy is assigned by the team lead. "
+        "All new hires must complete security training within two weeks. Production access requires completing "
+        "the incident response course. The engineering handbook lives in the internal wiki.",
+    "deploy-policy.md": "Deployments to production happen through the CI pipeline only. Manual deploys are forbidden "
+        "except during a declared incident. Every deploy requires two approvals on the pull request. Rollbacks are "
+        "triggered from the deploy dashboard. Deploy freezes apply during the last week of each quarter.",
+    "oncall.md": "The oncall rotation changes every Monday at 10am. Primary oncall must acknowledge pages within five "
+        "minutes. Secondary oncall is paged if the primary does not respond. After an incident the oncall engineer "
+        "writes the postmortem. Postmortems are blameless and due within three business days.",
+    "expenses.md": "Engineers may expense up to 500 dollars per year for learning materials. Conference travel requires "
+        "manager approval in advance. Receipts must be submitted within thirty days of purchase. Home office "
+        "equipment is budgeted separately at 1000 dollars.",
+}
+chunks = []
+for src, d in docs.items():
+    s = [x.strip() + "." for x in d.split(".") if x.strip()]
+    chunks += [{"text": " ".join(s[i:i + 2]), "source": src} for i in range(len(s))]
+texts = [c["text"] for c in chunks]
+# The rest of build_embedder: vocabulary, rarity weights (idf), co-occurrence C
+vocab = sorted({w for t in texts for w in tokenize(t)})
+stoi = {w: i for i, w in enumerate(vocab)}
+Vn, smooth = len(vocab), 0.3
+df = np.array([sum(w in tokenize(t) for t in texts) for w in vocab])
+idf = np.log(len(texts) / df)
+C = np.zeros((Vn, Vn))
+for t in texts:
+    ws = [stoi[w] for w in tokenize(t)]
+    for a in ws:
+        for b in ws:
+            if a != b:
+                C[a, b] += 1
+C = C / (C.sum(axis=1, keepdims=True) + 1e-9)
+def embed(text):
+    v = np.zeros(Vn)
+    for w in tokenize(text):
+        if w in stoi:
+            v[stoi[w]] += idf[stoi[w]]
+    v = v + smooth * (v @ C)
+    return v / (np.linalg.norm(v) + 1e-9)
+def retrieve(question, k=3):   # search(): top k chunks by cosine
+    q = embed(question)
+    return sorted([(c, float(embed(c["text"]) @ q)) for c in chunks], key=lambda p: -p[1])[:k]`}
+          show={`for question in ["how quickly must I acknowledge pages", "what is the wifi password"]:
+    print(question, "->", extractive_answer(question, retrieve(question), embed))`}
+        >{`
 def extractive_answer(question, retrieved, embed, threshold=0.35):
     qv = embed(question)
     best, best_sim, best_cite = None, -1, None
@@ -205,7 +331,28 @@ def extractive_answer(question, retrieved, embed, threshold=0.35):
     return f"{best}. [source {best_cite[0]}: {best_cite[1]}] (sim {best_sim:.2f})"
 `}</Code>
         <p>And the IVF index from the lab is two steps: rank the cluster centres, then brute-force only inside the chosen buckets.</p>
-        <Code source="phase4-modern-llms/vector_db.py" title="IVF search">{`
+        <Code
+          source="phase4-modern-llms/vector_db.py"
+          title="IVF search"
+          setup={`import numpy as np
+from types import SimpleNamespace
+rng = np.random.default_rng(0)
+# 2,000 unit vectors of 16 numbers, gathered around 8 hidden centres
+X = rng.normal(size=(8, 16))[rng.integers(0, 8, 2000)] + 0.6 * rng.normal(size=(2000, 16))
+X = X / np.linalg.norm(X, axis=1, keepdims=True)
+# build_ivf: k-means into 8 clusters, then one bucket of row numbers per cluster
+cent = X[rng.choice(2000, 8, replace=False)]
+for _ in range(10):
+    assign = ((X[:, None, :] - cent[None, :, :]) ** 2).sum(-1).argmin(axis=1)
+    cent = np.array([X[assign == j].mean(axis=0) if (assign == j).any() else cent[j] for j in range(8)])
+self = SimpleNamespace(vecs=X, ids=list(range(2000)), centroids=cent,
+                       buckets=[np.where(assign == j)[0] for j in range(8)])`}
+          show={`queries = rng.normal(size=(50, 16))
+for nprobe in [1, 2, 4, 8]:
+    recall = np.mean([len({i for i, _ in search_ivf(self, q, k=10, nprobe=nprobe)}
+                          & set(np.argsort(-(X @ q))[:10])) / 10 for q in queries])
+    print(f"nprobe={nprobe}: recall@10 = {recall:.2f}")`}
+        >{`
 def search_ivf(self, qvec, k=5, nprobe=1):
     q = qvec / (np.linalg.norm(qvec) + 1e-9)
     c_sims = self.centroids @ q                  # 1: which clusters is q nearest to?
@@ -250,16 +397,6 @@ def search_ivf(self, qvec, k=5, nprobe=1):
         </Exercise>
 
         <Exercise
-          id="rag-predict-weights"
-          type="predict"
-          title="What changed?"
-          hints={['List the components: documents, chunks, vectors, prompt, model weights.', 'Which of those exist only at query time, and which one is sent to the model?']}
-          solution={<p>Nothing inside the model changed: not one weight. The <em>vector store</em> gained a few rows at ingest time, and from then on the <em>prompt</em> for related questions contains the new text. That is why RAG updates are instant and reversible (delete the document and the knowledge is gone), and why RAG cannot teach the model a new <em>behaviour</em> such as a house style. Behaviour lives in weights. That is the next lesson.</p>}
-        >
-          <p>You add a new policy document to a RAG system and re-run ingest. A colleague says “great, the model has learned our new policy”. Predict: which numbers inside the LLM are different from yesterday? What actually changed, and where does it live?</p>
-        </Exercise>
-
-        <Exercise
           id="rag-debug-miss"
           type="debug"
           title="Diagnose the miss"
@@ -275,31 +412,40 @@ def search_ivf(self, qvec, k=5, nprobe=1):
           <p>Which stage failed: chunking, embedding/retrieval, prompt assembly, or the LLM? How can you tell from the log?</p>
         </Exercise>
 
-        <Exercise
-          id="rag-modify-chunks"
-          type="modify"
-          title="Change the chunk size in the real file"
-          hints={['Run python phase4-modern-llms/mini_rag.py and note the similarity of the top chunk for “how quickly must I acknowledge pages” (0.47).', 'In main(), change chunk(text, src) to chunk(text, src, sentences_per_chunk=5, overlap=0): each document becomes one chunk.', 'Compare the top retrieval score again, and look at how long the printed prompt has become.']}
-          solution={<p>With whole documents as chunks there are only 4 chunks, and the top retrieval score for the paging question drops from 0.47 to <b>0.28</b>: the one relevant sentence is diluted by four irrelevant ones in the same vector. The prompt also grows to three whole documents. The stand-in still answers correctly because it re-scores individual sentences, but a vector store at scale would now rank that document much lower. Too small loses context (the split-answer failure); too large blurs the vector. That tension is why chunking is a real design decision.</p>}
-        >
-          <p>Open <code>mini_rag.py</code>. Predict what happens to the top similarity score for the first demo query if every document becomes a single chunk. Then change <code>sentences_per_chunk</code> and check.</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="rag-predict-weights"
+            type="predict"
+            title="What changed?"
+            hints={['List the components: documents, chunks, vectors, prompt, model weights.', 'Which of those exist only at query time, and which one is sent to the model?']}
+            solution={<p>Nothing inside the model changed: not one weight. The <em>vector store</em> gained a few rows at ingest time, and from then on the <em>prompt</em> for related questions contains the new text. That is why RAG updates are instant and reversible (delete the document and the knowledge is gone), and why RAG cannot teach the model a new <em>behaviour</em> such as a house style. Behaviour lives in weights. That is the next lesson.</p>}
+          >
+            <p>You add a new policy document to a RAG system and re-run ingest. A colleague says “great, the model has learned our new policy”. Predict: which numbers inside the LLM are different from yesterday? What actually changed, and where does it live?</p>
+          </Exercise>
 
-        <ExplainBack
-          id="rag-explain"
-          prompt="Your product manager asks: “If we add RAG, will the chatbot stop making things up?” Answer in three or four sentences, without jargon."
-          modelAnswer={<p>It will make things up less often, not never. RAG does not change the model. It searches our documents for passages related to the question and puts them into the prompt, so the model can read the answer instead of recalling it, and we can show which document the answer came from. But if the search brings back the wrong passage, or nothing relevant, the model will still produce a fluent answer, and it may now look trustworthy because it has a citation next to it. So the quality of the search decides the quality of the answers, and we should measure and monitor the search, and let the system say “not found”.</p>}
-        />
+          <Exercise
+            id="rag-modify-chunks"
+            type="modify"
+            title="Change the chunk size in the real file"
+            hints={['Run python phase4-modern-llms/mini_rag.py and note the similarity of the top chunk for “how quickly must I acknowledge pages” (0.47).', 'In main(), change chunk(text, src) to chunk(text, src, sentences_per_chunk=5, overlap=0): each document becomes one chunk.', 'Compare the top retrieval score again, and look at how long the printed prompt has become.']}
+            solution={<p>With whole documents as chunks there are only 4 chunks, and the top retrieval score for the paging question drops from 0.47 to <b>0.28</b>: the one relevant sentence is diluted by four irrelevant ones in the same vector. The prompt also grows to three whole documents. The stand-in still answers correctly because it re-scores individual sentences, but a vector store at scale would now rank that document much lower. Too small loses context (the split-answer failure); too large blurs the vector. That tension is why chunking is a real design decision.</p>}
+          >
+            <p>Open <code>mini_rag.py</code>. Predict what happens to the top similarity score for the first demo query if every document becomes a single chunk. Then change <code>sentences_per_chunk</code> and check.</p>
+          </Exercise>
+
+          <ExplainBack
+            id="rag-explain"
+            prompt="Your product manager asks: “If we add RAG, will the chatbot stop making things up?” Answer in three or four sentences, without jargon."
+            modelAnswer={<p>It will make things up less often, not never. RAG does not change the model. It searches our documents for passages related to the question and puts them into the prompt, so the model can read the answer instead of recalling it, and we can show which document the answer came from. But if the search brings back the wrong passage, or nothing relevant, the model will still produce a fluent answer, and it may now look trustworthy because it has a citation next to it. So the quality of the search decides the quality of the answers, and we should measure and monitor the search, and let the system say “not found”.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
         questions={[
-          {
-            q: 'What does RAG change about the LLM?',
-            options: ['Its weights, slightly, each time a document is added', 'Nothing. It changes the text of the prompt the model receives', 'Its tokenizer, so that company terms become single tokens', 'Its attention mechanism, so that it can read a database'],
-            answer: 1,
-            explain: 'The model is untouched. Retrieval and prompt assembly are ordinary code that runs before the model call.',
-          },
           {
             q: 'Why must the question be embedded with the same embedding model as the chunks?',
             options: ['Otherwise the vectors have different lengths and the code crashes', 'Because similarity only means something between vectors from the same space; two models place the same text in unrelated positions', 'Because embedding models are licensed per corpus', 'It is only a performance optimisation'],
@@ -318,20 +464,13 @@ def search_ivf(self, qvec, k=5, nprobe=1):
             answer: 2,
             explain: 'The scores it computes are exact. The approximation is in which vectors it never looks at. In the repo benchmark, nprobe = 1 found only 51% of the true top 10.',
           },
-          {
-            q: 'A RAG bot gives a wrong answer with a citation. Where should you look first?',
-            options: ['The model’s temperature setting', 'The retrieval log: which chunks were put into the prompt, and with what scores', 'The size of the model', 'The system prompt wording'],
-            answer: 1,
-            explain: 'Most RAG failures start at retrieval: the right text never reached the prompt. Read the exact prompt before blaming the model.',
-          },
         ]}
       />
 
       <Remember
         items={[
-          <><b>What changes: the prompt. Not the weights.</b> RAG is retrieval + context injection around an unchanged model.</>,
+          <><b>What changes: the prompt. Not the weights.</b> RAG is retrieval + context injection around an unchanged model. It moves the model’s job from <b>recall</b> (unreliable) to <b>reading comprehension</b> (strong), and makes knowledge instantly updatable and citable.</>,
           <>Ingest time: documents → <b>chunks</b> → <b>embeddings</b> → vector database. Query time: embed the question → <b>top-k</b> by cosine → paste into the prompt → LLM → answer with citation.</>,
-          <>It moves the model’s job from <b>recall</b> (unreliable) to <b>reading comprehension</b> (strong), and makes knowledge instantly updatable and citable.</>,
           <>Exact search is one matrix multiply. Approximate indexes such as IVF search only the nearest clusters: a <b>recall vs speed</b> knob.</>,
           <>RAG does not stop hallucination. <b>Garbage retrieved, garbage answered.</b> When it fails, check chunking, embedding and k before the model.</>,
         ]}
@@ -343,7 +482,7 @@ def search_ivf(self, qvec, k=5, nprobe=1):
           toy={<ul><li>4 documents, 19 chunks of 2 sentences</li><li>Bag-of-words TF-IDF embedder with 123 dimensions, one per word</li><li>Exact search over a Python list</li><li>An extractive stand-in that can only quote one sentence</li></ul>}
           real={<ul><li>Millions of documents; chunks of a few hundred tokens that respect headings</li><li>A Transformer encoder producing dense vectors, often combined with keyword search (“hybrid”) and a slower re-ranking model over the top candidates</li><li>An approximate index (IVF, or the graph-based HNSW) with metadata filters</li><li>A real LLM that can combine passages, and can also ignore or misread them</li></ul>}
         />
-        <Callout kind="established">The shape is the same in every production system: chunk, embed, index, retrieve, assemble a prompt, generate. “Search the web” and “chat with your PDF” features are this pipeline. Long context windows reduce how much you must retrieve, but do not remove the need: someone still has to decide what goes in the prompt, and you pay for every token.</Callout>
+        <p>The shape is the same in every production system: chunk, embed, index, retrieve, assemble a prompt, generate. “Search the web” and “chat with your PDF” features are this pipeline. Long context windows reduce how much you must retrieve, but do not remove the need: someone still has to decide what goes in the prompt, and you pay for every token.</p>
         <p>One change is now common. Instead of your code running one search before the model call, the model is given search as a <em>tool</em>. It writes its own queries, reads the results, and searches again if the first results were poor. This is often called agentic search. It is the same pipeline, driven by a loop, and you will build that loop in <a href="#/lesson/agents">Agents</a>.</p>
         <Callout kind="research">How faithfully models use retrieved context is an active research area. Measured effects include weaker use of information in the middle of long contexts, and models preferring what is in their weights when it conflicts with the context. Treat “grounded” as a property you test for, not one you get by construction.</Callout>
         <p>By Friday the bot answers the dispute question from page 14, with the PDF’s name beside the answer. Dev asks, “So it learned the policy?” Riya smiles. “No. It read it. Nothing inside it changed.”</p>

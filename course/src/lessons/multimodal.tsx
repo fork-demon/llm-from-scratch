@@ -14,9 +14,7 @@ export default function MultimodalLesson() {
         <p>Half the tickets this week look like this. Screenshots, photos of bank SMS, a blurry picture of a receipt. Customers do not type what they can show.</p>
         <p>Dev reads over her shoulder. “Easy. The new models take images. It probably runs OCR, pulls out the text, and reads that.”</p>
         <p>Riya is not so sure. The model she built in <a href="#/lesson/build-gpt">Part 7</a> eats one thing only: a list of token IDs, each turned into a row of an <G t="embedding">embedding</G> table. There is no row for “red circle”.</p>
-        <Callout kind="idea">
-          A language model only ever processes a sequence of vectors. To “see”, a picture must become a sequence of vectors of the same width as the word vectors. This lesson shows exactly how: cut the picture into small squares, and turn each square into one token.
-        </Callout>
+        <p>A language model only ever processes a sequence of vectors. To “see”, a picture must become a sequence of vectors of the same width as the word vectors. So how does a photo become tokens?</p>
       </Why>
 
       <Problem title="The problem: a photo is not a sentence">
@@ -56,9 +54,7 @@ export default function MultimodalLesson() {
           <br /><br />
           Where the analogy stops: Amma used words. A patch token is a list of numbers, and nobody decides what they mean. Training does. The tokens also do not arrive one by one: the model looks at all squares together.
         </Callout>
-        <Callout kind="dev">
-          Notice what is missing: there is no lookup. A text token ID picks a row from a table. A patch <em>is</em> its own row: its pixels go straight into a matrix multiply. That is why an image never has an “unknown token”.
-        </Callout>
+        <p>Notice what is missing: there is no lookup. A text token ID picks a row from a table. A patch <em>is</em> its own row: its pixels go straight into a matrix multiply. That is why an image never has an “unknown token”.</p>
 
         <h3>Three parts: encoder, projector, language model</h3>
         <p>Most open vision-language models (for example the LLaVA family) are built from three pieces:</p>
@@ -78,9 +74,7 @@ export default function MultimodalLesson() {
           example={<>A photo of a cat and the caption “a cat asleep on a sofa” should get a high <G t="dot-product">dot product</G>. The same photo and “a bus in the rain” should get a low one.</>}
           formal={<>For N pairs, compute the N × N table of similarities between every image and every caption. Train so the diagonal (the true pairs) wins: CLIP uses a <G t="softmax">softmax</G> over each row and column, SigLIP (Google, 2023) a sigmoid on each pair separately.</>}
         />
-        <Callout kind="established">
-          After this training, an image encoder produces vectors that line up with language: a photo of a failed-payment screen lands near text about errors and payments. CLIP and SigLIP encoders are used as the “eyes” of many open vision-language models.
-        </Callout>
+        <p>After this training, an image encoder produces vectors that line up with language: a photo of a failed-payment screen lands near text about errors and payments. CLIP and SigLIP encoders are the “eyes” of many open vision-language models.</p>
 
         <h3>Plugging the eyes into the language model</h3>
         <p>The encoder’s vectors have the wrong width and live in a different “space” from the language model’s embeddings. The <b>projector</b> fixes that. In the original LLaVA (2023) it was a single matrix. LLaVA-1.5 used a small two-layer MLP.</p>
@@ -188,7 +182,16 @@ export default function MultimodalLesson() {
 
       <CodeIt title="Let’s code it: patchify, project, merge">
         <p>There is no repository file for this lesson, so these are short NumPy sketches. The first function was checked against the lab’s TypeScript on a small image: same numbers, same order.</p>
-        <Code title="Step 1: cut into patches and flatten">{`
+        <Code
+          title="Step 1: cut into patches and flatten"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)`}
+          show={`img = rng.random((448, 448, 3))                # a 448 x 448 colour image
+print("448 x 448 image, p = 14:", patchify(img, 14).shape)
+tiny = np.arange(4 * 4 * 3).reshape(4, 4, 3)   # a 4 x 4 test image you can check by hand
+print("4 x 4 image, p = 2, first patch (the top-left 2 x 2 square):")
+print(patchify(tiny, 2)[0])`}
+        >{`
 def patchify(img, p):                    # img: (H, W, 3) numbers in 0..1
     H, W, C = img.shape
     x = img.reshape(H // p, p, W // p, p, C)   # cut rows and columns into blocks
@@ -196,25 +199,67 @@ def patchify(img, p):                    # img: (H, W, 3) numbers in 0..1
     return x.reshape(-1, p * p * C)            # one flat vector per patch
 `}</Code>
         <p>For a 448 × 448 image and p = 14 this returns shape <code>(1024, 588)</code>: 1,024 patches, 588 numbers each.</p>
-        <Code title="Step 2: one matrix multiply turns every patch into a token">{`
+        <Code
+          title="Step 2: one matrix multiply turns every patch into a token"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)
+def patchify(img, p):
+    H, W, C = img.shape
+    x = img.reshape(H // p, p, W // p, p, C).transpose(0, 2, 1, 3, 4)
+    return x.reshape(-1, p * p * C)
+img = rng.random((448, 448, 3))
+D = 64                                            # tiny model width (real ones use 1,000+)
+W_E = rng.normal(size=(588, D)) * 0.05            # learned in a real model
+pos = rng.normal(size=(1024, D)) * 0.02           # learned in a real model`}
+          show={`print("patches:", patches.shape, " W_E:", W_E.shape, " tokens:", tokens.shape)
+print("image token 0, first 4 numbers:", tokens[0, :4].round(3))`}
+        >{`
 patches = patchify(img, 14)              # (1024, 588)
 tokens = patches @ W_E + pos             # W_E: (588, D) learned; pos: (1024, D) learned
 `}</Code>
-        <Code title="Step 3: merge 2 × 2 neighbours (pixel shuffle)">{`
+        <Code
+          title="Step 3: merge 2 × 2 neighbours (pixel shuffle)"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)
+enc_out = rng.normal(size=(32 * 32, 64))   # the encoder's 32 x 32 grid of output vectors, d = 64`}
+          show={`merged = pixel_shuffle(enc_out, 32, 32)
+print("before:", enc_out.shape, " after 2 x 2 merge:", merged.shape)
+tiny = np.arange(16).reshape(16, 1)         # a 4 x 4 grid, one number per token
+print(pixel_shuffle(tiny, 4, 4))            # each row is one 2 x 2 block of neighbours`}
+        >{`
 def pixel_shuffle(tokens, rows, cols, r=2):     # tokens: (rows*cols, d)
     d = tokens.shape[1]
     x = tokens.reshape(rows // r, r, cols // r, r, d).transpose(0, 2, 1, 3, 4)
     return x.reshape(-1, r * r * d)             # r*r times fewer tokens, r*r times longer
 `}</Code>
         <p>On the encoder’s 32 × 32 grid of output vectors this gives 256 tokens. A projector MLP then maps each one to the language model’s width.</p>
-        <Code title="Step 4: one sequence for the language model">{`
+        <Code
+          title="Step 4: one sequence for the language model"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)
+# Tiny untrained stand-ins, so the shapes can flow end to end
+d, D_llm, vocab = 64, 96, 50
+def pixel_shuffle(tokens, rows, cols, r=2):
+    x = tokens.reshape(rows // r, r, cols // r, r, tokens.shape[1]).transpose(0, 2, 1, 3, 4)
+    return x.reshape(-1, r * r * tokens.shape[1])
+tokens = rng.normal(size=(32 * 32, d))                        # patch tokens from Step 2
+vision_encoder = lambda t: t                                  # a real one is a ViT; shapes unchanged
+W_proj = rng.normal(size=(4 * d, D_llm)) * 0.05
+projector = lambda t: t @ W_proj                              # a real one is a small MLP
+E = rng.normal(size=(vocab, D_llm)) * 0.05
+embed = lambda ids: E[ids]                                    # the text embedding table
+W_out = rng.normal(size=(D_llm, vocab)) * 0.05
+language_model = lambda x: x @ W_out                          # stands in for the whole GPT
+text_before = [3, 17, 8]                                      # e.g. "Customer sent:"
+text_after = [21, 5, 9, 30, 2, 11]                            # e.g. "Why did the payment fail?"`}
+          show={`print("image tokens:", image_tokens.shape, " sequence x:", x.shape, " logits:", logits.shape)
+print("3 text + 256 image + 6 text =", 3 + 256 + 6, "positions")`}
+        >{`
 image_tokens = projector(pixel_shuffle(vision_encoder(tokens), 32, 32))   # (256, D_llm)
 x = np.concatenate([embed(text_before), image_tokens, embed(text_after)])  # (T, D_llm)
 logits = language_model(x)      # from here on: the GPT you already built
 `}</Code>
-        <Callout kind="dev">
-          The language model never learns it is looking at a picture. It receives a <code>(T, D)</code> array, as always. Image support is an input adapter in front of an unchanged interface, much like adding a new deserializer in front of an existing service.
-        </Callout>
+        <p>The language model never learns it is looking at a picture. It receives a <code>(T, D)</code> array, as always: image support is an input adapter in front of an unchanged interface, like a new deserializer in front of an existing service.</p>
       </CodeIt>
 
       <BreakIt>
@@ -262,22 +307,6 @@ logits = language_model(x)      # from here on: the GPT you already built
         </Exercise>
 
         <Exercise
-          id="multimodal-audio"
-          type="calculate"
-          title="A ten-minute support call"
-          answer={{ value: 30000, tolerance: 0 }}
-          answerLabel="encoder vectors"
-          hints={[
-            'A Whisper-style spectrogram has one column every 10 ms: 100 per second.',
-            '10 minutes = 600 s → 60,000 columns.',
-            'The encoder’s stride-2 convolution halves the length.',
-          ]}
-          solution={<><p>600 s × 100 = 60,000 columns, halved = <b>30,000</b> encoder vectors (one per 20 ms).</p><p>That is far more than a typical transcript of the same call (a few thousand text tokens). Audio models pool further, and many systems still transcribe first when they only need the words.</p></>}
-        >
-          <p>Paisa Pal wants to analyse recorded support calls. A Whisper-style encoder makes one spectrogram column per 10 ms and then halves the sequence length. How many encoder output vectors for a 10-minute call? (Ignore the 30-second chunking; the total is the same.)</p>
-        </Exercise>
-
-        <Exercise
           id="multimodal-debug"
           type="debug"
           title="The patches are stripes"
@@ -288,7 +317,15 @@ logits = language_model(x)      # from here on: the GPT you already built
           solution={<><p>Without the transpose, <code>reshape(-1, p*p*C)</code> cuts the image in memory order, so each “patch” is a run of consecutive pixels from one or two rows: a thin horizontal strip, not a square. On a 4 × 4 test image with p = 2, the second “patch” is the whole of row 1 instead of the top-right 2 × 2 square.</p><p>Nothing crashes: the shape is correct, <code>(num_patches, p*p*C)</code>. The model still trains, only worse, because each token now mixes far-apart pixels. Shape checks cannot catch this; a tiny hand-made test like the one in the hint can.</p></>}
         >
           <p>A colleague shortens <code>patchify</code> to one line and the vision model trains poorly. The shapes look right. What is wrong?</p>
-          <Code>{`
+          <Code
+            setup={`import numpy as np
+# pixel (row r, col c) holds the numbers [r, c, 0], so you can see where each value came from
+img = np.array([[[r, c, 0] for c in range(4)] for r in range(4)])`}
+            show={`bad = patchify(img, 2)
+print("shape looks right:", bad.shape)
+print("patch 1 (should be the top-right 2 x 2 square), as (row, col) pairs:")
+print(bad[1].reshape(-1, 3)[:, :2].tolist())`}
+          >{`
 def patchify(img, p):
     H, W, C = img.shape
     return img.reshape(-1, p * p * C)
@@ -300,6 +337,26 @@ def patchify(img, p):
           prompt="Dev still thinks the model “runs OCR and reads the text”. In plain words, explain what actually happens to the screenshot, and one thing the model can use that OCR would lose."
           modelAnswer={<p>The picture is cut into small squares, for example 14 by 14 pixels. Each square’s pixel values are written out as a list of numbers and multiplied by a learned matrix, which turns the square into one vector, the same kind of vector a word becomes. A vision encoder (a Transformer trained on images and their captions) lets all the squares look at each other, and a small projector adapts the result for the language model. Then the language model reads those image vectors and the text tokens as one sequence and writes its answer as usual. Nothing is converted to text on the way, so the model can use things OCR drops: the red cross, which button is greyed out, the layout, a chart. It often reads the printed words well too, because it learned to during training, but that is a learned skill, not a separate OCR step.</p>}
         />
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+            <Exercise
+              id="multimodal-audio"
+              type="calculate"
+              title="A ten-minute support call"
+              answer={{ value: 30000, tolerance: 0 }}
+              answerLabel="encoder vectors"
+              hints={[
+                'A Whisper-style spectrogram has one column every 10 ms: 100 per second.',
+                '10 minutes = 600 s → 60,000 columns.',
+                'The encoder’s stride-2 convolution halves the length.',
+              ]}
+              solution={<><p>600 s × 100 = 60,000 columns, halved = <b>30,000</b> encoder vectors (one per 20 ms).</p><p>That is far more than a typical transcript of the same call (a few thousand text tokens). Audio models pool further, and many systems still transcribe first when they only need the words.</p></>}
+            >
+              <p>Paisa Pal wants to analyse recorded support calls. A Whisper-style encoder makes one spectrogram column per 10 ms and then halves the sequence length. How many encoder output vectors for a 10-minute call? (Ignore the 30-second chunking; the total is the same.)</p>
+            </Exercise>
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -309,12 +366,6 @@ def patchify(img, p):
             options: ['One pixel’s three colour values', 'A row looked up from an image vocabulary', 'One P × P patch, flattened and multiplied by a learned matrix, plus a position vector', 'A word produced by running OCR on the image'],
             answer: 2,
             explain: 'No vocabulary lookup: the patch’s own numbers go through a matrix multiply to become a D-wide vector.',
-          },
-          {
-            q: 'You halve the patch size from 28 to 14 pixels on the same image. The number of patches…',
-            options: ['halves', 'stays the same', 'doubles', 'goes up 4 times'],
-            answer: 3,
-            explain: 'Patches per side double in both directions: 2 × 2 = 4 times as many. Cost follows area.',
           },
           {
             q: 'What does contrastive training (CLIP, SigLIP) teach the image encoder?',
@@ -328,21 +379,14 @@ def patchify(img, p):
             answer: 1,
             explain: 'A single matrix or small MLP. After it, image tokens can sit in the same sequence as text tokens.',
           },
-          {
-            q: 'Why do many models merge 2 × 2 neighbouring patches into one token?',
-            options: ['To make the image sharper', 'Neighbouring patches are often redundant, and 4 times fewer tokens means much less compute and context used', 'Because Transformers cannot read more than 256 tokens', 'To hide the image from the language model'],
-            answer: 1,
-            explain: 'Pixel shuffle keeps the information (the vectors are concatenated) but makes the sequence 4 times shorter.',
-          },
         ]}
       />
 
       <Remember
         items={[
-          <>A model “sees” by turning a picture into a <b>sequence of vectors</b>: cut into P × P patches, flatten, multiply by a learned matrix, add a position. One patch = one token.</>,
+          <>A model “sees” by turning a picture into a <b>sequence of vectors</b>: cut into P × P patches, flatten, multiply by a learned matrix, add a position. One patch = one token. Sound works the same way: a <b>log-mel spectrogram</b> (100 columns per second) → an encoder (Whisper: one vector per 20 ms) → tokens.</>,
           <>Typical open design: <b>vision encoder</b> (a Transformer, often trained contrastively on image-caption pairs) → <b>projector</b> → the <b>language model</b>, which reads image and text tokens as one sequence.</>,
           <>Token cost grows with <b>area</b>: N = (H/P)(W/P)/r². 448 × 448 at 14 px is 1,024 patches, 256 tokens after 2 × 2 merging. Tiling adds tokens per tile.</>,
-          <>Sound works the same way: a <b>log-mel spectrogram</b> (100 columns per second) → an encoder (Whisper: one vector per 20 ms) → tokens for the language model.</>,
           <>Late fusion (bolted-on encoder) is well documented in open models. How closed “natively multimodal” models are built is largely <b>not published</b>.</>,
         ]}
       />
@@ -355,19 +399,11 @@ def patchify(img, p):
         />
         <h3>Generating pictures, briefly</h3>
         <p>Reading an image and drawing one are different problems. Two families dominate:</p>
-        <div className="grid-2">
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>Diffusion</h4>
-            <p>Start from pure noise and repeatedly remove a little of it, guided by the text prompt, until an image remains. Stable Diffusion and many commercial image generators work this way, usually in a compressed “latent” space rather than on raw pixels.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>Autoregressive image tokens</h4>
-            <p>Turn images into discrete tokens with a learned codebook, then predict them one after another, exactly like text. Chameleon is an open example. It lets one model write text and images in a single stream.</p>
-          </div>
-        </div>
-        <Callout kind="research">
-          Since 2025 some chat assistants generate images “natively” rather than by handing off to a separate model, and hybrids that mix both approaches exist. Which recipe a given closed product uses is mostly not disclosed. The established part: both families work, and both still need huge amounts of paired image-text data.
-        </Callout>
+        <ul>
+          <li><b>Diffusion.</b> Start from pure noise and repeatedly remove a little of it, guided by the text prompt, until an image remains. Stable Diffusion and many commercial image generators work this way, usually in a compressed “latent” space rather than on raw pixels.</li>
+          <li><b>Autoregressive image tokens.</b> Turn images into discrete tokens with a learned codebook, then predict them one after another, exactly like text. Chameleon is an open example: one model writes text and images in a single stream.</li>
+        </ul>
+        <p>Since 2025 some chat assistants generate images “natively” rather than by handing off to a separate model, and hybrids exist. Which recipe a given closed product uses is mostly <b>not disclosed</b>. What is established: both families work, and both need huge amounts of paired image-text data.</p>
         <Callout kind="established">
           For reading images, the pipeline in this lesson is not a simplification of the open models: LLaVA, InternVL and Qwen-VL publish their code, and it is patchify → vision Transformer → merge → projector → language model. The differences are in sizes, resolutions and training data.
         </Callout>

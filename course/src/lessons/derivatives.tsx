@@ -1,6 +1,6 @@
 import { CodeExercise } from '../components/python'
-import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
-import { Callout, DeepDive, Equation, G, Term, ToyVsReal, WhyExists } from '../components/ui'
+import { Lesson, Why, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
+import { Callout, DeepDive, Equation, G, Term, ToyVsReal } from '../components/ui'
 import { Code } from '../components/Code'
 import { Exercise, ExplainBack, OrderExercise } from '../components/exercise'
 import { NudgePlayground } from '../interactive/NudgePlayground'
@@ -43,25 +43,11 @@ export default function DerivativesLesson() {
         <p>“See? Nobody needs a formula for a cooker,” Amma says. “You nudge the knob, you listen, you nudge again.”</p>
         <p>Riya laughs, and then stops laughing. On Friday Kabir wrote one question on the whiteboard: <em>how does a model find its numbers?</em> A model is a function with billions of adjustable numbers, like billions of knobs. Next to them sits one meter: the <G t="loss">loss</G>, the “surprise” number from the <a href="#/lesson/softmax">last lesson</a>. Lower is better.</p>
         <p>For every knob you would want to know two things. <b>If I turn you up a hair, does the loss go up or down? And how strongly?</b></p>
-        <Callout kind="idea">
-          That question has a name: the <b>derivative</b>. It is the only calculus an LLM needs. You can measure it with three lines of code and no formulas at all.
-          <br /><br />
-          Training a model is then three steps on repeat. Measure this for every knob. Turn every knob a little in its helpful direction. Go again.
-        </Callout>
+        <p>That question has a name: the <b>derivative</b>. It is the only calculus an LLM needs, and you can measure it with three lines of code and no formulas at all.</p>
+        <p>Dev wanders in, drawn by the smell. “Computers are fast, na. Just try random settings and keep whichever is best.” With a billion knobs, a random change is almost never an improvement, and each try costs a full run of the model. So we do not guess. For each knob we measure which direction helps and how much, then move all the knobs at once.</p>
+        <p>That measurement is only valid for tiny changes around where you stand, so training is three steps on repeat: measure for every knob, turn every knob a little in its helpful direction, go again. That loop is the <a href="#/lesson/gradient-descent">next lesson</a>.</p>
         <p className="muted">If school calculus left scars: we will not use limits, integrals or trigonometry. We will nudge things and watch what happens.</p>
       </Why>
-
-      <Problem>
-        <p>Dev wanders into the kitchen, drawn by the smell. Riya explains the knobs. “Computers are fast, na,” he says. “Just try random settings and keep whichever one is best.”</p>
-        <p>It is a fair first idea. Here is why it falls apart.</p>
-        <WhyExists
-          problem="A billion knobs, one loss meter. Find settings that make the loss small."
-          naive="Try random changes to the knobs. Keep a change if the loss went down, undo it if not."
-          fails="With a billion knobs, a random change is almost never an improvement, and each try costs a full run of the model. You would wait forever."
-          idea="Do not guess. For each knob, measure how sensitive the loss is to it: which direction helps, and how much. Then move all knobs at once in their helpful directions."
-          tradeoff="A sensitivity is only valid for tiny changes around where you stand. So you must take small steps and re-measure, many times. That loop is the next lesson, gradient descent."
-        />
-      </Problem>
 
       <MentalModel>
         <p>Back to the cooker. Say you turn the flame knob up by 1 degree and the hiss gets 2 units louder. The sensitivity of the hiss to the knob is 2. That one number tells you two things: the <b>direction</b> (louder, not quieter) and the <b>strength</b> (twice your nudge).</p>
@@ -140,13 +126,7 @@ ratio             0.006001 / 0.001 = 6.001
         </div>
         <p>Chain rule: <span className="mono">4 × 1 × 3 = <b>12</b></span>.</p>
         <p>The honest check, treating the whole pipeline as a black box: <span className="mono">f(2) = 15</span>, <span className="mono">f(2.001) = 15.012003</span>. Moved by 0.012003, divided by 0.001: <span className="mono">12.003</span>. They agree.</p>
-        <Callout kind="idea">
-          This is the entire mathematical content of <G t="backprop">backpropagation</G>, the algorithm that trains every neural network.
-          <br /><br />
-          A 50-layer network is a 50-stage pipeline. Backpropagation walks it from the output back to the input, multiplying local amplifications as it goes. One more rule joins in when a value feeds several later stages: the effects along the separate routes add up.
-          <br /><br />
-          You will build it in <a href="#/lesson/backprop">lesson 3.2</a>. The “hard part” will be a multiplication you already understand.
-        </Callout>
+        <p>This is the entire mathematical content of <G t="backprop">backpropagation</G>, the algorithm that trains every neural network. A 50-layer network is a 50-stage pipeline, walked from the output back to the input, multiplying local amplifications as it goes. (When a value feeds several later stages, the effects along the separate routes add up.) You will build it in <a href="#/lesson/backprop">lesson 3.2</a>, and the “hard part” will be a multiplication you already understand.</p>
       </Numbers>
 
       <TheMath>
@@ -198,7 +178,13 @@ ratio             0.006001 / 0.001 = 6.001
 
       <CodeIt>
         <p>After dinner Riya opens the repository to see how the nudge is written in code. It is the whole idea in two lines. Read the comment: it is the recipe.</p>
-        <Code source="phase1-foundations/math_primer.py" title="the nudge experiment">{`
+        <Code
+          source="phase1-foundations/math_primer.py"
+          title="the nudge experiment"
+          show={`print("derivative of x**2 at x = 3:", round(d, 4))
+for h in [1, 0.1, 0.01, 0.001]:
+    print("h =", h, " ratio =", round(nudge_derivative(lambda x: x ** 2, 3.0, h), 4))`}
+        >{`
 def nudge_derivative(f, x, h=1e-6):
     return (f(x + h) - f(x)) / h      # nudge, re-measure, divide
 
@@ -206,7 +192,15 @@ d = nudge_derivative(lambda x: x ** 2, 3.0)
 assert abs(d - 6) < 1e-3
 `}</Code>
         <p><code>f</code> is any Python function. It is treated as a black box: we never look inside, we only call it twice. The file then checks the whole formula table the same way:</p>
-        <Code source="phase1-foundations/math_primer.py" title="formulas are shortcuts; the experiment is the meaning">{`
+        <Code
+          source="phase1-foundations/math_primer.py"
+          title="formulas are shortcuts; the experiment is the meaning"
+          setup={`import numpy as np
+def nudge_derivative(f, x, h=1e-6):
+    return (f(x + h) - f(x)) / h`}
+          show={`for name, f, formula in table:
+    print(name, " measured", round(nudge_derivative(f, x0), 4), "  formula", round(formula(x0), 4))`}
+        >{`
 table = [
     ("c*x (c=5) ", lambda x: 5 * x,  lambda x: 5.0),
     ("x^2       ", lambda x: x ** 2, lambda x: 2 * x),
@@ -219,7 +213,13 @@ for name, f, formula in table:
     assert abs(measured - expected) < 1e-3
 `}</Code>
         <p>And the chain rule, on a two-stage pipeline (square, then times 5):</p>
-        <Code source="phase1-foundations/math_primer.py" title="amplification factors multiply">{`
+        <Code
+          source="phase1-foundations/math_primer.py"
+          title="amplification factors multiply"
+          setup={`def nudge_derivative(f, x, h=1e-6):
+    return (f(x + h) - f(x)) / h`}
+          show={`print("chain rule:", end_to_end, "  measured:", round(measured, 4))`}
+        >{`
 stage1_amp = 2 * 2.0            # d(x^2)/dx = 2x = 4 at x=2
 stage2_amp = 5.0                # d(5u)/du = 5
 end_to_end = stage1_amp * stage2_amp
@@ -280,26 +280,36 @@ assert abs(measured - end_to_end) < 1e-3
           <LossCurvePicture />
         </Exercise>
 
-        <Exercise
-          id="derivatives-debug"
-          type="debug"
-          title="The estimate that does not match"
-          hints={['The measured value is 12. Which combination of 4, 1 and 3 gives 12?', 'Think of the currency exchange: do you add exchange rates or multiply them?']}
-          solution={<><p>The amplifications must be <b>multiplied</b>, not added: 4 × 1 × 3 = 12. A nudge is stretched by stage 1, and the <em>stretched</em> nudge is what stage 2 receives, and so on.</p><p>Notice that the nudge check caught the bug without anyone reasoning about calculus. Keep that habit: whenever you derive a gradient by hand, measure it too.</p></>}
-        >
-          <p>A colleague at Paisa Pal analyses the pipeline <code>x → square → +1 → ×3</code> at x = 2. His code says 8. The nudge experiment prints 12.0. What is wrong?</p>
-          <Code>{`
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="derivatives-debug"
+            type="debug"
+            title="The estimate that does not match"
+            hints={['The measured value is 12. Which combination of 4, 1 and 3 gives 12?', 'Think of the currency exchange: do you add exchange rates or multiply them?']}
+            solution={<><p>The amplifications must be <b>multiplied</b>, not added: 4 × 1 × 3 = 12. A nudge is stretched by stage 1, and the <em>stretched</em> nudge is what stage 2 receives, and so on.</p><p>Notice that the nudge check caught the bug without anyone reasoning about calculus. Keep that habit: whenever you derive a gradient by hand, measure it too.</p></>}
+          >
+            <p>A colleague at Paisa Pal analyses the pipeline <code>x → square → +1 → ×3</code> at x = 2. His code says 8. The nudge experiment prints 12.0. What is wrong?</p>
+            <Code
+              setup={`def nudge_derivative(f, x, h=1e-6):
+    return (f(x + h) - f(x)) / h`}
+              show={`print("his end-to-end:", end_to_end)
+print("measured:     ", round(measured, 3))`}
+            >{`
 amps = [4.0, 1.0, 3.0]        # local amplification of each stage at x = 2
 end_to_end = sum(amps)        # 8.0
 measured = nudge_derivative(lambda x: 3 * (x ** 2 + 1), 2.0)   # 12.0
 `}</Code>
-        </Exercise>
+          </Exercise>
 
-        <ExplainBack
-          id="derivatives-explain"
-          prompt="Explain to a teammate who has never studied calculus what a gradient is and how a model could use it to improve. Do not use the words “derivative” or “slope”."
-          modelAnswer={<p>Imagine the model as a machine with many knobs and one meter that shows how wrong it currently is. For each knob you can run a small experiment: turn it up a hair, see how much the meter moves, and divide the movement by the size of your turn. That gives one number per knob. Its sign says whether turning the knob up makes things better or worse, and its size says how much that knob matters right now. The list of all those numbers is the gradient. To improve, turn every knob a little in the direction that lowers the meter, more for knobs that matter more, and then measure again, because the numbers change once you have moved.</p>}
-        />
+          <ExplainBack
+            id="derivatives-explain"
+            prompt="Explain to a teammate who has never studied calculus what a gradient is and how a model could use it to improve. Do not use the words “derivative” or “slope”."
+            modelAnswer={<p>Imagine the model as a machine with many knobs and one meter that shows how wrong it currently is. For each knob you can run a small experiment: turn it up a hair, see how much the meter moves, and divide the movement by the size of your turn. That gives one number per knob. Its sign says whether turning the knob up makes things better or worse, and its size says how much that knob matters right now. The list of all those numbers is the gradient. To improve, turn every knob a little in the direction that lowers the meter, more for knobs that matter more, and then measure again, because the numbers change once you have moved.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -322,28 +332,14 @@ measured = nudge_derivative(lambda x: 3 * (x ** 2 + 1), 2.0)   # 12.0
             answer: 2,
             explain: 'They multiply: 2 × 0 × 5 = 0. A stage that passes no nudges through blocks the whole chain, which matters a lot when networks get deep.',
           },
-          {
-            q: 'What is a gradient?',
-            options: ['The largest derivative among all knobs', 'A list with one derivative per knob: how the output responds to nudging each knob on its own', 'The total of all the knobs', 'A special kind of matrix multiplication'],
-            answer: 1,
-            explain: 'Same nudge experiment, once per knob, others held still. A model with a billion parameters has a gradient with a billion entries.',
-          },
-          {
-            q: 'What is the mathematical content of backpropagation?',
-            options: ['Solving a large system of equations exactly', 'The chain rule: multiplying local amplifications, from the output back to the input', 'Trying random weight changes and keeping the good ones', 'Integrating the loss over all inputs'],
-            answer: 1,
-            explain: 'A network is a long pipeline. Backpropagation is an efficient way of organising the chain-rule multiplications so that one backward sweep yields the derivative for every weight.',
-          },
         ]}
       />
 
       <Remember
         items={[
           <>A <b>derivative</b> is a measured sensitivity: <b>nudge the input, see how far the output moves, divide</b>. Its sign gives the direction, its size the strength.</>,
-          <>It is <b>local</b>: valid for tiny nudges around where you stand. Move, and you must measure again.</>,
-          <>A <b>gradient</b> is one derivative per knob. For each knob: up a hair, does the error rise or fall, and how fast?</>,
-          <>The <b>chain rule</b>: in a pipeline, local amplifications <b>multiply</b>. At x = 2, square → +1 → ×3 gives 4 × 1 × 3 = 12.</>,
-          <>That multiplication is the whole mathematical content of <b>backpropagation</b>. The nudge experiment remains your unit test for it.</>,
+          <>It is <b>local</b>: valid for tiny nudges around where you stand. Move, and you must measure again. A <b>gradient</b> is one derivative per knob.</>,
+          <>The <b>chain rule</b>: in a pipeline, local amplifications <b>multiply</b>. At x = 2, square → +1 → ×3 gives 4 × 1 × 3 = 12. That multiplication is the whole mathematical content of <b>backpropagation</b>, and the nudge experiment is its unit test.</>,
         ]}
       />
 
@@ -355,9 +351,7 @@ measured = nudge_derivative(lambda x: 3 * (x ** 2 + 1), 2.0)   # 12.0
         <Callout kind="established">
           Nobody trains a model by nudging. Measuring one parameter’s derivative that way costs one extra run of the whole model, so a 7-billion-parameter model would need 7 billion runs for a single training step. The chain rule lets backpropagation get every derivative from <em>one</em> backward sweep. That sweep costs roughly twice as much arithmetic as one forward run, so a full training step (forward plus backward) is about three forward runs. That efficiency is what makes training large models possible at all.
         </Callout>
-        <Callout kind="established">
-          In frameworks like PyTorch you never write the backward sweep yourself. Every operation records what it needs to work out its local amplification as it runs, and <code>loss.backward()</code> multiplies them together in reverse. This is called automatic differentiation. In <a href="#/lesson/backprop">Backpropagation</a> you will write it by hand once, in NumPy, and check it with the nudge experiment, so that <code>.backward()</code> is never magic again.
-        </Callout>
+        <p>In frameworks like PyTorch you never write the backward sweep yourself. Every operation records what it needs to work out its local amplification as it runs, and <code>loss.backward()</code> multiplies them together in reverse. This is called automatic differentiation. In <a href="#/lesson/backprop">Backpropagation</a> you will write it by hand once, in NumPy, and check it with the nudge experiment, so that <code>.backward()</code> is never magic again.</p>
         <p>You now have all four tools:</p>
         <ul>
           <li><a href="#/lesson/vectors">dot products</a> to compare,</li>

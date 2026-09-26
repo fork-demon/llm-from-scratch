@@ -50,7 +50,12 @@ export default function CapstoneLesson() {
         <div className="section-head"><span className="section-kicker">Before you start</span></div>
         <h2>Setup, and how the tests work</h2>
         <p>Make a folder <code>capstone/</code> at the repository root for your own files. Run everything from the repository root. The phase folders have hyphens in their names, so they cannot be imported as packages; add them to the path instead:</p>
-        <Code title="capstone/paths.py">{`
+        <Code
+          title="capstone/paths.py"
+          show={`print("Python now searches these folders first, in this order:")
+for folder in sys.path[:5]:
+    print("  ", folder)`}
+        >{`
 import sys
 for folder in ("phase2-language", "phase3-transformers",
                "phase4-modern-llms", "phase5-agents", "capstone"):

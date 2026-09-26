@@ -17,9 +17,7 @@ export default function PromptToAnswerLesson() {
         <p>Riya is not so sure. She uses these tools every day, and she realises she cannot explain what happened in that one second. Kabir, the team’s ML lead, only smiles. “Good. Then we start at the bottom.”</p>
         <p>By the end of this course you will be able to draw every step of that second, explain it, and point at the code that does it. You will have written that code yourself.</p>
         <p>This first lesson has no maths and no code. It shows you the whole machine from the outside, once, so that every later lesson has somewhere to sit.</p>
-        <Callout kind="idea">
-          An LLM answers by doing one small thing over and over: given all the text so far, work out <b>how likely each possible next piece of text is</b>, pick one, add it to the text, and go again.
-        </Callout>
+        <p>An LLM answers by doing one small thing over and over: given all the text so far, work out <b>how likely each possible next piece of text is</b>, pick one, add it to the text, and go again.</p>
       </Why>
 
       <Problem title="The wrong picture: “it looks the answer up”">

@@ -21,11 +21,7 @@ export default function NeuronsLesson() {
         <p>“A straight line cannot fold,” he says. “Training longer won’t teach it to.”</p>
         <p>That is the wall the last lesson ended at. Gradient descent finds the best line. But if the data follows a curve, the best line is still a bad answer. The model <em>cannot express</em> the shape.</p>
         <p>Almost nothing interesting is a straight line. Is this email spam? Which word comes next? Which spiral arm is this dot on? None of them is “the output goes up steadily as the input goes up”.</p>
-        <Callout kind="idea">
-          We need a model that can bend, and whose bends can be <em>learned</em> by the same gradient descent loop. That is all a neural network is:
-          <br /><br />
-          <b>A neural network is a collection of adjustable functions whose parameters are learned from examples.</b>
-        </Callout>
+        <p>We need a model that can bend, and whose bends can be <em>learned</em> by the same gradient descent loop. That is all a neural network is: <b>a collection of adjustable functions whose parameters are learned from examples.</b></p>
         <p>This lesson builds one from parts you already own: the <a href="#/lesson/vectors">dot product</a> and the <a href="#/lesson/matrices">matrix multiply</a>. There is exactly one new ingredient, and it is one line of code.</p>
       </Why>
 
@@ -159,20 +155,55 @@ export default function NeuronsLesson() {
 
       <CodeIt>
         <p>One layer is one line of NumPy. <code>X</code> holds one example per row, so the same line processes a whole batch at once.</p>
-        <Code title="Step 1: multiply, shift">{`
+        <Code
+          title="Step 1: multiply, shift"
+          setup={`import numpy as np
+X = np.array([[1.0, 2.0]])               # one example, x = [1, 2]
+W = np.array([[1.0, -1.0],               # column j = weights of neuron j
+              [0.5,  0.25]])
+b = np.zeros(2)`}
+          show={`print("z =", z, " shape", z.shape)`}
+        >{`
 z = X @ W + b            # (N, n_in) @ (n_in, n_out) -> (N, n_out)
 `}</Code>
-        <Code title="Step 2: bend">{`
+        <Code
+          title="Step 2: bend"
+          setup={`import numpy as np
+z = np.array([[2.0, -0.5]])              # the weighted sums from step 1`}
+          show={`print("h =", h, " (neuron 2's hinge is shut)")`}
+        >{`
 h = np.maximum(0, z)     # ReLU: negatives become 0
 `}</Code>
-        <Code title="Step 3: repeat for every hidden layer; no bend on the last one">{`
+        <Code
+          title="Step 3: repeat for every hidden layer; no bend on the last one"
+          setup={`import numpy as np
+# the tiny network from "A forward pass, by hand": one column of weights per neuron
+X = np.array([[1.0, 2.0]])                       # one example: x = [1, 2]
+W = [np.array([[1.0, -1.0], [0.5, 0.25]]),       # hidden layer: neuron 1 [1.0, 0.5], neuron 2 [-1.0, 0.25]
+     np.array([[0.5, -0.5], [0.5, 1.0]])]        # output layer: score 1 [0.5, 0.5], score 2 [-0.5, 1.0]
+b = [np.zeros(2), np.zeros(2)]                   # all biases 0`}
+          show={`print("hidden h =", h, "  logits =", logits)
+p = np.exp(logits) / np.exp(logits).sum()
+print("softmax:", p.round(2))`}
+        >{`
 h = X
 for i in range(len(W) - 1):
     h = np.maximum(0, h @ W[i] + b[i])
 logits = h @ W[-1] + b[-1]
 `}</Code>
         <p>That is the forward pass of the repository’s network. Here is the real class, called <code>MLP</code>. The name is short for <b>multi-layer perceptron</b>, which is the traditional name for exactly what you have just built: a few layers of weighted sums with a bend after each one. The only additions below are the random starting weights and a <code>cache</code> that remembers each layer’s output (the next lesson needs those):</p>
-        <Code source="phase1-foundations/mlp_numpy.py" title="class MLP: setup and forward pass">{`
+        <Code
+          source="phase1-foundations/mlp_numpy.py"
+          title="class MLP: setup and forward pass"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)           # the file's seed`}
+          show={`net = MLP()
+print("weight shapes:", [W.shape for W in net.W])
+print("parameters:", sum(W.size for W in net.W) + sum(b.size for b in net.b))
+X = np.array([[1.0, 2.0], [0.3, -0.7]])  # two points on the plane
+print("logits:", net.forward(X).round(3))
+print("cached layer outputs:", [h.shape for h in net.cache])`}
+        >{`
 class MLP:
     def __init__(self, sizes=(2, 64, 64, 3)):
         self.W = [0.1 * rng.normal(size=(a, b)) for a, b in zip(sizes, sizes[1:])]
@@ -207,7 +238,7 @@ class MLP:
           <br /><br />
           You can check this one yourself. Right after the line that prints the final accuracy, add <code>Xv, yv = make_spiral()</code> (300 new points with new random noise) and print <code>net.accuracy(Xv, yv)</code>. With the file’s seed, the 64-wide network scores <b>97.7%</b> on the fresh points, against 98.7% on its training points. A small gap: this model learned the shape. We come back to validation properly in <a href="#/lesson/training-gpt">Training GPT</a>, where it is watched as <G t="validation-loss">validation loss</G>.
         </Callout>
-        <Callout kind="dev">Why random starting weights and not zeros? If every neuron in a layer starts identical, every neuron receives an identical gradient, and they stay identical forever: 64 copies of one neuron. Small random values break the tie.</Callout>
+        <p>Why random starting weights and not zeros? If every neuron in a layer starts identical, every neuron receives an identical gradient, and they stay identical forever: 64 copies of one neuron. Small random values break the tie.</p>
         <RepoRunner path="phase1-foundations/mlp_numpy.py" title="Run mlp_numpy.py in your browser">
           <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
         </RepoRunner>
@@ -243,19 +274,6 @@ class MLP:
         </Exercise>
 
         <Exercise
-          id="neurons-predict"
-          type="predict"
-          title="Ten layers, no activation"
-          hints={[
-            'Write the network as W10 · ( … (W2 · (W1 · x)) … ). What can you do with a chain of matrix multiplications?',
-            'Biases do not rescue it: a line plus an offset, fed into another line plus an offset, is still a line plus an offset.',
-          ]}
-          solution={<p>No more powerful than a single linear layer. The ten matrices multiply together into one matrix (and the biases fold into one bias), so the network can only draw straight lines, however long you train it. On the spiral it would stay near 54% at best. It is also slower and harder to train than the one-layer version, so it is strictly worse.</p>}
-        >
-          <p>A colleague builds a 10-layer network for the spiral data but forgets every activation function. Predict: roughly what accuracy will it reach, and why?</p>
-        </Exercise>
-
-        <Exercise
           id="neurons-experiment"
           type="experiment"
           title="Build |x| from two hinges"
@@ -280,12 +298,36 @@ class MLP:
           solution={<><p>There is a ReLU on the <em>output</em> layer. Scores can then never be negative, so the network cannot push a wrong class far below the others, and any score that would be negative gets a zero gradient and stops learning. The last layer must be plain linear: <code>logits = h @ W[-1] + b[-1]</code>, as in the repository.</p><p>Hidden layers bend. The output layer only reads off the result.</p></>}
         >
           <p>This forward pass runs without errors but the model trains poorly. What is wrong?</p>
-          <Code>{`
+          <Code
+            setup={`import numpy as np
+# the tiny network from "A forward pass, by hand": one column of weights per neuron
+X = np.array([[1.0, 2.0]])                       # one example: x = [1, 2]
+W = [np.array([[1.0, -1.0], [0.5, 0.25]]),       # hidden layer: neuron 1 [1.0, 0.5], neuron 2 [-1.0, 0.25]
+     np.array([[0.5, -0.5], [0.5, 1.0]])]        # output layer: score 1 [0.5, 0.5], score 2 [-0.5, 1.0]
+b = [np.zeros(2), np.zeros(2)]                   # all biases 0`}
+            show={`print("logits:", logits)`}
+          >{`
 h = X
 for i in range(len(W)):
     h = np.maximum(0, h @ W[i] + b[i])
 logits = h
 `}</Code>
+        </Exercise>
+
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+        <Exercise
+          id="neurons-predict"
+          type="predict"
+          title="Ten layers, no activation"
+          hints={[
+            'Write the network as W10 · ( … (W2 · (W1 · x)) … ). What can you do with a chain of matrix multiplications?',
+            'Biases do not rescue it: a line plus an offset, fed into another line plus an offset, is still a line plus an offset.',
+          ]}
+          solution={<p>No more powerful than a single linear layer. The ten matrices multiply together into one matrix (and the biases fold into one bias), so the network can only draw straight lines, however long you train it. On the spiral it would stay near 54% at best. It is also slower and harder to train than the one-layer version, so it is strictly worse.</p>}
+        >
+          <p>A colleague builds a 10-layer network for the spiral data but forgets every activation function. Predict: roughly what accuracy will it reach, and why?</p>
         </Exercise>
 
         <Exercise
@@ -311,22 +353,12 @@ logits = h
           prompt="Explain to a teammate why a neural network needs activation functions. Use the phrase “collapse into one matrix” and say what ReLU changes."
           modelAnswer={<p>Each layer without an activation is a matrix multiply plus an offset. Two of those in a row collapse into one matrix multiply plus one offset, so a deep network without activations can only compute what a single linear layer computes: straight lines and flat planes. ReLU puts a bend after each layer: negative values become zero. Now the layers cannot be merged, because which neurons are “on” depends on the input. Each neuron becomes an adjustable hinge, and sums of many hinges can follow curves. The weights that position the hinges are learned by gradient descent.</p>}
         />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
         questions={[
-          {
-            q: 'What does a single neuron compute?',
-            options: ['A lookup in a table of stored examples', 'A dot product of its inputs with its weights, plus a bias, passed through a simple bend', 'The average of its inputs', 'A probability that the input is correct'],
-            answer: 1,
-            explain: 'Weighted sum, shift, bend. Everything else in this part is that, repeated.',
-          },
-          {
-            q: 'Why is a whole layer written as one matrix multiply?',
-            options: ['Because matrices are required by Python', 'Because each neuron is a dot product with the same input, and a matrix multiply is many dot products at once', 'Because layers have no biases', 'It is only an approximation of what the neurons do'],
-            answer: 1,
-            explain: 'One column of W per neuron. This is also why GPUs, which are built for large matrix multiplies, run neural networks fast.',
-          },
           {
             q: 'You stack 5 linear layers with no activation. Compared with 1 linear layer, the stack can represent…',
             options: ['5 times more complex functions', 'curves, but only gentle ones', 'at most the same functions: the matrices multiply into one', 'nothing at all'],
@@ -353,7 +385,6 @@ logits = h
           <>A <b>neuron</b> = dot product with its weights + bias, then an activation. A <b>layer</b> = many neurons = one matrix multiply: <code>h = relu(x @ W + b)</code>.</>,
           <>Without activations, stacked layers <b>collapse into one matrix</b>: W2(W1 x) = (W2 W1) x. Depth alone adds nothing.</>,
           <><b>ReLU</b>, max(0, z), is a hinge. The weight sets its steepness and direction, the bias moves the bend. Sums of hinges can approximate any curve.</>,
-          <>The <b>forward pass</b> is evaluating the layers in order. Hidden layers bend; the last layer outputs raw scores.</>,
           <>On the spiral’s training points: linear model <b>54%</b>, the same loop with ReLU layers <b>98.7%</b> (97.7% on fresh points). The weights are not designed. They are learned.</>,
         ]}
       />
@@ -367,7 +398,7 @@ logits = h
           real={<ul><li>In GPT-2: d → 4d → d inside every block, e.g. 768 → 3,072 → 768 in the smallest GPT-2: about 4.7 million parameters per block, in each of 12 blocks</li><li>GELU or a gated variant (SwiGLU): a hinge with a rounded corner</li><li>Input and output: one token’s vector, processed independently of the other tokens</li><li>One such network per block, alternating with attention</li></ul>}
         />
         <Callout kind="established">In a GPT-2-style block the feed-forward network holds about two thirds of the block’s weights: two d × 4d matrices make 8d², against 4d² for attention’s four d × d matrices. So most of the parameters of a typical LLM sit in plain “multiply, shift, bend, multiply” layers like the one you just built.</Callout>
-        <Callout kind="note">Modern models such as Llama use <G t="swiglu">SwiGLU</G> instead. It has <em>three</em> matrices instead of two (one of them acts as a gate), so the hidden width is shrunk to about 8/3 · d to keep the count near 8d². Llama 2 7B, for example, has d = 4,096 and a hidden width of 11,008. The shape of the idea is unchanged: widen, bend, project back. More in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>.</Callout>
+        <p>Modern models such as Llama use <G t="swiglu">SwiGLU</G> instead. It has <em>three</em> matrices instead of two (one of them acts as a gate), so the hidden width is shrunk to about 8/3 · d to keep the count near 8d². Llama 2 7B, for example, has d = 4,096 and a hidden width of 11,008. The shape of the idea is unchanged: widen, bend, project back. More in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>.</p>
         <Callout kind="research">What those feed-forward parameters <em>do</em> is much less settled. There is experimental evidence that they play a large part in recalling facts, and you will often read “facts are stored in the feed-forward layers”. Treat that as a useful hypothesis with supporting experiments, not as a known mechanism. We come back to it in <a href="#/lesson/why-llms-know">Why LLMs know things</a>.</Callout>
         <p>Riya reruns the spiral with the hinges in. 98.7%. She shows Kabir. He nods, then asks the question that makes the next lesson necessary: “4,547 weights. How did the loop know which way to turn each one?”</p>
       </RealLLM>

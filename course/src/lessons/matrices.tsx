@@ -15,9 +15,7 @@ export default function MatricesLesson() {
         <p>Open the source code of any LLM and search for the character <code>@</code>. You will find lines like <code>x @ W</code>, <code>Q @ K.T</code> and <code>weights @ V</code> everywhere.</p>
         <p>Delete them and almost nothing is left. An LLM is, to a surprising degree, a long chain of one operation: the <b>matrix multiply</b>.</p>
         <p>That sounds like bad news if you are not a maths person. It is good news. In the <a href="#/lesson/vectors">last lesson</a> you learned the dot product: one question, one answer. A matrix multiply is nothing new. It is <b>many dot products at once</b>, arranged in a grid, like Amma’s sheet.</p>
-        <Callout kind="idea">
-          One dot product asks one question of one vector. A model needs to ask thousands of questions of thousands of tokens, at every layer. A matrix multiply is how you write, and run, all of those at once.
-        </Callout>
+        <p>One dot product asks one question of one vector. A model needs to ask thousands of questions of thousands of tokens, at every layer. A matrix multiply is how you write, and run, all of those at once.</p>
       </Why>
 
       <Problem>
@@ -68,7 +66,7 @@ export default function MatricesLesson() {
 
         <h3>Matrix × matrix: every row with every column</h3>
         <p>Now put <em>several</em> vectors on the right-hand side, standing up as columns. This is Amma’s sheet. The rule:</p>
-        <Callout kind="idea">In <code>A @ B</code>, the number in row i, column j of the result is <b>(row i of A) · (column j of B)</b>. Every row of A gets dotted with every column of B. That is the entire definition.</Callout>
+        <p>In <code>A @ B</code>, the number in row i, column j of the result is <b>(row i of A) · (column j of B)</b>. Every row of A gets dotted with every column of B. That is the entire definition.</p>
         <Callout kind="analogy">
           Think of a questionnaire. Each row of A is a question. Each column of B is a respondent. The result is the full table of answers: one cell per (question, respondent) pair.
           <br /><br />
@@ -115,9 +113,7 @@ X = [[1, 0],      W = [[2, 0, 1],      X @ W = [[2, 0, 1],    <- token 0
 `}</Code>
         <p>Check token 2: <span className="mono">[1, 1] · [2, 1] = 3</span>, <span className="mono">[1, 1] · [0, 3] = 3</span>, <span className="mono">[1, 1] · [1, 0] = 1</span>.</p>
         <p>Each row of the result depends only on the matching row of X. The tokens do not mix. The same transformation is applied to each of them, independently, in one go.</p>
-        <Callout kind="idea">
-          Notice the switch. In the house example the questions were the <b>rows</b> of W, and we wrote <code>W @ x</code>. Here the data is on the left, so each question is a <b>column</b> of W, and we write <code>X @ W</code>. Same dot products, laid out sideways. LLM code almost always uses this second form. The next section shows, with the house numbers, that the two are the same thing.
-        </Callout>
+        <p>Notice the switch. In the house example the questions were the <b>rows</b> of W, and we wrote <code>W @ x</code>. Here the data is on the left, so each question is a <b>column</b> of W, and we write <code>X @ W</code>. Same dot products, laid out sideways. LLM code almost always uses this second form. The next section shows, with the house numbers, that the two are the same thing.</p>
       </Numbers>
 
       <TheMath>
@@ -185,14 +181,32 @@ X = [[2, 1, 1],      X @ W.T = [[4, 4],     <- house 0: price 4, upkeep 4
 
       <CodeIt>
         <p>Here is the definition as code: two loops choose a result cell, and the body is one dot product.</p>
-        <Code title="matrix multiply, the long way">{`
+        <Code
+          title="matrix multiply, the long way"
+          setup={`import numpy as np
+A = np.array([[1, 2],
+              [3, 0]])
+B = np.array([[1, 0, 1],
+              [2, 1, 0]])
+n, m = A.shape[0], B.shape[1]   # rows of A, columns of B`}
+          show={`print(out)`}
+        >{`
 out = np.zeros((n, m))
 for i in range(n):            # every row of A
     for j in range(m):        # every column of B
         out[i, j] = A[i, :] @ B[:, j]
 `}</Code>
         <p>And this is what everybody actually writes:</p>
-        <Code title="the same thing">{`
+        <Code
+          title="the same thing"
+          setup={`import numpy as np
+A = np.array([[1, 2],
+              [3, 0]])
+B = np.array([[1, 0, 1],
+              [2, 1, 0]])`}
+          show={`print(out.shape)
+print(out)`}
+        >{`
 out = A @ B
 `}</Code>
         <Callout kind="dev">
@@ -201,14 +215,19 @@ out = A @ B
           Now look at the loop body. No iteration reads anything another iteration wrote. So every cell can be worked out on its own, and all of them can be worked out at the same time.
           <br /><br />
           A GPU is a machine for doing thousands of identical multiply-adds at once. That match is why deep learning became practical.
-        </Callout>
-        <Callout kind="dev">
+          <br /><br />
           Arithmetic is only half the story. To multiply by W, every number of W has to be read from memory first. When an LLM generates text one token at a time, each new token reads <em>all</em> the weights but does only a little arithmetic with each one.
           <br /><br />
           So during generation the usual bottleneck is <b>memory bandwidth</b>: how fast the weights can be streamed to the cores. GPUs help here too, because their memory is much faster than a typical CPU’s. You will see this again in <a href="#/lesson/inference">Inference</a>.
         </Callout>
         <p>From the repository, the hand calculation checked by an assert:</p>
-        <Code source="phase1-foundations/math_primer.py" title="every row of A dotted with every column of B">{`
+        <Code
+          source="phase1-foundations/math_primer.py"
+          title="every row of A dotted with every column of B"
+          setup={`import numpy as np`}
+          show={`print(A @ B)
+print("cell (0, 0) = row 0 of A . column 0 of B =", A[0] @ B[:, 0])`}
+        >{`
 A = np.array([[1, 2],
               [3, 0]])
 B = np.array([[1, 0, 1],
@@ -218,7 +237,13 @@ by_hand = np.array([[5, 2, 1],
 assert (A @ B == by_hand).all()
 `}</Code>
         <p>And the two patterns you will see in every later lesson: a batch of tokens through one transformation, and all-pairs similarity via the transpose.</p>
-        <Code source="phase1-foundations/math_primer.py" title="one multiply, all tokens">{`
+        <Code
+          source="phase1-foundations/math_primer.py"
+          title="one multiply, all tokens"
+          setup={`import numpy as np`}
+          show={`print(tokens.shape, "@", transform.shape, "->", out.shape)
+print(out)`}
+        >{`
 tokens = np.array([[1.0, 2.0],      # token 0's vector
                    [3.0, 4.0],      # token 1's vector
                    [5.0, 6.0]])     # token 2's vector
@@ -226,7 +251,16 @@ transform = np.array([[1.0, 0.0, 1.0],
                       [0.0, 1.0, 1.0]])
 out = tokens @ transform            # (3,2) @ (2,3) -> (3,3): all 3 tokens at once
 `}</Code>
-        <Code source="phase1-foundations/math_primer.py" title="the Q @ K.T pattern">{`
+        <Code
+          source="phase1-foundations/math_primer.py"
+          title="the Q @ K.T pattern"
+          setup={`import numpy as np
+X = np.array([[1.0, 2.0],      # token 0
+              [3.0, 4.0],      # token 1
+              [5.0, 6.0]])     # token 2`}
+          show={`print(pairwise)
+print("token 0 . token 2 =", X[0] @ X[2])`}
+        >{`
 pairwise = X @ X.T                    # (3,2) @ (2,3) -> (3,3)
 assert pairwise[0, 2] == X[0] @ X[2]  # cell (i,j) is exactly token_i . token_j
 `}</Code>
@@ -354,12 +388,8 @@ scores = Q @ K              # ValueError: ... (size 4 is different from 8)
         />
         <Callout kind="established">
           A layer of a neural network is <code>x @ W</code> (plus a small extra step you will meet in <a href="#/lesson/neurons">Neurons and layers</a>). The <G t="parameters">parameters</G> of an LLM, the billions of numbers that training adjusts, are overwhelmingly the entries of matrices like W. When someone says “a 7-billion-parameter model”, picture a few hundred large spreadsheets.
-        </Callout>
-        <Callout kind="established">
-          All T tokens of a prompt go through each layer together, as rows of one matrix. No loop over tokens. This is why reading your prompt is fast, and why hardware built for parallel multiply-adds (GPUs and similar accelerators) is what LLMs run on.
-        </Callout>
-        <Callout kind="established">
-          Writing the answer is different. There, tokens come one at a time, so each multiply has only one new row, and the whole weight matrix must be read from memory for it. That makes token-by-token generation limited mostly by memory bandwidth, not by arithmetic. It is a big reason accelerators pair their cores with very fast memory.
+          <br /><br />
+          All T tokens of a prompt go through each layer together, as rows of one matrix. No loop over tokens. This is why reading your prompt is fast, and why hardware built for parallel multiply-adds (GPUs and similar accelerators) is what LLMs run on. Writing the answer, one token at a time, is the memory-bound case from earlier.
         </Callout>
         <p>You will see these exact patterns again: <code>x @ W</code> in <a href="#/lesson/neurons">every layer</a>, <code>Q @ K.T</code> in <a href="#/lesson/attention">attention</a>, and a final multiply that produces one score per word in the vocabulary, which is where the <a href="#/lesson/softmax">next lesson</a> picks up.</p>
         <p>Amma finishes her forty students in one sitting. Riya finishes this lesson. Neither of them used a loop.</p>

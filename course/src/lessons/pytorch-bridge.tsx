@@ -29,21 +29,18 @@ model.safetensors             548 MB
           <li>the sampling loop in <a href="#/lesson/inference">Inference</a>,</li>
           <li>LoRA in <a href="#/lesson/fine-tuning">Fine-tuning</a>.</li>
         </ul>
-        <p>What you have not done is match your parts to theirs.</p>
-        <Callout kind="idea">
-          A real open model is your <code>tiny_gpt.py</code> with different names, bigger numbers and a file format. After this lesson you can open <b>any</b> decoder-only model on the Hub, read its <code>config.json</code>, predict its size and memory, list its tensors and say which lesson built each one.
-        </Callout>
+        <p>What you have not done is match your parts to theirs. A real open model is your <code>tiny_gpt.py</code> with different names, bigger numbers and a file format. After this lesson you can open <b>any</b> decoder-only model on the Hub, read its <code>config.json</code>, predict its size and memory, list its tensors and say which lesson built each one.</p>
         <p>We will do it properly. Load GPT-2. Recompute its 124,439,808 parameters from the config alone. Reproduce its logits by hand from the raw tensors. Then fine-tune it with the LoRA library people actually use.</p>
       </Why>
 
       <Problem title="What stands between your GPT and theirs?">
         <p>Dev wanders in, sees the file list and says, “So that’s the brain? I thought it would be, like, a program.” It is a fair surprise. What stands between Riya’s GPT and this one is not ideas. It is four practical things:</p>
-        <div className="grid-2">
-          <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Names</h4><p>Your fused QKV layer is <code>attn.qkv</code>. GPT-2 calls it <code>attn.c_attn</code>. Llama splits it into <code>q_proj</code>, <code>k_proj</code>, <code>v_proj</code>. Same maths, three vocabularies.</p></div>
-          <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Files</h4><p>A model is shipped as data, not as a program. You need to know which file holds what, and which of them can hurt you.</p></div>
-          <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Number formats</h4><p>Your tiny GPT used 32-bit floats and nobody cared. At 8 billion parameters the format decides whether the model fits on your GPU at all.</p></div>
-          <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>Libraries</h4><p><code>from_pretrained</code>, <code>generate</code>, <code>get_peft_model</code>. Each wraps something you wrote by hand. You should know exactly what.</p></div>
-        </div>
+        <ul>
+          <li><b>Names.</b> Your fused QKV layer is <code>attn.qkv</code>. GPT-2 calls it <code>attn.c_attn</code>. Llama splits it into <code>q_proj</code>, <code>k_proj</code>, <code>v_proj</code>. Same maths, three vocabularies.</li>
+          <li><b>Files.</b> A model is shipped as data, not as a program: which file holds what, and which can hurt you?</li>
+          <li><b>Number formats.</b> At 8 billion parameters the format decides whether the model fits on your GPU at all.</li>
+          <li><b>Libraries.</b> <code>from_pretrained</code>, <code>generate</code>, <code>get_peft_model</code> each wrap something you wrote by hand.</li>
+        </ul>
         <WhyExists
           problem="A trained model must be handed to other people: a few hundred megabytes to hundreds of gigabytes of numbers, plus everything needed to use them."
           naive={<>Save the Python object. <code>torch.save(model)</code> uses Python’s <code>pickle</code>, which can store any object.</>}
@@ -54,7 +51,6 @@ model.safetensors             548 MB
       </Problem>
 
       <MentalModel title="A model repository, file by file">
-        <p>Here is the GPT-2 repository with a real excerpt from each file, connected to the machine you already know.</p>
         <RepoAnatomy />
         <p>Read it as four answers:</p>
         <ol>
@@ -80,7 +76,7 @@ model.safetensors             548 MB
           <p>Padding the table like this is common practice, for two usual reasons: matrix sizes that are multiples of a power of two tend to run faster on GPUs (151,936 = 128 × 1,187), and spare rows leave room to add special tokens later without resizing the model. The rule that matters is one-directional: every id the tokenizer can produce must have a row. The reverse is not required.</p>
         </DeepDive>
         <h3>Two dialects, one machine</h3>
-        <p>This table is the heart of the lesson. Left: what you wrote. Middle: GPT-2. Right: a Llama-style model (Llama, Mistral, Qwen and many others share these names).</p>
+        <p>This table is the heart of the lesson: what you wrote, GPT-2, and a Llama-style model (Llama, Mistral, Qwen and many others share these names).</p>
         <div className="table-scroll">
           <table className="plain" style={{ fontSize: 14 }}>
             <thead><tr><th>your tiny_gpt.py</th><th>GPT-2 tensor, shape</th><th>Llama 3 8B tensor, shape</th><th>built in</th></tr></thead>
@@ -105,7 +101,7 @@ model.safetensors             548 MB
       </MentalModel>
 
       <TryIt title="Read a config, then name the tensors">
-        <p>First the config. The presets are the real files from the Hub, in both dialects: GPT-2’s <code>n_embd</code>, <code>n_layer</code>, <code>n_head</code>, <code>n_positions</code>, and the Llama-style <code>hidden_size</code>, <code>intermediate_size</code>, <code>num_attention_heads</code>, <code>num_key_value_heads</code>, <code>rope_theta</code>, <code>rms_norm_eps</code>, <code>max_position_embeddings</code>, <code>tie_word_embeddings</code>, <code>torch_dtype</code>. Every field is explained in the words of the lesson that taught it. The text box is live: edit a number and everything below recomputes.</p>
+        <p>First the config. The presets are the real files from the Hub, in both dialects (GPT-2’s <code>n_embd</code>, <code>n_layer</code>; the Llama-style <code>hidden_size</code>, <code>num_key_value_heads</code> and the rest). Every field is explained in the words of the lesson that taught it. The text box is live: edit a number and everything below recomputes.</p>
         <ConfigReader />
         <p>Things worth noticing before you move on:</p>
         <ul>
@@ -156,12 +152,12 @@ model.safetensors             548 MB
             </tbody>
           </table>
         </div>
-        <Callout kind="established">This accounting is from the ZeRO paper (Rajbhandari et al., 2019), which uses it to show that a 1.5B-parameter GPT-2 needs at least 24 GB of model state. It is the standard back-of-envelope estimate, not a law: activations come on top, and 8-bit optimisers or pure-bf16 training lower it.</Callout>
+        <p>This accounting is from the ZeRO paper (Rajbhandari et al., 2019), which uses it to show that a 1.5B-parameter GPT-2 needs at least 24 GB of model state. It is the standard back-of-envelope estimate, not a law: activations come on top, and 8-bit optimisers or pure-bf16 training lower it.</p>
         <p>Now LoRA on GPT-2 from this lesson’s script. The frozen base needs only its weights: 124.4M × 4 bytes = 498 MB in fp32. Gradients and Adam state exist only for the adapter’s 442,368 numbers: about 5 MB. Activations still have to be stored for backprop, so LoRA does not make training free. It removes the largest fixed cost.</p>
       </Numbers>
 
       <TheMath>
-        <p>The whole sizing exercise is three multiplications. Worth writing down once, because you will do them in your head for the rest of your career.</p>
+        <p>The whole sizing exercise is three multiplications, worth writing down once:</p>
         <Equation
           label="Weight memory equals N times bytes per parameter. KV cache per token equals 2 times layers times KV heads times head size times bytes. Training memory is about 16 N bytes plus activations."
           symbols={[
@@ -181,7 +177,7 @@ model.safetensors             548 MB
       </TheMath>
 
       <CodeIt>
-        <p>Two files. Install once with <code>pip install transformers peft</code>. The first run downloads GPT-2 (about 550 MB) and caches it. No account, no API key.</p>
+        <p>Two files. Install once with <code>pip install transformers peft</code>. The first run downloads GPT-2 (about 550 MB); no account, no API key.</p>
         <h3>1. Load it, and put it in the right mode</h3>
         <Code title="loading a model and its tokenizer">{`
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -197,10 +193,8 @@ with torch.no_grad():   # do not record the forward pass: we will not call backw
         <ul>
           <li><b><code>model.eval()</code></b> switches dropout off. Forget it and you get different logits on every call. You will measure that below.</li>
           <li><b><code>torch.no_grad()</code></b> stops PyTorch keeping the recording it would need for <code>loss.backward()</code>. Same results, much less memory.</li>
-          <li><b>Pass the dtype: <code>dtype=torch.bfloat16</code>.</b> Always say which number format you want the weights in. Leave it out and an older library version may load an 8B model in fp32, silently taking 32 GB instead of 16.
-            <p className="muted" style={{ fontSize: 14, marginTop: 4 }}>Version trivia, if you hit it: transformers 4.x defaults to fp32 whatever the file holds; version 5 defaults to the checkpoint’s own format. Before 4.56 the argument was spelled <code>torch_dtype</code>, and many config files still use that key.</p>
-          </li>
-          <li><b><code>device_map="auto"</code></b> decides which piece of the model goes where: GPU first, then ordinary CPU memory once the GPU is full. It needs the <code>accelerate</code> package. For a model that fits on the card anyway, <code>model.to("cuda")</code> does the same job.</li>
+          <li><b>Pass the dtype: <code>dtype=torch.bfloat16</code>.</b> Leave it out and an older library version may load an 8B model in fp32, silently taking 32 GB instead of 16. (transformers 4.x defaults to fp32; version 5 to the checkpoint’s own format. Before 4.56 the argument was spelled <code>torch_dtype</code>.)</li>
+          <li><b><code>device_map="auto"</code></b> puts the model on the GPU first, then in CPU memory once the GPU is full (it needs <code>accelerate</code>). For a model that fits, <code>model.to("cuda")</code> does the same job.</li>
         </ul>
         <h3>2. Walk the tensors</h3>
         <p>The script prints GPT-2’s config next to your <code>Config</code>, then every tensor with the lesson that built it. This is its real output for block 0:</p>
@@ -261,7 +255,7 @@ def sample_next(logits, temperature=1.0, top_k=None, generator=None):
     return int(torch.multinomial(probs, num_samples=1, generator=generator))
 `}</Code>
         <p>Wrap that in “run the model, take the last row, sample, append” and you have <code>model.generate(ids, do_sample=True, temperature=0.8, top_k=40, max_new_tokens=25)</code>. The script proves it for greedy decoding: your loop and <code>generate(do_sample=False)</code> return identical ids.</p>
-        <p>What <code>generate</code> adds is engineering you also know: the <G t="kv-cache">KV cache</G> (your loop recomputes everything each step), stopping at <code>eos_token_id</code>, batching with padding, and more knobs of the same kind (<code>top_p</code>, <code>repetition_penalty</code>). Note that <code>do_sample=False</code> is the default, and then <code>temperature</code> is ignored.</p>
+        <p>What <code>generate</code> adds is engineering you also know: the <G t="kv-cache">KV cache</G>, stopping at <code>eos_token_id</code>, batching with padding, and more knobs (<code>top_p</code>, <code>repetition_penalty</code>). <code>do_sample=False</code> is the default, and then <code>temperature</code> is ignored.</p>
         <h3>5. Chat models: let the tokenizer build the prompt</h3>
         <p>GPT-2 is a base model and has no chat template. An instruction-tuned model does. This is real output from the tokenizer of <code>Qwen/Qwen2.5-0.5B-Instruct</code>, a small open chat model:</p>
         <Code title="apply_chat_template">{`
@@ -275,7 +269,7 @@ text = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=T
 # What is a cat?<|im_end|>
 # <|im_start|>assistant
 `}</Code>
-        <p><code>add_generation_prompt=True</code> appends the opening of the assistant’s turn, so the most likely continuation is an answer. The model stops by sampling <code>&lt;|im_end|&gt;</code>, which this tokenizer declares as its end-of-sequence token. Build this string by hand with one wrong newline and quality drops quietly. Use the template. It is stored with the tokenizer: in a <code>chat_template.jinja</code> file in newer repositories, inside <code>tokenizer_config.json</code> in older ones.</p>
+        <p><code>add_generation_prompt=True</code> appends the opening of the assistant’s turn, so the most likely continuation is an answer. The model stops by sampling <code>&lt;|im_end|&gt;</code>, this tokenizer’s end-of-sequence token. Build this string by hand with one wrong newline and quality drops quietly, so use the template (stored with the tokenizer, in <code>chat_template.jinja</code> or <code>tokenizer_config.json</code>).</p>
         <h3>6. LoRA with the real library</h3>
         <p>In <a href="#/lesson/fine-tuning">Fine-tuning</a> you wrote <code>LoRALinear</code>: a frozen layer plus a thin trainable path <code>(x @ A) @ B * (alpha / r)</code>, with B starting at zero. The <code>peft</code> library does exactly that. The second script fine-tunes GPT-2 to triage support tickets into a format it has never seen: <code>&lt;&lt;team:payments|priority:P1&gt;&gt;</code>.</p>
         <Code source="phase6-engineering/lora_finetune_hf.py" title="the whole LoRA setup">{`
@@ -292,7 +286,7 @@ model = get_peft_model(base, config)   # freezes every base weight, wraps the ta
 model.print_trainable_parameters()
 `}</Code>
         <p><code>target_modules</code> are name endings from the tensor walk above. That is why this lesson made you learn the names. <code>"c_proj"</code> alone would also match <code>mlp.c_proj</code>. For a Llama-style model you would write <code>["q_proj", "k_proj", "v_proj", "o_proj"]</code>.</p>
-        <p>Which layers do people adapt in practice? The LoRA paper adapted only W<sub>q</sub> and W<sub>v</sub> in most of its experiments, and peft’s built-in default for Llama is still <code>q_proj</code> and <code>v_proj</code>. The QLoRA paper later reported that adapters on <em>all</em> linear layers of the block, MLP included, were needed to match full fine-tuning, and peft accepts <code>target_modules="all-linear"</code> for that. More targets means more trainable numbers: you will compute how many in the exercises.</p>
+        <p>Which layers do people adapt? The LoRA paper adapted only W<sub>q</sub> and W<sub>v</sub> in most experiments, and peft’s default for Llama is still <code>q_proj</code> and <code>v_proj</code>. The QLoRA paper later reported that adapters on <em>all</em> linear layers were needed to match full fine-tuning (peft: <code>target_modules="all-linear"</code>).</p>
         <Code lang="text" title="real output, default rank 8">{`
 trainable params: 442,368 || all params: 124,882,176 || trainable%: 0.3542
 your arithmetic: 12 blocks x (r x (D + 3D) + r x (D + D)) = 442,368
@@ -303,7 +297,19 @@ h.0.attn.c_attn is now a peft Linear holding:
 `}</Code>
         <p>Your A was (768, 8). Theirs prints as (8, 768) because peft builds A and B as <code>nn.Linear</code> layers, which store (out, in). Same matrix, transposed storage, once again.</p>
         <p>The second idea in the file is <b>loss masking</b>. The ticket is given. Only the answer should be graded:</p>
-        <Code source="phase6-engineering/lora_finetune_hf.py" title="grade the response, not the prompt">{`
+        <Code
+          source="phase6-engineering/lora_finetune_hf.py"
+          title="grade the response, not the prompt"
+          setup={`IGNORE = -100   # the value PyTorch's cross-entropy skips
+# (masked_next_token_loss needs PyTorch, so only build_example runs here)
+prompt_ids   = [464, 3797, 3332, 319, 262]   # "The cat sat on the"
+response_ids = [2272, 13]                     # a made-up two-token answer
+eos_id = 50256`}
+          show={`input_ids, labels = build_example(prompt_ids, response_ids, eos_id)
+print("input_ids:", input_ids)
+print("labels:   ", labels)
+print("graded positions:", sum(l != IGNORE for l in labels), "of", len(labels))`}
+        >{`
 def build_example(prompt_ids, response_ids, eos_id, max_len=128):
     input_ids = (list(prompt_ids) + list(response_ids) + [eos_id])[:max_len]
     labels = ([IGNORE] * len(prompt_ids) + list(response_ids) + [eos_id])[:max_len]
@@ -314,7 +320,7 @@ def masked_next_token_loss(logits, labels):
     return F.cross_entropy(logits[:, :-1].reshape(-1, V), labels[:, 1:].reshape(-1),
                            ignore_index=IGNORE)
 `}</Code>
-        <p><code>IGNORE</code> is −100, the value PyTorch’s cross-entropy skips. The slice <code>[:, :-1]</code> against <code>[:, 1:]</code> is the shift you made in <code>get_batch</code>: position t predicts token t + 1. The end-of-sequence token stays graded, so the model learns to stop. A test in the repository checks this function returns the same loss as the library’s built-in <code>model(..., labels=labels).loss</code>.</p>
+        <p><code>IGNORE</code> is −100, the value PyTorch’s cross-entropy skips. The slice <code>[:, :-1]</code> against <code>[:, 1:]</code> is the shift you made in <code>get_batch</code>: position t predicts token t + 1. The end-of-sequence token stays graded, so the model learns to stop.</p>
         <p>Measured on a laptop CPU, 300 steps, 94 seconds. Your numbers will differ slightly:</p>
         <div className="table-scroll">
           <table className="plain">
@@ -334,11 +340,12 @@ def masked_next_token_loss(logits, labels):
           example={<>The script saves <code>adapter_config.json</code> (1 kB: rank, alpha, target modules, base model name) and <code>adapter_model.safetensors</code> (1,775,520 bytes). The base model is 498 MB in fp32: a ratio of 1 to 279.</>}
           formal={<>Attached: base and adapter stay separate, the adapter can be switched off or swapped per request, at the cost of a little extra compute. Merged (<code>merge_and_unload()</code>): scale · A·B is added into each frozen weight, giving a plain model of the original shape with no extra latency, which can no longer be detached. The script does both and checks the logits agree.</>}
         />
-        <p>Two options you will meet in every real training script, both available as flags here:</p>
-        <ul>
-          <li><b>Mixed precision</b> (<code>--bf16</code>): <code>torch.autocast</code> runs the matrix multiplies in bf16, while the weights being trained and the optimiser state stay in fp32. On GPUs with bf16 support it roughly halves activation memory and speeds up the multiplies. The script ignores the flag elsewhere, because CPUs without native bf16 emulate it slowly.</li>
-          <li><b>Gradient accumulation</b> (<code>--grad-accum N</code>): call <code>backward()</code> on N small batches before one optimiser step. Gradients add up, so it behaves like a batch N times larger while only one small batch of activations is in memory.</li>
-        </ul>
+        <DeepDive title="Two flags you will meet in every real training script">
+          <ul>
+            <li><b>Mixed precision</b> (<code>--bf16</code>): <code>torch.autocast</code> runs the matrix multiplies in bf16, while the weights being trained and the optimiser state stay in fp32. On GPUs with bf16 support it roughly halves activation memory and speeds up the multiplies. The script ignores the flag elsewhere, because CPUs without native bf16 emulate it slowly.</li>
+            <li><b>Gradient accumulation</b> (<code>--grad-accum N</code>): call <code>backward()</code> on N small batches before one optimiser step. Gradients add up, so it behaves like a batch N times larger while only one small batch of activations is in memory.</li>
+          </ul>
+        </DeepDive>
       </CodeIt>
 
       <BreakIt>
@@ -371,22 +378,6 @@ def masked_next_token_loss(logits, labels):
         </Exercise>
 
         <Exercise
-          id="pytorch-bridge-calc-fit"
-          type="calculate"
-          title="Will Mistral 7B fit?"
-          answer={{ value: 14.5, tolerance: 0.2 }}
-          answerLabel="GB, one decimal"
-          hints={[
-            'The config reader gives the exact parameter count for the Mistral preset.',
-            '7,241,732,096 parameters, 2 bytes each in bf16.',
-            '7,241,732,096 × 2 = 14,483,464,192 bytes. Divide by 10⁹.',
-          ]}
-          solution={<><p>7,241,732,096 × 2 bytes = 14.48 GB, so about <b>14.5 GB</b>.</p><p>It fits on a 16 GB GPU only on paper: the KV cache and activations need room too. At 131,072 bytes per token, 1.5 GB of headroom is about 11,000 cached tokens across all concurrent requests. This is the arithmetic behind “use a 24 GB card or quantise to int8”.</p></>}
-        >
-          <p>How many GB (10⁹ bytes) do the weights of Mistral 7B v0.1 take in bf16? Use the config reader for the parameter count.</p>
-        </Exercise>
-
-        <Exercise
           id="pytorch-bridge-trace-137m"
           type="trace"
           title="The Hub says 137M. The paper says 124M."
@@ -398,26 +389,6 @@ def masked_next_token_loss(logits, labels):
           solution={<><p>1,048,576 = 1024 × 1024 is the <b>causal mask</b>. In <code>tiny_gpt.py</code> you stored it with <code>register_buffer("mask", ...)</code>: a tensor that belongs to the module but is not a parameter. GPT-2’s original checkpoint saved that buffer for every block, as <code>h.N.attn.bias</code> (a confusing name: it is the mask, not a bias vector). 12 masks × 1,048,576 = 12,582,912 extra numbers in the file.</p><p>The lesson: a checkpoint file can hold things that are not parameters, and a name alone can mislead. The shape (1, 1, 1024, 1024) gives it away.</p></>}
         >
           <p>The GPT-2 model page reports 137M parameters for <code>model.safetensors</code>. The script counts 124,439,808 and the formula agrees. Nobody is wrong. Explain the 12,582,912 extra numbers.</p>
-        </Exercise>
-
-        <Exercise
-          id="pytorch-bridge-debug-eval"
-          type="debug"
-          title="The flaky evaluation"
-          hints={[
-            'The same prompt, the same weights, greedy decoding, and still different answers. What in the forward pass is random?',
-            'Look at what is missing between from_pretrained and the loop. In this snippet the model was just fine-tuned, so it was last put in which mode?',
-          ]}
-          solution={<><p>The model is still in <b>train mode</b>, so dropout is active and every forward pass is different, even with greedy decoding. Add <code>model.eval()</code> before evaluating (and <code>model.train()</code> again afterwards if training continues). Wrapping the evaluation in <code>torch.no_grad()</code> is good for memory, but it does not switch dropout off: the two switches are independent.</p><p><code>from_pretrained</code> returns a model in eval mode, which is why people forget: the bug only appears after a training loop has called <code>model.train()</code>.</p></>}
-        >
-          <p>A colleague fine-tunes a model, then scores it. The score changes by several points on every run, although decoding is greedy. Why?</p>
-          <Code>{`
-for step in range(steps):
-    train_step(model, batch)          # model.train() was called earlier
-
-with torch.no_grad():
-    score = evaluate(model, held_out) # greedy decoding inside
-`}</Code>
         </Exercise>
 
         <Exercise
@@ -441,16 +412,50 @@ with torch.no_grad():
           prompt="A teammate downloads a 1.8 MB file called adapter_model.safetensors from a colleague and asks: “Is this the fine-tuned model? How can it be so small, and is it safe to load?” Answer all three questions."
           modelAnswer={<p>It is not a model. It is a LoRA adapter: the small A and B matrices that were trained while the base model stayed frozen. For rank 8 on GPT-2’s attention layers that is 442,368 numbers against 124 million, so about 1.8 MB against 500 MB. To use it you also need the exact base model named in <code>adapter_config.json</code>: the library loads the base, wraps the target layers, and adds the thin path x·A·B·(alpha/r) beside each one. You can keep it attached (swappable, can be switched off) or merge it into the weights (a plain model, no extra latency). On safety: safetensors holds only a JSON header and raw numbers, so loading it cannot execute code, unlike a pickled <code>.bin</code> or <code>.pt</code> file. It can still change the model’s behaviour in ways you did not intend, so you evaluate it like any other change.</p>}
         />
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+            <Exercise
+              id="pytorch-bridge-calc-fit"
+              type="calculate"
+              title="Will Mistral 7B fit?"
+              answer={{ value: 14.5, tolerance: 0.2 }}
+              answerLabel="GB, one decimal"
+              hints={[
+                'The config reader gives the exact parameter count for the Mistral preset.',
+                '7,241,732,096 parameters, 2 bytes each in bf16.',
+                '7,241,732,096 × 2 = 14,483,464,192 bytes. Divide by 10⁹.',
+              ]}
+              solution={<><p>7,241,732,096 × 2 bytes = 14.48 GB, so about <b>14.5 GB</b>.</p><p>It fits on a 16 GB GPU only on paper: the KV cache and activations need room too. At 131,072 bytes per token, 1.5 GB of headroom is about 11,000 cached tokens across all concurrent requests. This is the arithmetic behind “use a 24 GB card or quantise to int8”.</p></>}
+            >
+              <p>How many GB (10⁹ bytes) do the weights of Mistral 7B v0.1 take in bf16? Use the config reader for the parameter count.</p>
+            </Exercise>
+
+            <Exercise
+              id="pytorch-bridge-debug-eval"
+              type="debug"
+              title="The flaky evaluation"
+              hints={[
+                'The same prompt, the same weights, greedy decoding, and still different answers. What in the forward pass is random?',
+                'Look at what is missing between from_pretrained and the loop. In this snippet the model was just fine-tuned, so it was last put in which mode?',
+              ]}
+              solution={<><p>The model is still in <b>train mode</b>, so dropout is active and every forward pass is different, even with greedy decoding. Add <code>model.eval()</code> before evaluating (and <code>model.train()</code> again afterwards if training continues). Wrapping the evaluation in <code>torch.no_grad()</code> is good for memory, but it does not switch dropout off: the two switches are independent.</p><p><code>from_pretrained</code> returns a model in eval mode, which is why people forget: the bug only appears after a training loop has called <code>model.train()</code>.</p></>}
+            >
+              <p>A colleague fine-tunes a model, then scores it. The score changes by several points on every run, although decoding is greedy. Why?</p>
+              <Code>{`
+for step in range(steps):
+    train_step(model, batch)          # model.train() was called earlier
+
+with torch.no_grad():
+    score = evaluate(model, held_out) # greedy decoding inside
+`}</Code>
+            </Exercise>
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
         questions={[
-          {
-            q: 'You open an unfamiliar model repo. Which file tells you how many blocks it has and whether it uses GQA?',
-            options: ['model.safetensors, in the tensor bytes', 'config.json: the layer count and the two head counts', 'tokenizer.json, next to the vocabulary', 'generation_config.json, with the sampling defaults'],
-            answer: 1,
-            explain: 'config.json is the skeleton: num_hidden_layers, num_attention_heads and num_key_value_heads. If the last is smaller than the head count, the model uses GQA.',
-          },
           {
             q: 'GPT-2’s c_attn.weight has shape (768, 2304), while nn.Linear(768, 2304).weight has shape (2304, 768). What follows?',
             options: ['GPT-2 computes a different function from your fused qkv layer', 'Same function; the storage is transposed, and tools that assume nn.Linear must be told', 'GPT-2 has three times as many attention parameters as your layer', 'One of the two checkpoints must be corrupted or mislabelled'],
@@ -462,12 +467,6 @@ with torch.no_grad():
             options: ['bf16 keeps more significant digits than fp16 does', 'bf16 has fp32’s exponent range, so large values do not overflow to infinity', 'bf16 is the only 16-bit format that GPUs can multiply', 'bf16 files are compressed, so checkpoints are smaller'],
             answer: 1,
             explain: 'bf16 spends 8 bits on the exponent, like fp32, and only 7 on the fraction. fp16 overflows above 65,504. bf16 actually has fewer digits than fp16; range is what training needs.',
-          },
-          {
-            q: 'An 8B-parameter model needs about 16 GB to run in bf16, but about 128 GB to fully fine-tune with Adam, before activations. Where does the rest go?',
-            options: ['Into a longer KV cache, which training needs for every batch', 'Gradients, a 32-bit master copy of the weights, and Adam’s two running averages', 'Into the tokenizer and the chat template, which are loaded per GPU', 'Training always uses 64-bit floats, which are four times larger'],
-            answer: 1,
-            explain: '2 + 2 + 4 + 4 + 4 = 16 bytes per parameter in the standard mixed-precision accounting. LoRA avoids most of it by training well under 1% of the numbers.',
           },
           {
             q: 'In the fine-tuning data, labels are −100 on the prompt tokens. What would change if they held the real token ids instead?',
@@ -483,8 +482,7 @@ with torch.no_grad():
           <>A model repo is <b>data, not code</b>: <code>config.json</code> is the skeleton, tokenizer files turn text into ids, <code>model.safetensors</code> holds named tensors, <code>generation_config.json</code> holds loop defaults. The forward pass lives in the library.</>,
           <>Two dialects, one machine: <code>wte / c_attn / c_proj / c_fc / ln_f</code> (GPT-2) and <code>embed_tokens / q_proj k_proj v_proj o_proj / gate_proj up_proj down_proj / norm</code> (Llama-style). <b>Name plus shape</b> identifies any tensor.</>,
           <>From the config alone you can compute parameters exactly (GPT-2: 124,439,808; Llama 3 8B: 8,030,261,248), weights = N × bytes, KV cache per token = 2 · L · H<sub>kv</sub> · d<sub>head</sub> · bytes, and training ≈ 16 bytes per parameter plus activations.</>,
-          <><b>bf16</b> = 2 bytes with fp32’s range. <code>model.eval()</code> switches dropout off; <code>torch.no_grad()</code> switches recording off. They are independent.</>,
-          <><code>generate()</code> is your loop with a KV cache. <code>peft</code>’s LoRA is your <code>LoRALinear</code> plus bookkeeping. The tokenizer and its chat template must match the model. Prefer <b>safetensors</b>: a pickle can run code.</>,
+          <><code>generate()</code> is your loop with a KV cache, and <code>peft</code>’s LoRA is your <code>LoRALinear</code> plus bookkeeping. <code>model.eval()</code> (dropout off) and <code>torch.no_grad()</code> (recording off) are independent switches. Prefer <b>safetensors</b>: a pickle can run code.</>,
         ]}
       />
 
@@ -493,7 +491,7 @@ with torch.no_grad():
           toy={<ul><li><code>tiny_gpt.py</code>: 0.8M parameters, fp32, one file, names you chose</li><li>GPT-2 small in this lesson: 124M, fp32, runs on a laptop CPU</li><li>LoRA on 40 tickets, 8 held out, checked by eye</li><li>Your loop re-runs the whole sequence for each new token</li></ul>}
           real={<ul><li>Billions of parameters in bf16, sharded across several safetensors files with an index</li><li>Served in bf16, FP8 or a 4-bit format (int4, MXFP4, NVFP4), by engines such as the ones in <a href="#/lesson/inference-systems">Inference systems</a></li><li>Thousands to millions of examples, a held-out set sized as in <a href="#/lesson/evals">Evals</a>, often LoRA on all linear layers over a 4-bit base (QLoRA)</li><li>KV cache, batching, stop tokens and chat templates handled by the serving stack</li></ul>}
         />
-        <Callout kind="established">The names and shapes in this lesson are read from the published files, and the architecture code is open: you can read <code>modeling_gpt2.py</code> and <code>modeling_llama.py</code> in the transformers repository and find every line of your own GPT in them. For closed models such as Claude, GPT or Gemini none of this is published. What you can say is that openly released models from many labs share this layout.</Callout>
+        <p>The names and shapes in this lesson are read from the published files, and the architecture code is open: you can read <code>modeling_gpt2.py</code> and <code>modeling_llama.py</code> in the transformers repository and find every line of your own GPT in them. For closed models such as Claude, GPT or Gemini none of this is published; what you can say is that openly released models from many labs share this layout.</p>
         <Callout kind="warn" label="Careful: two things that can still run code">A safetensors file cannot execute anything. Two other things can. Pickled checkpoints (<code>.bin</code>, <code>.pt</code>, <code>.ckpt</code>). And <code>trust_remote_code=True</code>, which downloads and runs Python from the model’s repository because the architecture is not in the library yet. Read that code, or pin a revision you have read, before you pass the flag.</Callout>
         <Callout kind="model" label="Simplified: what this lesson left out">Dense models only. A mixture-of-experts config has many MLPs per block and uses a few per token, so “parameters” and “parameters used per token” diverge; the config reader refuses those rather than guess. Some families add small things the Llama rules do not know about (extra norms, biases without a config field, a vocabulary padded beyond the tokenizer’s size), so for an unfamiliar <code>model_type</code> treat the count as an estimate and check it against the Hub’s number.</Callout>
         <p>By lunch the coffee is cold and Riya’s notebook has a two-column list: her names on the left, theirs on the right. Not one row is a mystery. Dev reads it over her shoulder and, for once, has no theory.</p>

@@ -16,13 +16,9 @@ export default function SoftmaxLesson() {
         <p>You know from the <a href="#/lesson/matrices">last lesson</a> what its final step looks like: one big matrix multiply that produces <b>one score per word in the vocabulary</b>. Each score is a dot product, so it can be any number: 4.2, 0, −3.7.</p>
         <p>Raw scores are awkward. You cannot say “the model is 70% sure” from a 4.2. You cannot roll a die with a face of width −3.7.</p>
         <p>And during training you cannot measure <em>how wrong</em> the model was without knowing how much belief it put on the right answer.</p>
-        <Callout kind="idea">
-          The model needs to turn a list of arbitrary scores into <b>probabilities</b>. The function that does it is called <b>softmax</b>.
-          <br /><br />
-          It runs in two places. At the very end of the model, every time a token is generated. And inside every attention layer, to decide how much each word listens to each other word.
-          <br /><br />
-          Softmax itself never picks anything. It only produces the probabilities. Picking is a separate step, which you meet below as sampling.
-        </Callout>
+        <p>The model needs to turn a list of arbitrary scores into <b>probabilities</b>. The function that does it is called <b>softmax</b>.</p>
+        <p>It runs in two places. At the very end of the model, every time a token is generated. And inside every attention layer, to decide how much each word listens to each other word.</p>
+        <p>Softmax itself never picks anything. It only produces the probabilities. Picking is a separate step, which you meet below as sampling.</p>
       </Why>
 
       <Problem>
@@ -177,7 +173,14 @@ export default function SoftmaxLesson() {
         <DeepDive title="Numerical stability: why real code subtracts the max">
           <p>e<sup>z</sup> grows so fast that computers give up early. In 64-bit floating point, e<sup>709</sup> is about 8 × 10<sup>307</sup> and e<sup>710</sup> is already “infinity”. In 32-bit floats the limit is near e<sup>88</sup> (the same for bfloat16, a 16-bit format many models use), and in ordinary 16-bit floats it is only about e<sup>11</sup>. Then infinity ÷ infinity gives <code>nan</code> (not a number), and one nan poisons everything it touches.</p>
           <p>The fix uses the fact you just learned: shifting all logits by a constant changes nothing. So subtract the largest logit from all of them. Now the largest is 0, its exponential is exactly 1, and every other exponential is between 0 and 1. Nothing can overflow.</p>
-          <Code source="phase1-foundations/mlp_numpy.py" title="the softmax used throughout the repository">{`
+          <Code
+            source="phase1-foundations/mlp_numpy.py"
+            title="the softmax used throughout the repository"
+            setup={`import numpy as np`}
+            show={`logits = np.array([[4.2, 2.1, -0.7],
+                   [1000.0, 997.9, 995.1]])   # same gaps, shifted up by 995.8
+print(softmax(logits).round(3))                # both rows agree, no overflow`}
+          >{`
 def softmax(logits):
     # subtract the row max first: exp() of big numbers overflows, and
     # softmax is unchanged by shifting -- the classic numerical-stability trick.
@@ -195,18 +198,40 @@ def softmax(logits):
 
       <CodeIt>
         <p>The two steps, one line each:</p>
-        <Code title="softmax, the direct way">{`
+        <Code
+          title="softmax, the direct way"
+          setup={`import numpy as np`}
+          show={`print("e =", e.round(2))
+print("p =", p.round(3), " sum =", p.sum())`}
+        >{`
 z = np.array([4.2, 2.1, -0.7])   # logits: cat, dog, car
 e = np.exp(z)                    # [66.69, 8.17, 0.50]   all positive now
 p = e / e.sum()                  # [0.885, 0.108, 0.007] sums to 1
 `}</Code>
         <p>Temperature is one extra division, and the loss is one line:</p>
-        <Code title="temperature and surprise">{`
+        <Code
+          title="temperature and surprise"
+          setup={`import numpy as np
+z = np.array([4.2, 2.1, -0.7])   # logits: cat, dog, car
+p = np.exp(z) / np.exp(z).sum()  # T = 1`}
+          show={`print("T = 1:", p.round(3))
+print("T = 2:", p_flat.round(3))
+print("loss if the answer was dog:", round(loss, 2))`}
+        >{`
 p_flat = np.exp(z / 2.0) / np.exp(z / 2.0).sum()   # T = 2: [0.696, 0.244, 0.060]
 loss = -np.log(p[1])                               # correct word was "dog": 2.22
 `}</Code>
         <p>The repository’s version is the same recipe, made safe against overflow (see the deep dive above) and applied to a whole batch of rows at once:</p>
-        <Code source="phase1-foundations/mlp_numpy.py" title="softmax and cross-entropy, as used for training">{`
+        <Code
+          source="phase1-foundations/mlp_numpy.py"
+          title="softmax and cross-entropy, as used for training"
+          setup={`import numpy as np`}
+          show={`logits = np.array([[4.2, 2.1, -0.7]])   # one example: cat, dog, car
+y = np.array([1])                        # the correct word was "dog"
+probs = softmax(logits)
+print(probs.round(3))
+print("loss:", round(cross_entropy(probs, y), 2))`}
+        >{`
 def softmax(logits):
     z = logits - logits.max(axis=1, keepdims=True)
     e = np.exp(z)
@@ -267,7 +292,10 @@ def cross_entropy(probs, y):
           solution={<><p><code>np.exp(1000)</code> overflows to <code>inf</code>, and <code>inf / inf</code> is <code>nan</code>. Fix: <code>z = z - z.max()</code> before exponentiating. The logits become [0, −1], the exponentials [1, 0.368], and the result is [<b>0.731</b>, 0.269].</p><p>This is exactly what the repository’s <code>softmax</code> does. The bug is nasty in practice because it only appears once training has pushed some logit high enough, often hours into a run.</p></>}
         >
           <p>This returns <code>[nan, nan]</code>. Why? Fix it in your head. What should the first probability be?</p>
-          <Code>{`
+          <Code
+            setup={`import numpy as np`}
+            show={`print(softmax(np.array([1000.0, 999.0])))`}
+          >{`
 def softmax(z):
     e = np.exp(z)
     return e / e.sum()
@@ -347,8 +375,7 @@ softmax(np.array([1000.0, 999.0]))
         />
         <Callout kind="established">
           The same function does two jobs in a Transformer. At the output it turns vocabulary logits into <b>next-token probabilities</b>, which are then sampled (<a href="#/lesson/inference">Inference</a> covers temperature, top-k and top-p in detail). Inside <a href="#/lesson/attention">attention</a> it turns a row of match scores into <b>attention weights</b>: how much one token listens to each other token. Same formula, same “positive and sums to 1”.
-        </Callout>
-        <Callout kind="established">
+          <br /><br />
           <G t="cross-entropy">Cross-entropy</G> on the next token is the training objective of every GPT-style model. Pretraining means: read text, predict each next token, measure −ln(p<sub>correct</sub>), and adjust the weights to make it smaller. How to “adjust the weights” is the subject of the <a href="#/lesson/derivatives">next lesson</a> and of <a href="#/lesson/gradient-descent">Part 2</a>.
         </Callout>
         <Callout kind="model">“The model is 88% sure it is cat” is a convenient way to talk. The 88% is a well-defined number that pretraining shapes to match how often continuations occur in the training text (later fine-tuning can distort that match). Whether it reflects anything like human confidence is a separate, and much harder, question.</Callout>

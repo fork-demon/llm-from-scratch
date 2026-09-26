@@ -1,7 +1,7 @@
 import { RepoRunner } from '../components/RepoRunner'
 import { CodeExercise } from '../components/python'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
-import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
+import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal } from '../components/ui'
 import { Code } from '../components/Code'
 import { Exercise, ExplainBack } from '../components/exercise'
 import { EvalLab } from '../interactive/EvalLab'
@@ -29,19 +29,10 @@ export default function EvalsLesson() {
         </div>
         <p>Nothing crashed. No test went red. The system got quietly worse at the one behaviour that protects you from confident nonsense.</p>
         <p>And here is the uncomfortable second half: <b>16 versus 14 out of 24 is not enough evidence that it got worse at all.</b> Both halves are this lesson.</p>
-        <Callout kind="idea">
-          An <b>eval</b> is a repeatable measurement of whether your LLM system does its job: a fixed set of inputs, a rule for marking outputs, and a number that comes with an honest statement of its uncertainty. It is how you replace “it looked fine when I tried it” with evidence.
-        </Callout>
+        <p>An <b>eval</b> is a repeatable measurement of whether your LLM system does its job: a fixed set of inputs, a rule for marking outputs, and a number that comes with an honest statement of its uncertainty. It is how you replace “it looked fine when I tried it” with evidence. It has a price: building the set is real work, and a small set gives a number that is mostly noise.</p>
       </Why>
 
       <Problem>
-        <WhyExists
-          problem="Every part of an LLM system is a knob: the prompt, the model version, the chunk size, k, a threshold. You need to know whether turning one made things better."
-          naive="Try a few inputs by hand and look at the answers. Ship if they look good."
-          fails="You check the cases you thought of, which are the cases you already built for. Output is free text, so nothing fails loudly. A change that fixes three cases and silently breaks five looks like progress."
-          idea="Freeze a set of representative inputs with known right outcomes. Mark every output with a rule, not a mood. Re-run the whole set on every change, and compare with statistics instead of by eye."
-          tradeoff="Building and labelling the set is real work, scorers are themselves imperfect, and a small set gives a number that is mostly noise. An eval you trust too much is worse than none."
-        />
         <Callout kind="dev">
           Riya’s first instinct is the right one: “So it’s a regression suite.” For the workflow, yes: run in CI, block the merge, add a case for every bug. The analogy breaks in three places.
           <br /><br />
@@ -58,7 +49,6 @@ export default function EvalsLesson() {
       <MentalModel title="The anatomy of an eval">
         <p>Every eval, from a 20-line script to a public benchmark, has the same four parts. Here they are with real rows from this lesson’s harness:</p>
         <EvalAnatomy />
-        <p>Each part can be wrong in its own way, so take them one at a time.</p>
 
         <h3>1. The dataset decides what you can find out</h3>
         <p>An eval only sees failures its questions can trigger. Our 24 items come in four categories, and that is deliberate:</p>
@@ -79,7 +69,7 @@ export default function EvalsLesson() {
         <p><b>Watch for leakage.</b> If an eval question (or its answer) also sits in the few-shot examples of your prompt, in your fine-tuning data, or in the model’s pretraining data, a high score measures memory, not ability.</p>
 
         <h3>2. The task calls the system like a user would</h3>
-        <p>The eval does not reach inside. It sends the question in, and records everything that comes back: the answer, the retrieved chunks, the citation. Recording the intermediate results is what makes step 3 useful.</p>
+        <p>The eval sends the question in and records everything that comes back: the answer, the retrieved chunks, the citation. The intermediate results are what let you locate a failure later.</p>
 
         <h3>3. The scorer is where most evals go wrong</h3>
         <div className="table-scroll">
@@ -104,15 +94,15 @@ export default function EvalsLesson() {
           Zheng et al. (2023), “Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena”, measured the failure modes of LLM judges. <b>Position bias:</b> when comparing two answers, judges tend to favour one slot, often the first. Swapping the order changed the verdict in a large share of cases. <b>Verbosity bias:</b> longer answers are preferred even when the extra text adds nothing. <b>Self-enhancement bias:</b> a judge may favour answers written by itself. The paper names this one and also says its data was too limited to confirm it. They also found that a strong judge agreed with human raters more than 80% of the time, about as often as the human raters agreed with each other.
         </Callout>
         <p>So a judge is usable, on three conditions. Give it a specific rubric and a reference answer, not “rate this 1 to 10”. For pairwise comparisons, run both orders and count a flip as a tie. And <b>calibrate it</b>: have people label a sample, and measure how often the judge agrees with them. If it agrees with people less than people agree with each other, fix the rubric before you trust a single score.</p>
-        <Callout kind="model">The harness in this lesson has no LLM in it. Its “rubric judge” is a deterministic function that applies three checks a judge prompt would ask for. It stands in for an LLM judge the same way the extractive answerer in <code>mini_rag.py</code> stands in for an LLM: so that every number is reproducible offline. It has none of a real judge’s flexibility and none of its biases.</Callout>
+        <p>A note on this lesson’s harness: it has no LLM in it. Its “rubric judge” is a deterministic function that applies three checks a judge prompt would ask for, so every number is reproducible offline. It has none of a real judge’s flexibility and none of its biases.</p>
 
         <h3>4. Component metrics tell you where, end-to-end metrics tell you whether</h3>
         <p>When an answer is wrong, the first question is: which part failed? A RAG system has at least three separately measurable properties:</p>
-        <div className="grid-3">
-          <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>Retrieval</h4><p>Was the chunk that holds the answer among the k retrieved? Measurable without any LLM.</p></div>
-          <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>Faithfulness</h4><p>Is every claim in the answer supported by the retrieved text? Also called groundedness. An answer can be faithful and still wrong, if retrieval brought the wrong text.</p></div>
-          <div className="card"><h4 style={{ fontSize: 16, marginBottom: 6 }}>Answer correctness</h4><p>Does the final answer match what a person expects? This is the end-to-end number users feel.</p></div>
-        </div>
+        <ul>
+          <li><b>Retrieval:</b> was the chunk that holds the answer among the k retrieved? Measurable without any LLM.</li>
+          <li><b>Faithfulness</b> (groundedness): is every claim in the answer supported by the retrieved text? An answer can be faithful and still wrong, if retrieval brought the wrong text.</li>
+          <li><b>Answer correctness:</b> does the final answer match what a person expects? This is the end-to-end number users feel.</li>
+        </ul>
         <Term
           name="recall@k"
           plain={<>Of the passages that should have been retrieved, what share showed up in the top k results?</>}
@@ -171,7 +161,7 @@ export default function EvalsLesson() {
         <p>And the regression check from the opening story. A scores 66.7%, B scores 58.3%. Two items pass only under A and none only under B.</p>
         <p>The <b>sign test</b> asks whether a two-to-nothing split is surprising for a fair coin, and the answer is no: p = 0.50. <b>Verdict: cannot tell.</b> Two coin flips landing the same way happen half the time.</p>
         <p>Riya does one more line of arithmetic, for the 200 real tickets waiting for her: at 80%, the interval is still ± 5.5 points. Better than ± 16. Still not a single number.</p>
-        <Callout kind="dev">This is the same discipline as latency work. You would not compare two builds on one request each, and you would not report a p99 from 20 samples. A pass rate is a statistic. Give it the treatment you give every other statistic on your dashboards.</Callout>
+        <p>This is the same discipline as latency work. You would not compare two builds on one request each, and you would not report a p99 from 20 samples. A pass rate is a statistic. Give it the treatment you give every other statistic on your dashboards.</p>
       </Numbers>
 
       <TheMath>
@@ -190,27 +180,28 @@ export default function EvalsLesson() {
         <p><b>Comparing two systems.</b> Run both on the <em>same</em> items and look at each item’s difference. Items that both pass, or both fail, cancel out. Only the items where they disagree carry information, and the question becomes: of those disagreements, is the split lopsided enough that a fair coin would rarely produce it? That is the <b>sign test</b> in the harness. Comparing two separately reported scores throws the pairing away and keeps all the noise of both. Evan Miller’s “Adding Error Bars to Evals” (2024) makes this the central recommendation, noting that models tend to get the same questions right and wrong.</p>
         <p><b>Repeated runs.</b> If your system samples with temperature above 0, one run per item adds a second source of noise on top of the choice of items. Run each item several times and average, or the same commit will score differently on two CI runs.</p>
 
-        <h3>pass@k: the metric for code</h3>
-        <p>Code is the friendly case: a generated function either passes the unit tests or it does not. Code benchmarks often ask a softer question than “is the first attempt right?”: if the model may try k times, does <em>any</em> attempt pass?</p>
-        <Term
-          name="pass@k"
-          plain={<>The probability that at least one of k generated solutions passes the tests.</>}
-          example={<>pass@1 = 30% and pass@10 = 75% means: the first try usually fails, but ten tries usually contain a winner.</>}
-          formal={<>Estimated per problem from n ≥ k samples of which c pass, then averaged over problems.</>}
-        />
-        <Equation
-          label="pass at k equals one minus the ratio of n minus c choose k to n choose k"
-          symbols={[
-            ['n', 'samples generated for this problem (the Codex paper used 200)'],
-            ['c', 'how many of those n passed the unit tests'],
-            ['k', 'the budget of attempts you are asking about'],
-            [<>C(a, b)</>, '“a choose b”: the number of ways to pick b things out of a'],
-            [<>C(n−c, k) / C(n, k)</>, 'the chance that k samples drawn from the n are all failures'],
-          ]}
-        >
-          pass@k = 1 − C(n − c, k) / C(n, k)
-        </Equation>
-        <p>This is the unbiased estimator from Chen et al. (2021), the paper that introduced Codex and HumanEval. The tempting shortcut, 1 − (1 − c/n)<sup>k</sup>, is biased: it underestimates when n is small. With n = 5, c = 2, k = 2 the correct value is 1 − C(3,2)/C(5,2) = 1 − 3/10 = <b>0.70</b>, and the shortcut gives 0.64.</p>
+        <DeepDive title="pass@k: the metric for code">
+          <p>Code is the friendly case: a generated function either passes the unit tests or it does not. Code benchmarks often ask a softer question than “is the first attempt right?”: if the model may try k times, does <em>any</em> attempt pass?</p>
+          <Term
+            name="pass@k"
+            plain={<>The probability that at least one of k generated solutions passes the tests.</>}
+            example={<>pass@1 = 30% and pass@10 = 75% means: the first try usually fails, but ten tries usually contain a winner.</>}
+            formal={<>Estimated per problem from n ≥ k samples of which c pass, then averaged over problems.</>}
+          />
+          <Equation
+            label="pass at k equals one minus the ratio of n minus c choose k to n choose k"
+            symbols={[
+              ['n', 'samples generated for this problem (the Codex paper used 200)'],
+              ['c', 'how many of those n passed the unit tests'],
+              ['k', 'the budget of attempts you are asking about'],
+              [<>C(a, b)</>, '“a choose b”: the number of ways to pick b things out of a'],
+              [<>C(n−c, k) / C(n, k)</>, 'the chance that k samples drawn from the n are all failures'],
+            ]}
+          >
+            pass@k = 1 − C(n − c, k) / C(n, k)
+          </Equation>
+          <p>This is the unbiased estimator from Chen et al. (2021), the paper that introduced Codex and HumanEval. The tempting shortcut, 1 − (1 − c/n)<sup>k</sup>, is biased: it underestimates when n is small. With n = 5, c = 2, k = 2 the correct value is 1 − C(3,2)/C(5,2) = 1 − 3/10 = <b>0.70</b>, and the shortcut gives 0.64.</p>
+        </DeepDive>
         <DeepDive title="Cohen’s kappa: agreement that is not just luck">
           <p>The substring scorer agrees with the human on 19 of 24 items, 79%. But two raters who both say “pass” most of the time agree often by accident. Kappa subtracts that: κ = (p<sub>o</sub> − p<sub>e</sub>) / (1 − p<sub>e</sub>), where p<sub>o</sub> is the observed agreement and p<sub>e</sub> the agreement expected by chance.</p>
           <p>Here the scorer passes 50% and the human 70.8%, so chance agreement is 0.5 × 0.708 + 0.5 × 0.292 = 0.50. Then κ = (0.792 − 0.50) / (1 − 0.50) = 0.58. A kappa of 1 is perfect agreement and 0 is what coin-flipping raters achieve. Report it when you calibrate a judge, and compute human-versus-human kappa too: that is the ceiling.</p>
@@ -222,7 +213,15 @@ export default function EvalsLesson() {
 
       <CodeIt>
         <p>The harness imports the real pipeline, as <code>finetune_tiny_gpt.py</code> imports <code>tiny_gpt.py</code>. A golden item is a dictionary. <code>gold</code> names the sentence that holds the answer, which is what makes a retrieval metric possible:</p>
-        <Code source="phase6-engineering/eval_harness.py" title="1. golden items: an answerable one and an unanswerable one">{`
+        <Code
+          source="phase6-engineering/eval_harness.py"
+          title="1. golden items: an answerable one and an unanswerable one"
+          setup={`golden_set = [   # GOLDEN_SET in the harness has 24 of these`}
+          show={`]
+for item in golden_set:
+    kind = "answerable, answer in " + item["source"] if item["expected"] else "must be refused"
+    print(item["id"], item["cat"], "|", item["q"], "|", kind)`}
+        >{`
 {"id": "d1", "cat": "direct", "q": "how quickly must I acknowledge pages",
  "expected": "within 5 minutes", "source": "oncall.md",
  "gold": "Primary oncall must acknowledge pages"},
@@ -230,7 +229,72 @@ export default function EvalsLesson() {
  "expected": None, "source": None, "gold": None},
 `}</Code>
         <p>The task is one function. It returns the answer <em>and</em> the retrieved chunks, so that a failure can be located later:</p>
-        <Code source="phase6-engineering/eval_harness.py" title="2. the task: call the system, record everything">{`
+        <Code
+          source="phase6-engineering/eval_harness.py"
+          title="2. the task: call the system, record everything"
+          setup={`import re
+import numpy as np
+from types import SimpleNamespace
+# mini_rag.py from the RAG lesson, condensed: the four wiki pages, chunking, embedder, store, answerer
+CORPUS = {
+    "onboarding.md": "New engineers get laptop access on day one. The onboarding buddy is assigned by the team lead. "
+        "All new hires must complete security training within two weeks. Production access requires completing "
+        "the incident response course. The engineering handbook lives in the internal wiki.",
+    "deploy-policy.md": "Deployments to production happen through the CI pipeline only. Manual deploys are forbidden "
+        "except during a declared incident. Every deploy requires two approvals on the pull request. Rollbacks are "
+        "triggered from the deploy dashboard. Deploy freezes apply during the last week of each quarter.",
+    "oncall.md": "The oncall rotation changes every Monday at 10am. Primary oncall must acknowledge pages within five "
+        "minutes. Secondary oncall is paged if the primary does not respond. After an incident the oncall engineer "
+        "writes the postmortem. Postmortems are blameless and due within three business days.",
+    "expenses.md": "Engineers may expense up to 500 dollars per year for learning materials. Conference travel requires "
+        "manager approval in advance. Receipts must be submitted within thirty days of purchase. Home office "
+        "equipment is budgeted separately at 1000 dollars.",
+}
+def tokenize(t):
+    return t.lower().replace(".", "").replace(",", "").split()
+chunks = []
+for src, text in CORPUS.items():
+    s = [x.strip() + "." for x in text.split(".") if x.strip()]
+    chunks += [{"text": " ".join(s[i:i + 2]), "source": src} for i in range(len(s))]
+texts = [c["text"] for c in chunks]
+vocab = sorted({w for t in texts for w in tokenize(t)})
+stoi = {w: i for i, w in enumerate(vocab)}
+idf = np.log(len(texts) / np.array([sum(w in tokenize(t) for t in texts) for w in vocab]))
+C = np.zeros((len(vocab), len(vocab)))
+for t in texts:
+    for a in [stoi[w] for w in tokenize(t)]:
+        for b in [stoi[w] for w in tokenize(t)]:
+            C[a, b] += a != b
+C = C / (C.sum(axis=1, keepdims=True) + 1e-9)
+def embed(text):
+    v = np.zeros(len(vocab))
+    for w in tokenize(text):
+        if w in stoi:
+            v[stoi[w]] += idf[stoi[w]]
+    v = v + 0.3 * (v @ C)
+    return v / (np.linalg.norm(v) + 1e-9)
+vecs = np.array([embed(t) for t in texts])
+def search(qvec, k=3):
+    order = np.argsort(-(vecs @ qvec))[:k]
+    return [(chunks[i], float(vecs[i] @ qvec)) for i in order]
+store = SimpleNamespace(search=search)
+def extractive_answer(question, retrieved, embed, threshold=0.35):
+    qv = embed(question)
+    best, best_sim, best_cite = None, -1, None
+    for i, (c, _) in enumerate(retrieved):
+        for sent in c["text"].split("."):
+            if sent.strip() and float(embed(sent) @ qv) > best_sim:
+                best, best_sim, best_cite = sent.strip(), float(embed(sent) @ qv), (i + 1, c["source"])
+    if best_sim < threshold:
+        return f"Not found in the provided context. (best match {best_sim:.2f})"
+    return f"{best}. [source {best_cite[0]}: {best_cite[1]}] (sim {best_sim:.2f})"
+rag = SimpleNamespace(extractive_answer=extractive_answer)
+config = {"k": 3, "threshold": 0.35}   # DEFAULT_CONFIG in eval_harness.py`}
+          show={`for q in ["how quickly must I acknowledge pages", "what is the wifi password"]:
+    out = run_task({"q": q}, embed, store, config)
+    print(q, "->", {key: out[key] for key in ["refused", "answer", "cited"]})
+    print("   retrieved:", [f"{c['source']} {sim:.2f}" for c, sim in out["retrieved"]])`}
+        >{`
 def run_task(item, embed, store, config):
     retrieved = store.search(embed(item["q"]), k=config["k"])
     raw = rag.extractive_answer(item["q"], retrieved, embed,
@@ -242,7 +306,20 @@ def run_task(item, embed, store, config):
             "cited": None if refused else m.group(2)}
 `}</Code>
         <p>A scorer takes the item and the output and returns a verdict with a reason. The reason is not decoration: it is what you read when you triage failures.</p>
-        <Code source="phase6-engineering/eval_harness.py" title="3. the simplest scorer">{`
+        <Code
+          source="phase6-engineering/eval_harness.py"
+          title="3. the simplest scorer"
+          setup={`import re
+def _plain(text):
+    return re.sub(r"[^a-z0-9 ]", "", text.lower()).strip()
+d1 = {"q": "how quickly must I acknowledge pages", "expected": "within 5 minutes"}
+u1 = {"q": "what is the wifi password", "expected": None}
+right_answer = {"refused": False, "answer": "Primary oncall must acknowledge pages within five minutes"}
+a_refusal = {"refused": True, "answer": None}`}
+          show={`print(score_substring(d1, right_answer))   # a correct answer, marked wrong
+print(score_substring(u1, a_refusal))
+print(score_substring(u1, right_answer))`}
+        >{`
 def score_substring(item, out):
     if item["expected"] is None:
         return out["refused"], "refused" if out["refused"] else "answered a question that has no answer"
@@ -252,14 +329,43 @@ def score_substring(item, out):
     return ok, "reference found in the answer" if ok else f"the string '{item['expected']}' is not in the answer"
 `}</Code>
         <p>The component metric ignores the answer entirely:</p>
-        <Code source="phase6-engineering/eval_harness.py" title="4. retrieval hit: was the right chunk in the top-k?">{`
+        <Code
+          source="phase6-engineering/eval_harness.py"
+          title="4. retrieval hit: was the right chunk in the top-k?"
+          setup={`d1 = {"q": "how quickly must I acknowledge pages", "gold": "Primary oncall must acknowledge pages"}
+u1 = {"q": "what is the wifi password", "gold": None}
+out = {"retrieved": [   # (chunk, similarity), as run_task records them
+    ({"text": "The oncall rotation changes every Monday at 10am. Primary oncall must acknowledge pages within five minutes."}, 0.47),
+    ({"text": "Primary oncall must acknowledge pages within five minutes. Secondary oncall is paged if the primary does not respond."}, 0.45),
+    ({"text": "Secondary oncall is paged if the primary does not respond. After an incident the oncall engineer writes the postmortem."}, 0.09),
+]}`}
+          show={`print("d1 hit:", retrieval_hit(d1, out))
+print("u1 hit:", retrieval_hit(u1, out), "(no right chunk exists, so it is left out of recall@k)")`}
+        >{`
 def retrieval_hit(item, out):
     if item["gold"] is None:
         return None
     return any(item["gold"] in c["text"] for c, _ in out["retrieved"])
 `}</Code>
         <p>The bootstrap is a loop you could have written on day one of the course. Resample the 24 marks with replacement, take the mean, repeat, sort, read off the middle 95%:</p>
-        <Code source="phase6-engineering/eval_harness.py" title="5. a confidence interval with no formula">{`
+        <Code
+          source="phase6-engineering/eval_harness.py"
+          title="5. a confidence interval with no formula"
+          setup={`def mulberry32(seed):          # the harness's tiny seeded generator (same as the course website's)
+    state = seed & 0xFFFFFFFF
+    def nxt():
+        nonlocal state
+        state = (state + 0x6D2B79F5) & 0xFFFFFFFF
+        t = state
+        t = ((t ^ (t >> 15)) * (t | 1)) & 0xFFFFFFFF
+        t ^= (t + (((t ^ (t >> 7)) * (t | 61)) & 0xFFFFFFFF)) & 0xFFFFFFFF
+        return ((t ^ (t >> 14)) & 0xFFFFFFFF) / 4294967296
+    return nxt
+# the rubric judge's marks on the 24 golden items, in order: 16 passes
+marks = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0]`}
+          show={`low, high = bootstrap_interval(marks)
+print(f"score {sum(marks) / len(marks):.1%}, 95% interval {low:.1%} to {high:.1%}")`}
+        >{`
 def bootstrap_interval(values, resamples=10000, seed=15):
     values = list(values)
     n, rnd = len(values), mulberry32(seed)
@@ -273,7 +379,13 @@ def bootstrap_interval(values, resamples=10000, seed=15):
     return means[int(0.025 * resamples)], means[min(resamples - 1, int(0.975 * resamples))]
 `}</Code>
         <p>And the regression check. <code>b</code> and <code>c</code> count the items only one side passes. Everything else has cancelled:</p>
-        <Code source="phase6-engineering/eval_harness.py" title="6. exact sign test on the disagreements">{`
+        <Code
+          source="phase6-engineering/eval_harness.py"
+          title="6. exact sign test on the disagreements"
+          setup={`import math`}
+          show={`print("one sentence per chunk (2 vs 0):   p =", round(sign_test(2, 0), 3))
+print("threshold 0.90       (12 vs 2):   p =", round(sign_test(12, 2), 3))`}
+        >{`
 def sign_test(b, c):
     n = b + c
     if n == 0:
@@ -292,7 +404,7 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
   only A passes: 12   only B passes: 2   sign test p = 0.013
   verdict: A is better
 `}</Code>
-        <Callout kind="dev">In CI this becomes a gate with two thresholds, not one. A hard floor per category (“unanswerable must stay at or above 90%”), because an average can hide a collapse in the category that matters. And a paired test against the main branch, so that a merge is blocked by a statistically real regression and not by three items of noise. Cache the baseline outputs so that the gate costs one run, not two.</Callout>
+        <p>In CI this becomes a gate with two thresholds, not one. A hard floor per category (“unanswerable must stay at or above 90%”), because an average can hide a collapse in the category that matters. And a paired test against the main branch, so that a merge is blocked by a statistically real regression and not by three items of noise. Cache the baseline outputs so that the gate costs one run, not two.</p>
         <RepoRunner path="phase6-engineering/eval_harness.py" title="Run eval_harness.py in your browser">
           <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
         </RepoRunner>
@@ -333,22 +445,6 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
         </Exercise>
 
         <Exercise
-          id="evals-calc-passk"
-          type="calculate"
-          title="pass@k by hand"
-          answer={{ value: 0.533, tolerance: 0.006 }}
-          answerLabel="pass@3 (three decimals)"
-          hints={[
-            'pass@k = 1 − C(n − c, k) / C(n, k). Here n = 10, c = 2, k = 3.',
-            'C(8, 3) = 8·7·6 / 6 = 56 is the number of ways to pick 3 samples that are all failures. C(10, 3) = 120.',
-            '1 − 56/120.',
-          ]}
-          solution={<><p>1 − 56/120 = <b>0.533</b>. Only 2 of 10 samples are correct, so pass@1 is 0.2, and yet three attempts succeed more than half the time.</p><p>That gap is why a pass@k number means little without its k. It is also the arithmetic behind <a href="#/lesson/reasoning-models">test-time compute</a>: when a verifier exists (here, unit tests), sampling more attempts buys accuracy.</p></>}
-        >
-          <p>For one programming problem you sample n = 10 solutions and c = 2 pass the unit tests. Using the unbiased estimator, what is pass@3?</p>
-        </Exercise>
-
-        <Exercise
           id="evals-debug-leak"
           type="debug"
           title="The eval that always improves"
@@ -375,51 +471,50 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
           <p>A RAG system scores 61% answer correctness. The team plans to spend the next sprint swapping in a better embedding model. Their component metric says retrieval recall@5 is 96%. Predict how much the sprint can gain, and say what you would do instead.</p>
         </Exercise>
 
-        <Exercise
-          id="evals-implement-items"
-          type="implement"
-          title="Extend the golden set, and watch the interval"
-          hints={[
-            'Run python phase6-engineering/eval_harness.py --items first and read every FAIL line.',
-            'Add items to GOLDEN_SET with new ids. For answerable ones, "gold" must be a fragment that really appears in rag.CORPUS[source]. The test test_golden_set_shape in tests/test_engineering_evals.py checks that (update its expected count).',
-            'HUMAN_LABELS_DEFAULT needs a label for every new id: read the system’s answer and decide yourself. Then run pytest tests -q and fix the counts the tests pin.',
-          ]}
-          solution={<p>With 8 more paraphrase items you will most likely see the paraphrase score stay near one half, and the overall accuracy fall a little, because you added items from the weakest category. That is the point of categories: the overall number depends on the mix, which you chose. The bootstrap interval narrows only slightly, from about 38 points wide to about 33, because 32 items is still a tiny sample. You will also probably have to make a judgement call on at least one label, which is what building a golden set actually feels like.</p>}
-        >
-          <p>Open <code>phase6-engineering/eval_harness.py</code>. Write 8 new paraphrase questions about the four documents, the way a colleague who has never read them would ask. Before you run it: predict the paraphrase pass rate, and predict how much narrower the confidence interval becomes.</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="evals-calc-passk"
+            type="calculate"
+            title="pass@k by hand"
+            answer={{ value: 0.533, tolerance: 0.006 }}
+            answerLabel="pass@3 (three decimals)"
+            hints={[
+              'pass@k = 1 − C(n − c, k) / C(n, k). Here n = 10, c = 2, k = 3.',
+              'C(8, 3) = 8·7·6 / 6 = 56 is the number of ways to pick 3 samples that are all failures. C(10, 3) = 120.',
+              '1 − 56/120.',
+            ]}
+            solution={<><p>1 − 56/120 = <b>0.533</b>. Only 2 of 10 samples are correct, so pass@1 is 0.2, and yet three attempts succeed more than half the time.</p><p>That gap is why a pass@k number means little without its k. It is also the arithmetic behind <a href="#/lesson/reasoning-models">test-time compute</a>: when a verifier exists (here, unit tests), sampling more attempts buys accuracy.</p></>}
+          >
+            <p>For one programming problem you sample n = 10 solutions and c = 2 pass the unit tests. Using the unbiased estimator, what is pass@3?</p>
+          </Exercise>
 
-        <ExplainBack
-          id="evals-explain"
-          prompt="A product manager says: “The new prompt scored 84% and the old one 81% on our 60-question eval, so the new one is better. Ship it.” Explain, without formulas, why that conclusion does not follow, and what you would do to find out."
-          modelAnswer={<p>A score from 60 questions is a small sample of all the questions users will ask. Pick a different 60 and the same system would score differently, easily by ten points either way. Three points is two questions, far inside that wobble, so the two prompts could be equal or the old one could even be better. To find out, I would run both prompts on the same questions and look only at the questions where they disagree: if the new prompt wins nearly all of those and there are enough of them, the improvement is real. If there are only a handful of disagreements, the honest answer is “we cannot tell yet”, and the fix is more eval questions, ideally drawn from real traffic. I would also check the breakdown by category, because an average can rise while something important, like refusing unanswerable questions, gets worse.</p>}
-        />
+          <Exercise
+            id="evals-implement-items"
+            type="implement"
+            title="Extend the golden set, and watch the interval"
+            hints={[
+              'Run python phase6-engineering/eval_harness.py --items first and read every FAIL line.',
+              'Add items to GOLDEN_SET with new ids. For answerable ones, "gold" must be a fragment that really appears in rag.CORPUS[source]. The test test_golden_set_shape in tests/test_engineering_evals.py checks that (update its expected count).',
+              'HUMAN_LABELS_DEFAULT needs a label for every new id: read the system’s answer and decide yourself. Then run pytest tests -q and fix the counts the tests pin.',
+            ]}
+            solution={<p>With 8 more paraphrase items you will most likely see the paraphrase score stay near one half, and the overall accuracy fall a little, because you added items from the weakest category. That is the point of categories: the overall number depends on the mix, which you chose. The bootstrap interval narrows only slightly, from about 38 points wide to about 33, because 32 items is still a tiny sample. You will also probably have to make a judgement call on at least one label, which is what building a golden set actually feels like.</p>}
+          >
+            <p>Open <code>phase6-engineering/eval_harness.py</code>. Write 8 new paraphrase questions about the four documents, the way a colleague who has never read them would ask. Before you run it: predict the paraphrase pass rate, and predict how much narrower the confidence interval becomes.</p>
+          </Exercise>
+
+          <ExplainBack
+            id="evals-explain"
+            prompt="A product manager says: “The new prompt scored 84% and the old one 81% on our 60-question eval, so the new one is better. Ship it.” Explain, without formulas, why that conclusion does not follow, and what you would do to find out."
+            modelAnswer={<p>A score from 60 questions is a small sample of all the questions users will ask. Pick a different 60 and the same system would score differently, easily by ten points either way. Three points is two questions, far inside that wobble, so the two prompts could be equal or the old one could even be better. To find out, I would run both prompts on the same questions and look only at the questions where they disagree: if the new prompt wins nearly all of those and there are enough of them, the improvement is real. If there are only a handful of disagreements, the honest answer is “we cannot tell yet”, and the fix is more eval questions, ideally drawn from real traffic. I would also check the breakdown by category, because an average can rise while something important, like refusing unanswerable questions, gets worse.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
         questions={[
-          {
-            q: 'Why can a conventional unit test suite not replace an eval for an LLM feature?',
-            options: [
-              'LLM outputs are free text with many acceptable phrasings, quality is a rate and not a pass or fail, and outputs can vary from run to run',
-              'Unit tests cannot call network services, and every LLM feature needs a network call to a hosted model, so the two cannot be combined',
-              'LLM features are written in Python notebooks, while unit test frameworks only support compiled, statically typed production code',
-              'Evals are only needed during model training, whereas unit tests are the right tool for everything that happens after deployment',
-            ],
-            answer: 0,
-            explain: 'The workflow is the same (run on every change, gate merges). What differs is the assertion: you need a scorer that tolerates phrasing, and statistics to tell a real change from noise.',
-          },
-          {
-            q: 'Your RAG bot has retrieval recall@3 of 94% and answer correctness of 67%. What is the most useful reading?',
-            options: [
-              'The two metrics contradict each other, so one of them must be computed wrongly and should be dropped',
-              'Retrieval is the bottleneck, because any recall figure below 100% caps the correctness of the final answers',
-              'The right text usually reaches the prompt, so most failures happen after retrieval: in the answering step or in the scorer',
-              'The system is fine, because the average of the two metrics is above 80% and that is a common release bar',
-            ],
-            answer: 2,
-            explain: 'Component metrics exist to locate failures. High retrieval recall with low correctness points at generation, prompt or scoring, not at the retriever.',
-          },
           {
             q: 'An LLM judge compares two answers and prefers answer 1. You swap the order and it now prefers the other one, which is again in slot 1. What should you do?',
             options: [
@@ -461,8 +556,7 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
           <>An eval has four parts: <b>dataset, task, scorer, aggregate</b>. Each can be wrong independently. Build the dataset from real traffic, past failures and adversarial cases, and keep a part of it <b>held out</b>.</>,
           <><b>The scorer is a design decision.</b> Exact match is too strict, embedding similarity too lenient, an LLM judge is flexible and has measured biases (position, verbosity). Calibrate any scorer against human labels and report the agreement.</>,
           <><b>Separate component metrics from end-to-end metrics.</b> Retrieval recall@k, faithfulness and answer correctness fail for different reasons. Measure each so a failure can be located.</>,
-          <><b>A score is a range.</b> SE = √(p(1−p)/n). At n = 50 and 80%, that is ± 11 points. A 3-point change is noise. Quadruple the items to halve the interval.</>,
-          <><b>Compare paired.</b> Same items through both systems, count the disagreements, test them. Put that test, plus per-category floors, in CI. Then keep watching online signals, because the golden set is never the whole world.</>,
+          <><b>A score is a range.</b> SE = √(p(1−p)/n). At n = 50 and 80%, that is ± 11 points. A 3-point change is noise. Quadruple the items to halve the interval. <b>Compare paired:</b> same items through both systems, count the disagreements, test them, and put that test, plus per-category floors, in CI.</>,
         ]}
       />
 
@@ -474,41 +568,43 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
         />
         <h3>Offline evals and online signals</h3>
         <p>An offline eval answers “did this change break what we already know about?” before users see it. It cannot answer “is this what users need?”, because its questions are yesterday’s.</p>
-        <p>Production systems pair it with online signals: A/B tests on a business metric, thumbs up and down, how often users rephrase or abandon, how often guardrails fire (refusals, blocked outputs, fallbacks to a human). Those signals are noisy and slow, and they are the only ones that measure the real distribution.</p>
-        <p>The loop closes when a production failure becomes a new golden item.</p>
+        <p>Production systems pair it with online signals: A/B tests on a business metric, thumbs up and down, how often users rephrase or abandon, how often guardrails fire. Those signals are noisy and slow, and they are the only ones that measure the real distribution. The loop closes when a production failure becomes a new golden item.</p>
 
         <h3>What public benchmarks measure, and why they keep dying</h3>
         <p>Dev sends a screenshot of a leaderboard. “This model scores 92% on MMLU. Just use that one, na?” Public benchmarks are someone else’s golden set. Everything above applies to them, plus two problems that only show up at internet scale.</p>
-        <div className="table-scroll">
-          <table className="plain">
-            <thead><tr><th>Style</th><th>Example</th><th>What is measured</th><th>Scorer</th></tr></thead>
-            <tbody>
-              <tr><td><b>Multiple choice</b></td><td>MMLU: 15,908 four-option questions across 57 subjects (Hendrycks et al., 2020)</td><td>Whether the model picks the right letter on exam-style knowledge questions</td><td>Exact match on a letter. Cheap and objective, and sensitive to prompt format. <b>Saturated:</b> frontier models score around 90%, close to the ceiling set by its own mislabelled questions, so it no longer separates them.</td></tr>
-              <tr><td><b>Execution-based</b></td><td>HumanEval: 164 hand-written programming problems with unit tests. SWE-bench: 2,294 real GitHub issues from 12 Python repositories. A patch must make failing tests pass without breaking passing ones. SWE-bench Verified is a 500-item human-validated subset.</td><td>Whether generated code actually works</td><td>Running tests. The strongest kind of scorer. HumanEval is reported as pass@k. <b>HumanEval is saturated</b> (top models above 90% pass@1), and SWE-bench Verified is getting close, with contamination concerns because the repositories are public.</td></tr>
-              <tr><td><b>Pairwise human preference</b></td><td>Chatbot Arena (LMArena): people chat with two anonymous models and vote for the better reply</td><td>Which model people prefer on whatever they chose to ask</td><td>Crowd votes, aggregated into ratings with a Bradley-Terry model (the family Elo ratings belong to)</td></tr>
-            </tbody>
-          </table>
-        </div>
         <p><b>Saturation.</b> When every strong model scores near the top, the remaining gaps are smaller than the benchmark’s noise, and the rest is label errors. The benchmark stops telling models apart. It is your ± 11 points again, at the scale of a whole field.</p>
         <p><b>Contamination.</b> Test questions sit on the web, and the web is training data. A high score may be memory, not ability: the few-shot leak from the exercise above, at internet scale.</p>
-        <p>So the field keeps building harder, fresher sets. The ones cited for frontier models in 2026:</p>
-        <div className="table-scroll">
-          <table className="plain">
-            <thead><tr><th>Benchmark</th><th>What it tries to measure</th><th>How it fights saturation or contamination</th></tr></thead>
-            <tbody>
-              <tr><td><b>GPQA-Diamond</b></td><td>198 graduate-level biology, physics and chemistry questions</td><td>Written by domain experts to be “Google-proof”: skilled non-experts with web access score poorly. Frontier models now score above the PhD-level domain experts tested on it, so it too is nearing its ceiling.</td></tr>
-              <tr><td><b>Humanity’s Last Exam</b></td><td>About 2,500 expert-written questions across many fields (2025)</td><td>Questions were kept only if frontier models of the time failed them. At its release in January 2025 the models tested all scored under 10%; scores have risen quickly since.</td></tr>
-              <tr><td><b>SWE-bench Pro</b></td><td>Longer, multi-file software tasks (Scale AI, 2025)</td><td>Includes repositories under copyleft licences and a private held-out set, to keep the tasks out of training data.</td></tr>
-              <tr><td><b>Terminal-Bench</b></td><td>Tasks done in a real command-line environment: build, configure, debug</td><td>Scored by running checks on the final state of the machine, not by reading the answer.</td></tr>
-              <tr><td><b>τ-bench</b> (tau-bench)</td><td>An agent helping a simulated customer, with tools and a policy to follow (retail, airline)</td><td>Reports pass^k: the chance that <em>all</em> k repeated tries succeed. It measures reliability, the opposite question from pass@k.</td></tr>
-              <tr><td><b>METR time horizon</b></td><td>The length of task, measured in how long it takes a skilled human, that a model finishes with 50% success</td><td>Not a fixed pass rate but a scale in minutes and hours, so it keeps growing instead of hitting 100%. METR measured it doubling roughly every seven months over 2019 to 2025.</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p>Expect this table to age. Every one of these will saturate or leak in its turn. The lesson is not the names. It is the two questions to ask of any score: <em>is there room left at the top?</em> and <em>could the model have seen these questions?</em></p>
-        <Callout kind="established">A leaderboard number rarely predicts your task, for three reasons. It measures a different task on a different distribution: exam questions are not your support tickets. Differences near the top are often smaller than the benchmark’s own noise. And public test sets leak: benchmark questions are on the web, the web is training data. One controlled check, GSM1k (Zhang et al., 2024), wrote fresh look-alikes of a popular grade-school maths benchmark and found accuracy drops of up to 8% for some model families, while many frontier models showed little sign of overfitting. Contamination is real, uneven, and hard to rule out from the outside.</Callout>
+        <p>And a leaderboard measures a different task: exam questions are not your support tickets. On contamination, one controlled check, GSM1k (Zhang et al., 2024), wrote fresh look-alikes of a popular grade-school maths benchmark and found accuracy drops of up to 8% for some model families, while many frontier models showed little sign of overfitting. Contamination is real, uneven, and hard to rule out from the outside.</p>
+        <p>So the field keeps building harder, fresher sets, and every one of them will saturate or leak in its turn. The lesson is not the names. It is the two questions to ask of any score: <em>is there room left at the top?</em> and <em>could the model have seen these questions?</em></p>
+        <DeepDive title="The benchmarks you will see cited, and what each measures">
+          <div className="table-scroll">
+            <table className="plain">
+              <thead><tr><th>Style</th><th>Example</th><th>What is measured</th><th>Scorer</th></tr></thead>
+              <tbody>
+                <tr><td><b>Multiple choice</b></td><td>MMLU: 15,908 four-option questions across 57 subjects (Hendrycks et al., 2020)</td><td>Whether the model picks the right letter on exam-style knowledge questions</td><td>Exact match on a letter. Cheap and objective, and sensitive to prompt format. <b>Saturated:</b> frontier models score around 90%, close to the ceiling set by its own mislabelled questions, so it no longer separates them.</td></tr>
+                <tr><td><b>Execution-based</b></td><td>HumanEval: 164 hand-written programming problems with unit tests. SWE-bench: 2,294 real GitHub issues from 12 Python repositories. A patch must make failing tests pass without breaking passing ones. SWE-bench Verified is a 500-item human-validated subset.</td><td>Whether generated code actually works</td><td>Running tests. The strongest kind of scorer. HumanEval is reported as pass@k. <b>HumanEval is saturated</b> (top models above 90% pass@1), and SWE-bench Verified is getting close, with contamination concerns because the repositories are public.</td></tr>
+                <tr><td><b>Pairwise human preference</b></td><td>Chatbot Arena (LMArena): people chat with two anonymous models and vote for the better reply</td><td>Which model people prefer on whatever they chose to ask</td><td>Crowd votes, aggregated into ratings with a Bradley-Terry model (the family Elo ratings belong to)</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>So the field keeps building harder, fresher sets. The ones cited for frontier models in 2026:</p>
+          <div className="table-scroll">
+            <table className="plain">
+              <thead><tr><th>Benchmark</th><th>What it tries to measure</th><th>How it fights saturation or contamination</th></tr></thead>
+              <tbody>
+                <tr><td><b>GPQA-Diamond</b></td><td>198 graduate-level biology, physics and chemistry questions</td><td>Written by domain experts to be “Google-proof”: skilled non-experts with web access score poorly. Frontier models now score above the PhD-level domain experts tested on it, so it too is nearing its ceiling.</td></tr>
+                <tr><td><b>Humanity’s Last Exam</b></td><td>About 2,500 expert-written questions across many fields (2025)</td><td>Questions were kept only if frontier models of the time failed them. At its release in January 2025 the models tested all scored under 10%; scores have risen quickly since.</td></tr>
+                <tr><td><b>SWE-bench Pro</b></td><td>Longer, multi-file software tasks (Scale AI, 2025)</td><td>Includes repositories under copyleft licences and a private held-out set, to keep the tasks out of training data.</td></tr>
+                <tr><td><b>Terminal-Bench</b></td><td>Tasks done in a real command-line environment: build, configure, debug</td><td>Scored by running checks on the final state of the machine, not by reading the answer.</td></tr>
+                <tr><td><b>τ-bench</b> (tau-bench)</td><td>An agent helping a simulated customer, with tools and a policy to follow (retail, airline)</td><td>Reports pass^k: the chance that <em>all</em> k repeated tries succeed. It measures reliability, the opposite question from pass@k.</td></tr>
+                <tr><td><b>METR time horizon</b></td><td>The length of task, measured in how long it takes a skilled human, that a model finishes with 50% success</td><td>Not a fixed pass rate but a scale in minutes and hours, so it keeps growing instead of hitting 100%. METR measured it doubling roughly every seven months over 2019 to 2025.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Expect this table to age.</p>
+        </DeepDive>
         <Callout kind="research">How to evaluate open-ended generation and multi-step agents is unsettled. LLM judges are widely used and their biases are still being mapped. Benchmarks saturate or leak within a year or two and are replaced. For agents, final-answer accuracy misses how the agent got there, which is why the <a href="#/lesson/production-agents">last lesson of this part</a> adds trajectory checks. Treat every eval method here as a tool with known error, not as ground truth.</Callout>
-        <Callout kind="dev">The practical order of operations: use public benchmarks to shortlist two or three models. Build your own golden set from your own traffic, starting with 50 items this week and not 5,000 next quarter. Read the failures by hand before automating anything. Add the scorer that would have caught what you read. Put it in CI with a paired test. Most teams that skip evals do not lack tooling. They lack the afternoon spent writing down what “good” means.</Callout>
+        <p>The practical order of operations: use public benchmarks to shortlist two or three models. Build your own golden set from your own traffic, starting with 50 items this week and not 5,000 next quarter. Read the failures by hand before automating anything. Add the scorer that would have caught what you read. Put it in CI with a paired test. Most teams that skip evals do not lack tooling. They lack the afternoon spent writing down what “good” means.</p>
         <p>That evening Riya exports the 200 tickets, one row each, and starts writing what “good” means for every one. Kabir leaves a single sticky note on her monitor: “Don’t memorise it. Build it.”</p>
       </RealLLM>
     </Lesson>

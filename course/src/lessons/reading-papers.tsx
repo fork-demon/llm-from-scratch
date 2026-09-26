@@ -22,12 +22,7 @@ export default function ReadingPapersLesson() {
           head<sub>i</sub> = Attention(QW<sub>i</sub><sup>Q</sup>, KW<sub>i</sub><sup>K</sup>, VW<sub>i</sub><sup>V</sup>)
         </div>
         <p>She wrote that line. So did you. It is <code>q, k, v = self.qkv(x).split(D, dim=2)</code> followed by the attention you built in <a href="#/lesson/attention">Part 6</a>. The paper only says it in a different language.</p>
-        <Callout kind="idea">
-          Papers are hard for two reasons that have nothing to do with intelligence. The <b>notation</b> is unfamiliar, and the <b>format</b> hides the important parts. Both can be learned in an afternoon.
-          <br /><br />
-          This lesson gives you a method, a decoder for the notation, and then walks you through the founding paper of the field, section by section.
-        </Callout>
-        <p>By the end you will have read it. You will also have met the one mechanism in it that you have not built: cross-attention.</p>
+        <p>Papers are hard for two reasons that have nothing to do with intelligence: the <b>notation</b> is unfamiliar, and the <b>format</b> hides the important parts. Both can be learned in an afternoon. This lesson gives you a method, a decoder for the notation, and a guided reading of the founding paper. By the end you will have read it, and met the one mechanism in it that you have not built: cross-attention.</p>
       </Why>
 
       <Problem>
@@ -59,7 +54,7 @@ export default function ReadingPapersLesson() {
           The third pass, in Keshav’s words, is to “virtually re-implement the paper”. For you this need not be virtual. You have a working GPT, a NumPy attention and a LoRA layer. For most LLM papers, the third pass is a change to a file you already own.
         </Callout>
         <h3>Where the content hides in a machine-learning paper</h3>
-        <p>Keshav wrote for networking research. ML papers have their own habits, so add this to the first and second pass: <b>look at the pictures first</b>. Five places carry most of the information. Here they are in the paper we are about to read, at their real page numbers.</p>
+        <p>Keshav wrote for networking research. For ML papers, add this to the first and second pass: <b>look at the pictures first</b>. Five places carry most of the information; here they are in the paper we are about to read, at their real page numbers.</p>
         <PaperAnatomy />
         <ol>
           <li><b>The architecture figure.</b> The authors’ own summary of the method.</li>
@@ -81,13 +76,13 @@ export default function ReadingPapersLesson() {
           <li><b>Is the compute comparable?</b> The Transformer paper is exemplary here: Table 2 has a training-cost column next to the scores.</li>
           <li><b>What was tuned, and on which data?</b> If choices were made by looking at the test set, the score is optimistic.</li>
           <li><b>Are there error bars or repeated runs?</b> Often there are none. Then a gap of a few tenths of a point may be noise. In <a href="#/lesson/evals">Evals</a> you computed how wide such intervals are.</li>
-          <li><b>Could the benchmark be in the training data?</b> For LLMs trained on the web, contamination is a standing risk. It is the leak you saw in <a href="#/lesson/evals">Evals</a> and in <a href="#/lesson/training-pipeline">From raw text to assistant</a>, at internet scale.</li>
+          <li><b>Could the benchmark be in the training data?</b> For LLMs trained on the web, contamination is a standing risk: the leak you saw in <a href="#/lesson/evals">Evals</a> and <a href="#/lesson/training-pipeline">From raw text to assistant</a>, at internet scale.</li>
           <li><b>What is missing?</b> The comparison that was not run, the task where the method lost, the cost nobody mentions.</li>
         </ul>
         <h3>One convention that makes formulas look backwards</h3>
         <p>This course writes a layer as <code>x @ W + b</code>: the vector is a <b>row</b> and stands on the left. Many papers write <b>Wx + b</b>: the vector is a <b>column</b> and stands on the right, so their W has shape (out, in), the transpose of ours.</p>
-        <p>Nothing is different except the bookkeeping. But shapes and the order of matrices flip. The LoRA paper writes <i>W</i><sub>0</sub><i>x</i> + <i>BAx</i> with B of shape d × r. Your code computes <code>(x @ A) @ B</code> with B of shape r × d. Same maths. The Transformer paper happens to use rows, like this course: its FFN is max(0, xW₁ + b₁)W₂ + b₂.</p>
-        <Callout kind="established">PyTorch straddles both worlds: <code>nn.Linear</code> stores its weight as (out, in), the paper convention, and computes <code>x @ W.T + b</code>, the row convention. You met the consequences in <a href="#/lesson/pytorch-bridge">the previous lesson</a>.</Callout>
+        <p>Nothing is different except the bookkeeping, but shapes and the order of matrices flip. The LoRA paper writes <i>W</i><sub>0</sub><i>x</i> + <i>BAx</i> with B of shape d × r. Your code computes <code>(x @ A) @ B</code> with B of shape r × d. Same maths. The Transformer paper happens to use rows, like this course: its FFN is max(0, xW₁ + b₁)W₂ + b₂.</p>
+        <p>PyTorch straddles both worlds: <code>nn.Linear</code> stores its weight as (out, in), the paper convention, and computes <code>x @ W.T + b</code>, the row convention. You met the consequences in <a href="#/lesson/pytorch-bridge">the previous lesson</a>.</p>
       </MentalModel>
 
       <TryIt title="Decode the notation, then read the paper">
@@ -110,9 +105,7 @@ export default function ReadingPapersLesson() {
           example={<>Source “the cat is small” (4 tokens), target so far “&lt;s&gt; die Katze” (3 tokens). Cross-attention computes a 3 × 4 table of weights: for each target position, how much to take from each source token.</>}
           formal={<>CrossAttention = softmax(Q<sub>dec</sub> K<sub>enc</sub><sup>T</sup> / √d<sub>k</sub>) V<sub>enc</sub>, with Q<sub>dec</sub> = X<sub>dec</sub>W<sup>Q</sup>, K<sub>enc</sub> = Z W<sup>K</sup>, V<sub>enc</sub> = Z W<sup>V</sup>, where Z is the encoder’s output. It is the attention function you know, with its inputs taken from two different sequences.</>}
         />
-        <Callout kind="established">
-          In your attention lesson the soft-lookup analogy had a weakness: the “dictionary” and the “query” came from the same sentence. Cross-attention is the cleaner case. The encoder output really is a small read-only store built from the source, and the decoder really does query it.
-        </Callout>
+        <p>In your attention lesson the soft-lookup analogy had a weakness: the “dictionary” and the “query” came from the same sentence. Cross-attention is the cleaner case. The encoder output really is a small read-only store built from the source, and the decoder really does query it.</p>
         <p><b>So why does GPT not need it?</b> A decoder-only model puts everything in one sequence. The prompt plays the role of the source, the answer the role of the target, and ordinary masked self-attention lets every answer token look back at every prompt token. One stack, one kind of attention, one training objective. The price is that prompt tokens cannot look at later prompt tokens.</p>
         <h3>The guided reading</h3>
         <p>Now open the paper next to this page and work through it. For each section: read the paper first, then compare with the map.</p>
@@ -181,7 +174,26 @@ export default function ReadingPapersLesson() {
 
       <CodeIt title="Let’s code it: cross-attention is a two-line change">
         <p>Here is the third pass for section 3.2.3. Start from the <code>attention</code> function in <code>phase3-transformers/attention_numpy.py</code>, which you wrote in <a href="#/lesson/attention">Attention</a>. It takes one input <code>x</code>. Give it two.</p>
-        <Code title="cross-attention: keys and values read a different sequence">{`
+        <Code
+          title="cross-attention: keys and values read a different sequence"
+          setup={`import numpy as np
+def softmax(s):
+    e = np.exp(s - s.max(axis=-1, keepdims=True))
+    return e / e.sum(axis=-1, keepdims=True)
+
+rng = np.random.default_rng(0)
+D = 4
+source = ["the", "cat", "is", "small"]        # 4 source tokens
+target = ["<s>", "die", "Katze"]              # 3 target tokens written so far
+enc_out = rng.normal(size=(len(source), D))   # the encoder's output, one row per source token
+x_dec = rng.normal(size=(len(target), D))     # the decoder's vectors, one row per target token
+Wq, Wk, Wv = (rng.normal(size=(D, D)) for _ in range(3))   # random: untrained`}
+          show={`out, weights = cross_attention(x_dec, enc_out, Wq, Wk, Wv)
+print("out:", out.shape, " weights:", weights.shape, "(target x source)")
+print("row sums:", weights.sum(axis=1).round(6))
+for t, row in zip(target, weights.round(2)):
+    print(f"{t:>6}", dict(zip(source, row.tolist())))`}
+        >{`
 def cross_attention(x_dec, enc_out, Wq, Wk, Wv):
     D = x_dec.shape[1]
     Q = x_dec @ Wq          # (T_tgt, D)  queries: from the decoder
@@ -194,7 +206,11 @@ def cross_attention(x_dec, enc_out, Wq, Wk, Wv):
 `}</Code>
         <p>Compare it with your original. <code>K</code> and <code>V</code> read <code>enc_out</code> instead of <code>x</code>, and the mask is gone. That is the whole difference. With 3 target rows and 4 source rows the weights come out as (3, 4), rows summing to 1.</p>
         <p>The second piece worth coding is the learning-rate schedule, equation 3 of the paper:</p>
-        <Code title="warm up linearly for 4000 steps, then decay like 1/sqrt(step)">{`
+        <Code
+          title="warm up linearly for 4000 steps, then decay like 1/sqrt(step)"
+          show={`for step in (1000, 4000, 16000):
+    print(f"step {step:>6}: lrate {lrate(step):.6f}")`}
+        >{`
 def lrate(step, d_model=512, warmup=4000):
     return d_model ** -0.5 * min(step ** -0.5, step * warmup ** -1.5)
 
@@ -233,37 +249,6 @@ lrate(16000)   # 0.000349   half the peak: 4x the steps, 1/sqrt(4)
         </Exercise>
 
         <Exercise
-          id="reading-papers-calc-lr"
-          type="calculate"
-          title="The peak learning rate"
-          answer={{ value: 0.0007, tolerance: 0.00002 }}
-          answerLabel="learning rate at the peak"
-          hints={[
-            'The rate rises while step · warmup⁻¹·⁵ is the smaller term and falls once step⁻⁰·⁵ is smaller. The peak is where they are equal.',
-            'They are equal at step = warmup = 4000. There, lrate = 512⁻⁰·⁵ × 4000⁻⁰·⁵.',
-            '1 / √(512 × 4000) = 1 / √2,048,000 = 1 / 1431.',
-          ]}
-          solution={<><p>At step 4000 both terms equal 4000⁻⁰·⁵. So lrate = 1 / √(512 × 4000) = 1 / 1431 ≈ <b>0.0007</b>.</p><p>That is about twice the constant 3e-4 in <code>tiny_gpt.py</code>, reached gradually and then left behind. Notice that the formula ties the rate to the model width: a d<sub>model</sub> of 1024 gives a peak 1/√2 as large. Wider models take smaller steps.</p></>}
-        >
-          <p>Equation 3: lrate = d<sub>model</sub><sup>−0.5</sup> · min(step<sup>−0.5</sup>, step · warmup<sup>−1.5</sup>), with d<sub>model</sub> = 512 and warmup = 4000. What is the highest learning rate the base model ever uses? (Four decimals.)</p>
-        </Exercise>
-
-        <Exercise
-          id="reading-papers-predict-crossover"
-          type="predict"
-          title="When does self-attention stop being the cheap one?"
-          answer={{ value: 512, tolerance: 0 }}
-          answerLabel="sequence length n"
-          hints={[
-            'Set the two costs from Table 1 equal: n² · d = n · d².',
-            'Divide both sides by n · d.',
-          ]}
-          solution={<><p>n² · d = n · d² gives n = d, so the crossover is at <b>n = 512</b>. Below it, a self-attention layer does less arithmetic than a recurrent layer of the same width. Above it, more.</p><p>The paper says this openly. In 2017 sentences were tens of tokens long, so n was far below d. Today’s contexts are hundreds of times longer than d, and the n² term is the dominant cost of long-context models. The argument that survived is the other column: O(1) sequential steps, which is what lets a GPU train on all positions at once.</p></>}
-        >
-          <p>Using only Table 1: for d = 512, at what sequence length n does one self-attention layer cost the same as one recurrent layer?</p>
-        </Exercise>
-
-        <Exercise
           id="reading-papers-explain-table"
           type="explain"
           title="Interrogate a results table"
@@ -296,6 +281,41 @@ lrate(16000)   # 0.000349   half the peak: 4x the steps, 1/sqrt(4)
           prompt="A colleague has read that “GPT is a Transformer” and then looked at Figure 1 of the paper, with its two towers. They are confused. Explain what the two halves do, which half GPT keeps, and why GPT does not need cross-attention."
           modelAnswer={<p>Figure 1 shows a translation model. The left tower, the encoder, reads the whole source sentence with unmasked self-attention and outputs one vector per source token. The right tower, the decoder, writes the target one token at a time. Each decoder layer has masked self-attention over the target so far, then cross-attention, in which the queries come from the decoder and the keys and values come from the encoder’s output, then a feed-forward network. GPT keeps only the right tower and deletes the cross-attention sub-layer. It does not need it because there is no separate source: the prompt and the answer are one sequence, so masked self-attention already lets every answer token look at every prompt token. What remains is a stack of masked self-attention and feed-forward blocks trained to predict the next token, which is what we built.</p>}
         />
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+            <Exercise
+              id="reading-papers-calc-lr"
+              type="calculate"
+              title="The peak learning rate"
+              answer={{ value: 0.0007, tolerance: 0.00002 }}
+              answerLabel="learning rate at the peak"
+              hints={[
+                'The rate rises while step · warmup⁻¹·⁵ is the smaller term and falls once step⁻⁰·⁵ is smaller. The peak is where they are equal.',
+                'They are equal at step = warmup = 4000. There, lrate = 512⁻⁰·⁵ × 4000⁻⁰·⁵.',
+                '1 / √(512 × 4000) = 1 / √2,048,000 = 1 / 1431.',
+              ]}
+              solution={<><p>At step 4000 both terms equal 4000⁻⁰·⁵. So lrate = 1 / √(512 × 4000) = 1 / 1431 ≈ <b>0.0007</b>.</p><p>That is about twice the constant 3e-4 in <code>tiny_gpt.py</code>, reached gradually and then left behind. Notice that the formula ties the rate to the model width: a d<sub>model</sub> of 1024 gives a peak 1/√2 as large. Wider models take smaller steps.</p></>}
+            >
+              <p>Equation 3: lrate = d<sub>model</sub><sup>−0.5</sup> · min(step<sup>−0.5</sup>, step · warmup<sup>−1.5</sup>), with d<sub>model</sub> = 512 and warmup = 4000. What is the highest learning rate the base model ever uses? (Four decimals.)</p>
+            </Exercise>
+
+            <Exercise
+              id="reading-papers-predict-crossover"
+              type="predict"
+              title="When does self-attention stop being the cheap one?"
+              answer={{ value: 512, tolerance: 0 }}
+              answerLabel="sequence length n"
+              hints={[
+                'Set the two costs from Table 1 equal: n² · d = n · d².',
+                'Divide both sides by n · d.',
+              ]}
+              solution={<><p>n² · d = n · d² gives n = d, so the crossover is at <b>n = 512</b>. Below it, a self-attention layer does less arithmetic than a recurrent layer of the same width. Above it, more.</p><p>The paper says this openly. In 2017 sentences were tens of tokens long, so n was far below d. Today’s contexts are hundreds of times longer than d, and the n² term is the dominant cost of long-context models. The argument that survived is the other column: O(1) sequential steps, which is what lets a GPU train on all positions at once.</p></>}
+            >
+              <p>Using only Table 1: for d = 512, at what sequence length n does one self-attention layer cost the same as one recurrent layer?</p>
+            </Exercise>
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -305,18 +325,6 @@ lrate(16000)   # 0.000349   half the peak: 4x the steps, 1/sqrt(4)
             options: ['Title, abstract, introduction, the section headings and the conclusion', 'The method section, slowly, until the first equation is fully clear', 'The related-work section, to learn the background before the claim', 'The appendix, because the hyperparameters decide whether it works'],
             answer: 0,
             explain: 'The first pass finds the claim and decides whether the paper deserves more time. In ML papers, add a look at the main figure and the main table.',
-          },
-          {
-            q: 'In cross-attention, where do the queries, keys and values come from?',
-            options: ['Queries from the encoder output; keys and values from the decoder', 'All three from the decoder, with the causal mask switched off', 'Queries from the decoder; keys and values from the encoder output', 'All three from the encoder output, with a causal mask added on'],
-            answer: 2,
-            explain: 'Each target position asks (query); the source tokens are matched (keys) and hand over content (values). The score grid is target length × source length.',
-          },
-          {
-            q: 'Why does the encoder’s self-attention have no causal mask, while the decoder’s has one?',
-            options: ['Masks were found to slow training down, so the authors used as few of them as they could', 'The source is fully known in advance; the target is being generated, so its future does not exist yet', 'The encoder has fewer layers than the decoder, so it needs all of the positions to compensate', 'The encoder uses sinusoidal positions, which already prevent tokens from seeing the future'],
-            answer: 1,
-            explain: 'Masking is about what is legitimately available. Peeking at later source words is fine. Peeking at later target words during training would be cheating.',
           },
           {
             q: 'A paper writes h = Wx with W ∈ ℝ^{d×k}. Your code has x of shape (k,). Which line computes h?',
@@ -335,8 +343,7 @@ lrate(16000)   # 0.000349   half the peak: 4x the steps, 1/sqrt(4)
 
       <Remember
         items={[
-          <><b>Three passes</b> (Keshav, 2007): find the claim in ten minutes; grasp the argument and its evidence in an hour, skipping proofs; re-create the work only for the papers that matter. Stop after any pass.</>,
-          <>In an ML paper, look first at the <b>architecture figure</b>, the <b>one central equation</b>, the <b>main results table</b>, the <b>ablation table</b> and the <b>hyperparameters</b>.</>,
+          <><b>Three passes</b> (Keshav, 2007): find the claim in ten minutes; grasp the argument and its evidence in an hour, skipping proofs; re-create the work only for the papers that matter. In an ML paper, look first at the <b>architecture figure</b>, the <b>one central equation</b>, the <b>main results table</b>, the <b>ablation table</b> and the <b>hyperparameters</b>.</>,
           <>Notation is code you already wrote: ∈ ℝ<sup>n×d</sup> is a shape, Σ is a loop, 𝔼 is <code>.mean()</code>, ∇ is <code>.backward()</code>, ⊙ is <code>*</code>. Many papers use <b>Wx + b</b> with column vectors: the transpose of this course’s <code>x @ W + b</code>.</>,
           <>The original Transformer is an <b>encoder-decoder</b>: unmasked self-attention over the source, masked self-attention over the target, and <b>cross-attention</b> with queries from the decoder and keys and values from the encoder. GPT is the decoder alone, without cross-attention.</>,
           <>Read results as claims: baselines, compute, tuning, error bars, contamination, and what is missing. Even this paper says “we suspect”, and has a typo in a headline number.</>,

@@ -16,11 +16,7 @@ export default function MasksAndHeadsLesson() {
         <p>She thinks about it. “Nothing.”</p>
         <p>“Right. And in a real exam, with no answers printed, you’d fail.” He taps her screen, where Friday’s attention code is still open. “That is what your model is doing.”</p>
         <p>He is right. We train a language model by asking it to <a href="#/lesson/next-token">predict the next token</a>. But the attention from <a href="#/lesson/attention">the last lesson</a> lets every token look at <em>every</em> token, including the next one. The answer is printed right there.</p>
-        <p>This lesson adds the two things that turn “attention” into the attention used inside GPT:</p>
-        <div className="grid-2">
-          <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>A. The causal mask</h4><p>Stop tokens from looking at their own future. One line of code.</p></div>
-          <div className="card"><h4 style={{ fontSize: 17, marginBottom: 6 }}>B. Multiple heads</h4><p>Let each token ask several questions at once instead of just one.</p></div>
-        </div>
+        <p>This lesson adds the two things that turn “attention” into the attention used inside GPT: <b>A. the causal mask</b>, which stops tokens from looking at their own future (one line of code), and <b>B. multiple heads</b>, which let each token ask several questions at once instead of just one.</p>
       </Why>
 
       <Problem title="Two problems with plain attention">
@@ -55,8 +51,7 @@ export default function MasksAndHeadsLesson() {
           <li>What word came just before me? (because)</li>
           <li>What is this sentence about in general? (a bit of everything)</li>
         </ul>
-        <p>If “it” spends 80% of its weight on “animal”, only 20% is left for everything else. One budget, several needs. They dilute each other.</p>
-        <p>Riya recognises this from hiring. One interviewer cannot judge coding, communication and design in the same hour. That is why Paisa Pal uses a panel.</p>
+        <p>If “it” spends 80% of its weight on “animal”, only 20% is left for everything else. One budget, several needs. Riya recognises this from hiring: one interviewer cannot judge coding, communication and design in the same hour. That is why Paisa Pal uses a panel.</p>
       </Problem>
 
       <MentalModel>
@@ -77,12 +72,7 @@ export default function MasksAndHeadsLesson() {
         </Callout>
 
         <h3>B. The heads</h3>
-        <p>If one search is not enough, run several. Give each token a few <em>small</em> attention mechanisms that work side by side. Each has its own idea of what is relevant. Each one is called a <b>head</b>.</p>
-        <Callout kind="analogy">
-          Think of an interview panel. One interviewer listens for coding, one for communication, one for system design. Each takes their own notes on the same candidate. At the end, the notes are put together into one decision.
-          <br /><br />
-          Where the analogy stops: nobody tells a head what to listen for. Each head’s focus is learned, because it lowered the loss. In a trained model most heads do not have a clean, nameable job like “communication”.
-        </Callout>
+        <p>If one search is not enough, run several. Give each token a few <em>small</em> attention mechanisms that work side by side, like the interview panel: each takes its own notes on the same tokens, and the notes are joined at the end. Each one is called a <b>head</b>. Unlike a panel, nobody tells a head what to listen for: its focus is learned because it lowered the loss.</p>
         <Term
           name="Multi-head attention"
           plain={<>Several small attention operations run in parallel on the same tokens. Each head has its own query, key and value projections, so each can look for something different. Their results are joined together at the end.</>}
@@ -98,9 +88,7 @@ export default function MasksAndHeadsLesson() {
         <h3>A. What does the mask actually do?</h3>
         <p>Click “cat”. Switch the mask off and on. Then open “What leaks?” and try the head that learned to cheat.</p>
         <CausalMaskLab />
-        <Callout kind="idea">
-          The mask is not only about honesty. It is about <b>efficiency</b>. Because row t can only see tokens 0…t, one forward pass over T tokens gives T valid training examples at once. Without the mask you would have to run each prefix separately.
-        </Callout>
+        <p>The mask is not only about honesty. It is about <b>efficiency</b>: because row t can only see tokens 0…t, one forward pass over T tokens gives T valid training examples at once.</p>
 
         <h3>B. Several heads on one sentence</h3>
         <p>Same sentence as last lesson. Keep “it” selected and switch between the heads.</p>
@@ -170,7 +158,23 @@ export default function MasksAndHeadsLesson() {
       <CodeIt>
         <h3>A. The mask: two lines</h3>
         <p>This is the part of <code>attention()</code> that last lesson asked you to ignore.</p>
-        <Code source="phase3-transformers/attention_numpy.py" title="inside attention(), between the scores and the softmax">{`
+        <Code
+          source="phase3-transformers/attention_numpy.py"
+          title="inside attention(), between the scores and the softmax"
+          setup={`import numpy as np
+def softmax(z, axis=-1):
+    z = z - z.max(axis=axis, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=axis, keepdims=True)
+
+# "the cat sat": every row gets the scores [1, 2, 3] from the worked example (after dividing by sqrt(4) = 2)
+T, D = 3, 4
+Q = np.array([[2.0, 0, 0, 0]] * 3)
+K = np.array([[1.0, 0, 0, 0], [2.0, 0, 0, 0], [3.0, 0, 0, 0]])
+causal = True`}
+          show={`print("rows = the, cat, sat (who looks); columns = who is looked at")
+print(weights.round(2))`}
+        >{`
 scores = Q @ K.T / np.sqrt(D)   # (T, T)
 if causal:
     # forbid looking at the future: upper triangle -> -inf -> softmax 0
@@ -183,7 +187,15 @@ weights = softmax(scores)       # (T, T) rows sum to 1
         <p>Why −1e9 and not −∞? e<sup>−1000000000</sup> is 0 in floating point, so the result is the same, and it avoids a division of 0 by 0 if a whole row were ever masked. The PyTorch version in <code>tiny_gpt.py</code> uses a true <code>float("-inf")</code>.</p>
 
         <h3>B. Multi-head, one step at a time</h3>
-        <Code title="Step 1: the same three projections as before">{`
+        <Code
+          title="Step 1: the same three projections as before"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)
+T, D, n_heads = 6, 8, 2                      # "the cat sat on a mat", 8 numbers per token, 2 heads
+x = rng.normal(size=(T, D))
+Wq, Wk, Wv = (rng.normal(size=(D, D)) / np.sqrt(D) for _ in range(3))`}
+          show={`print("hd =", hd, "  Q:", Q.shape, "  K:", K.shape, "  V:", V.shape)`}
+        >{`
 T, D = x.shape
 hd = D // n_heads       # per-head dimension, e.g. 8 // 2 = 4
 
@@ -191,14 +203,40 @@ Q = x @ Wq              # (T, D)
 K = x @ Wk
 V = x @ Wv
 `}</Code>
-        <Code title="Step 2: give each head its slice">{`
+        <Code
+          title="Step 2: give each head its slice"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)
+T, D, n_heads = 6, 8, 2                      # "the cat sat on a mat", 8 numbers per token, 2 heads
+hd = D // n_heads
+Q, K, V = (rng.normal(size=(T, D)).round(1) for _ in range(3))`}
+          show={`print("Q:", Q.shape, "->  Qh:", Qh.shape)
+print("token 'cat', all 8 numbers:", Q[1])
+print("head 0 sees:", Qh[0, 1], "  head 1 sees:", Qh[1, 1])`}
+        >{`
 # reshape (T, D) -> (n_heads, T, hd)
 def split(M):
     return M.reshape(T, n_heads, hd).transpose(1, 0, 2)
 Qh, Kh, Vh = split(Q), split(K), split(V)      # (H, T, hd)
 `}</Code>
         <p><code>reshape(T, n_heads, hd)</code> cuts each token’s D numbers into H groups of hd. <code>transpose(1, 0, 2)</code> swaps the first two axes so that the head comes first: “for each head, a (T, hd) matrix”. No number changes. This is step 2 of the lab.</p>
-        <Code title="Step 3: ordinary attention, for all heads at once">{`
+        <Code
+          title="Step 3: ordinary attention, for all heads at once"
+          setup={`import numpy as np
+def softmax(z, axis=-1):
+    z = z - z.max(axis=axis, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=axis, keepdims=True)
+
+rng = np.random.default_rng(0)
+T, D, n_heads = 6, 8, 2                      # "the cat sat on a mat", 8 numbers per token, 2 heads
+hd = D // n_heads
+Qh, Kh, Vh = (rng.normal(size=(n_heads, T, hd)) for _ in range(3))
+causal = True`}
+          show={`print("scores:", scores.shape, " weights:", weights.shape, " out:", out.shape)
+for h in range(n_heads):
+    print(f"head {h}, row of 'sat':", weights[h, 2].round(2))`}
+        >{`
 scores = Qh @ Kh.transpose(0, 2, 1) / np.sqrt(hd)   # (H, T, T)
 if causal:
     mask = np.triu(np.ones((T, T), dtype=bool), k=1)
@@ -213,7 +251,25 @@ out = out.transpose(1, 0, 2).reshape(T, D)
 return out @ Wo, weights                             # (T, D)
 `}</Code>
         <p>The complete function in the repository is these four steps and nothing else (a few comments are shortened here):</p>
-        <Code source="phase3-transformers/attention_numpy.py" title="multi_head_attention">{`
+        <Code
+          source="phase3-transformers/attention_numpy.py"
+          title="multi_head_attention"
+          setup={`import numpy as np
+def softmax(z, axis=-1):
+    z = z - z.max(axis=axis, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=axis, keepdims=True)
+
+rng = np.random.default_rng(0)
+T, D, n_heads = 6, 8, 2                      # "the cat sat on a mat", 8 numbers per token, 2 heads
+x = rng.normal(size=(T, D))
+Wq, Wk, Wv, Wo = (rng.normal(size=(D, D)) / np.sqrt(D) for _ in range(4))`}
+          show={`out, w = multi_head_attention(x, Wq, Wk, Wv, Wo, n_heads=2)
+print("out:", out.shape, "  weights:", w.shape)
+print("every row of every head sums to 1:", np.allclose(w.sum(-1), 1))
+print("head 0 (zeros above the diagonal):")
+print(w[0].round(2))`}
+        >{`
 def multi_head_attention(x, Wq, Wk, Wv, Wo, n_heads, causal=True):
     T, D = x.shape
     hd = D // n_heads
@@ -234,7 +290,18 @@ def multi_head_attention(x, Wq, Wk, Wv, Wo, n_heads, causal=True):
 `}</Code>
         <h3>C. One more axis: a batch of sequences</h3>
         <p>So far <code>x</code> is one sequence, shape <code>(T, D)</code>. Training code feeds many sequences at once, to keep the GPU busy. That adds a batch axis in front: <code>(B, T, D)</code>, meaning B sequences, each of T tokens, each token D numbers.</p>
-        <Code title="the same attention, on B sequences at once">{`
+        <Code
+          title="the same attention, on B sequences at once"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)
+B, T, D = 2, 3, 4                            # 2 sequences of 3 tokens
+x = rng.normal(size=(B, T, D))
+Wq, Wk = (rng.normal(size=(D, D)) for _ in range(2))`}
+          show={`print("x:", x.shape, " Q:", Q.shape, " scores:", scores.shape, " mask:", mask.shape)
+print("which scores survive the mask, sequence 0:")
+print(scores[0] > -1e8)
+print("same pattern in sequence 1:", np.array_equal(scores[0] > -1e8, scores[1] > -1e8))`}
+        >{`
 x.shape                                   # (B, T, D)
 Q = x @ Wq                                # (B, T, D)  Wq is (D, D): same weights for every sequence
 K = x @ Wk                                # (B, T, D)
@@ -245,7 +312,7 @@ scores = np.where(mask, -1e9, scores)     # (T, T) mask applied to all B tables
         <p>Two lines there mix shapes that do not match: <code>(B, T, D) @ (D, D)</code>, and a <code>(T, T)</code> mask against <code>(B, T, T)</code> scores. NumPy allows this through a rule called <b>broadcasting</b>.</p>
         <p>The rule: line the two shapes up from the right. Where one array is missing an axis, or has size 1 there, NumPy reuses it along that axis. So the one <code>(T, T)</code> mask is reused for every sequence in the batch, and nothing is copied in memory.</p>
         <p>You will see exactly this in <code>tiny_gpt.py</code>. Its attention works on <code>(B, T, D)</code>, splits into heads as <code>(B, H, T, hd)</code>, and stores the mask as <code>(1, 1, T, T)</code> so that it broadcasts over both the batch and the heads.</p>
-        <Callout kind="dev">Most bugs in Transformer code are shape bugs. Get into the habit of this file: write the shape as a comment at the end of every line. If you cannot write the comment, you do not yet understand the line.</Callout>
+        <p>Most bugs in Transformer code are shape bugs. Get into the habit of this file: write the shape as a comment at the end of every line.</p>
       </CodeIt>
 
       <BreakIt>
@@ -290,16 +357,6 @@ scores = np.where(mask, -1e9, scores)     # (T, T) mask applied to all B tables
         </Exercise>
 
         <Exercise
-          id="masks-and-heads-predict"
-          type="predict"
-          title="Two sentences, one prefix"
-          hints={['Which tokens can the row for “sat” see in each sentence?', 'In both sentences “sat” sees exactly “the cat sat”. Nothing to its right can influence it.']}
-          solution={<p><b>Identical.</b> With a causal mask, the output at a position depends only on the tokens up to and including that position. “the cat sat” is the same in both sentences, so the first three output rows are the same, number for number. Only the rows from “on” / “down” onwards differ. This property is what later makes the <G t="kv-cache">KV cache</G> possible: results for earlier tokens never need to be recomputed when a new token arrives.</p>}
-        >
-          <p>You run masked attention on “the cat sat on a mat” and on “the cat sat down quietly”. Compare the output vector for “sat” in the two runs. Identical, similar, or unrelated? Why?</p>
-        </Exercise>
-
-        <Exercise
           id="masks-and-heads-debug"
           type="debug"
           title="The mask that came too late"
@@ -311,7 +368,20 @@ scores = np.where(mask, -1e9, scores)     # (T, T) mask applied to all B tables
           solution={<><p>The mask is applied <b>after</b> softmax. The future weights do become 0, but the remaining weights are not re-normalised, so rows no longer sum to 1. With scores [1, 2, 3], row 0 sums to 0.09: the first token’s output is its value shrunk to 9%. Early tokens get tiny outputs, late tokens normal ones.</p><p>Fix: mask the <em>scores</em> with −∞ (or −1e9) <em>before</em> softmax. Then softmax does the normalising over the visible tokens only.</p><p>A related bug is <code>np.triu(…, k=0)</code>, which also masks the diagonal: no token can see itself, and the first token can see nothing at all. With −1e9 its row silently becomes uniform over <em>all</em> tokens, future included; with a true −∞ it becomes NaN. One assert catches both bugs: <code>assert np.allclose(weights.sum(-1), 1)</code> together with <code>assert np.allclose(np.triu(weights, k=1), 0)</code>.</p></>}
         >
           <p>A colleague’s model trains, but badly, and the first tokens of every sequence seem to be almost ignored. Find the bug.</p>
-          <Code>{`
+          <Code
+            setup={`import numpy as np
+def softmax(z, axis=-1):
+    z = z - z.max(axis=axis, keepdims=True)
+    e = np.exp(z)
+    return e / e.sum(axis=axis, keepdims=True)
+
+# "the cat sat": every row gets the scores [1, 2, 3] from the worked example (after dividing by sqrt(4) = 2)
+T, D = 3, 4
+Q = np.array([[2.0, 0, 0, 0]] * 3)
+K = np.array([[1.0, 0, 0, 0], [2.0, 0, 0, 0], [3.0, 0, 0, 0]])
+V = np.eye(3, 4)`}
+            show={`print("each row sums to:", weights.sum(axis=-1).round(2))`}
+          >{`
 scores = Q @ K.T / np.sqrt(D)
 weights = softmax(scores)
 mask = np.triu(np.ones((T, T), dtype=bool), k=1)
@@ -320,25 +390,40 @@ out = weights @ V
 `}</Code>
         </Exercise>
 
-        <Exercise
-          id="masks-and-heads-implement"
-          type="implement"
-          title="Change the number of heads"
-          hints={[
-            'Run python phase3-transformers/attention_numpy.py and find section 3. The settings are at the top of demo_multi_head(): T, D, H = 5, 8, 2.',
-            'H = 4 and H = 8 work. For H = 3: what is 8 // 3, and can 8 numbers be cut into 3 equal slices?',
-            'After the call, add: assert np.allclose(w.sum(-1), 1) and print(w.shape).',
-          ]}
-          solution={<><p>With H = 4 you get <code>w.shape == (4, 5, 5)</code>: four different 5×5 patterns from the same input, each row summing to 1, each with zeros above the diagonal. With H = 8 every head works with a single number per token.</p><p>H = 3 crashes: <code>ValueError: cannot reshape array of size 40 into shape (5,3,2)</code>. 8 numbers cannot be cut into 3 equal slices. That is why real configurations always have D divisible by the number of heads (768 = 12 × 64).</p></>}
-        >
-          <p>Open <code>attention_numpy.py</code> and find <code>demo_multi_head()</code>. Change <code>H</code> from 2 to 4, then 8, then 3. Before each run, predict the shape of <code>w</code> and whether it will run at all. Add an assert that every row of every head sums to 1.</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="masks-and-heads-predict"
+            type="predict"
+            title="Two sentences, one prefix"
+            hints={['Which tokens can the row for “sat” see in each sentence?', 'In both sentences “sat” sees exactly “the cat sat”. Nothing to its right can influence it.']}
+            solution={<p><b>Identical.</b> With a causal mask, the output at a position depends only on the tokens up to and including that position. “the cat sat” is the same in both sentences, so the first three output rows are the same, number for number. Only the rows from “on” / “down” onwards differ. This property is what later makes the <G t="kv-cache">KV cache</G> possible: results for earlier tokens never need to be recomputed when a new token arrives.</p>}
+          >
+            <p>You run masked attention on “the cat sat on a mat” and on “the cat sat down quietly”. Compare the output vector for “sat” in the two runs. Identical, similar, or unrelated? Why?</p>
+          </Exercise>
 
-        <ExplainBack
-          id="masks-and-heads-explain"
-          prompt="A teammate asks: “Why do we hide the future during training? Surely more context makes a better model.” Answer in your own words, and include why the mask makes training cheaper, not just more honest."
-          modelAnswer={<p>The model is trained to predict token t+1 at every position t. If position t could attend to token t+1, the answer would be part of its input, and gradient descent would learn to copy it rather than predict it. That model would be useless at generation time, when the next token does not exist yet. The mask sets every score for a later token to −∞ before softmax, so its weight is exactly 0 and the rest still sum to 1. Because every row then only depends on its own prefix, one forward pass over T tokens produces T honest predictions at once, instead of needing T separate runs on T prefixes.</p>}
-        />
+          <Exercise
+            id="masks-and-heads-implement"
+            type="implement"
+            title="Change the number of heads"
+            hints={[
+              'Run python phase3-transformers/attention_numpy.py and find section 3. The settings are at the top of demo_multi_head(): T, D, H = 5, 8, 2.',
+              'H = 4 and H = 8 work. For H = 3: what is 8 // 3, and can 8 numbers be cut into 3 equal slices?',
+              'After the call, add: assert np.allclose(w.sum(-1), 1) and print(w.shape).',
+            ]}
+            solution={<><p>With H = 4 you get <code>w.shape == (4, 5, 5)</code>: four different 5×5 patterns from the same input, each row summing to 1, each with zeros above the diagonal. With H = 8 every head works with a single number per token.</p><p>H = 3 crashes: <code>ValueError: cannot reshape array of size 40 into shape (5,3,2)</code>. 8 numbers cannot be cut into 3 equal slices. That is why real configurations always have D divisible by the number of heads (768 = 12 × 64).</p></>}
+          >
+            <p>Open <code>attention_numpy.py</code> and find <code>demo_multi_head()</code>. Change <code>H</code> from 2 to 4, then 8, then 3. Before each run, predict the shape of <code>w</code> and whether it will run at all. Add an assert that every row of every head sums to 1.</p>
+          </Exercise>
+
+          <ExplainBack
+            id="masks-and-heads-explain"
+            prompt="A teammate asks: “Why do we hide the future during training? Surely more context makes a better model.” Answer in your own words, and include why the mask makes training cheaper, not just more honest."
+            modelAnswer={<p>The model is trained to predict token t+1 at every position t. If position t could attend to token t+1, the answer would be part of its input, and gradient descent would learn to copy it rather than predict it. That model would be useless at generation time, when the next token does not exist yet. The mask sets every score for a later token to −∞ before softmax, so its weight is exactly 0 and the rest still sum to 1. Because every row then only depends on its own prefix, one forward pass over T tokens produces T honest predictions at once, instead of needing T separate runs on T prefixes.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -356,30 +441,17 @@ out = weights @ V
             explain: 'Every row only sees its own prefix, so every row is a valid prediction problem. This is why tiny_gpt.py can compute the loss over all positions at once.',
           },
           {
-            q: 'You replace 1 head of width 64 by 4 heads of width 16. What happens to the number of weights in Wq, Wk and Wv?',
-            options: ['It becomes 4 times larger', 'It becomes 4 times smaller', 'It depends on the sequence length', 'It stays the same: the heads share the same D numbers'],
-            answer: 3,
-            explain: 'Heads split the dimensions. Wq, Wk, Wv are still D×D. You gain 4 independent weight tables for free, at the price of thinner queries and keys per head.',
-          },
-          {
             q: 'What is the job of the final matrix W_O?',
             options: ['It applies the causal mask', 'It mixes the concatenated head outputs, which otherwise sit in separate columns, into one combined vector', 'It turns scores into probabilities', 'It reduces each token’s vector from D numbers to D/h, so the next layer receives one head’s worth of output'],
             answer: 1,
             explain: 'After concatenation, columns 0..D/h−1 came from head 0, and so on. Wo lets every output number draw on every head.',
-          },
-          {
-            q: 'A diagram in a blog post labels one head “the grammar head”. How should you read that?',
-            options: ['As a designed feature: engineers assign each head a role before training, and the diagram documents that assignment', 'As proof that the model understands grammar', 'As an illustration. A few head roles have been documented in trained models, but most heads are not cleanly interpretable, and none are assigned by hand', 'As wrong: heads are all identical'],
-            answer: 2,
-            explain: 'Heads are learned. Some (previous-token heads, induction heads) have been identified by interpretability research; most resist tidy labels.',
           },
         ]}
       />
 
       <Remember
         items={[
-          <>We train by predicting token t+1 at <b>every</b> position. Without a mask, position t can look straight at token t+1 and copy it.</>,
-          <>The <b>causal mask</b> sets every score for a later token to −∞ <em>before</em> softmax. Weight exactly 0, and the remaining weights still sum to 1.</>,
+          <>Without a mask, position t can look straight at token t+1 and copy it. The <b>causal mask</b> sets every score for a later token to −∞ <em>before</em> softmax. Weight exactly 0, and the remaining weights still sum to 1.</>,
           <>The mask also matches generation, where the future does not exist, and it makes training efficient: <b>one pass over T tokens = T training examples</b>.</>,
           <>One softmax row is one blend. <b>Multi-head attention</b> runs h thinner attentions in parallel, each with its own Q/K/V slice and its own weight table, then concatenates and mixes with W<sub>O</sub>.</>,
           <>Heads <b>split</b> the D numbers (width D/h each). Same parameters as one big head. Shapes: (T, D) → (h, T, D/h) → (T, D).</>,
@@ -393,7 +465,7 @@ out = weights @ V
           real={<ul><li>The identical mask, on sequences of thousands of tokens or more</li><li>GPT-2 small: 12 heads × 12 layers = 144 learned heads, none with a name</li><li>Head width is typically 64 to 128; a 70B-class model has 64 query heads per layer</li><li>The mask is precomputed once (<code>tiny_gpt.py</code>) or never materialised at all (fused kernels)</li></ul>}
         />
         <Callout kind="established">This masked, multi-head attention is what “decoder-only Transformer” means. GPT-2 and Llama do this by published design, and as far as is publicly known so do the closed chat models: they all generate text under a causal mask. In <code>tiny_gpt.py</code> you will find today’s function again, line for line (with the batch axis added), as <code>CausalSelfAttention</code>.</Callout>
-        <Callout kind="note">One modern change: many current models let several query heads <em>share</em> one set of keys and values (<G t="gqa">grouped-query attention</G>) to save memory during generation. The idea of several parallel heads is unchanged. More in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>.</Callout>
+        <p>One modern change: many current models let several query heads <em>share</em> one set of keys and values (<G t="gqa">grouped-query attention</G>) to save memory during generation. The idea of several parallel heads is unchanged. More in <a href="#/lesson/modern-architecture">Modern LLM architecture</a>.</p>
         <p>Riya reruns her Friday model with the mask switched on. Its training loss is worse now. Kabir looks at it and nods. “Good. Now it’s sitting the real exam.”</p>
       </RealLLM>
     </Lesson>

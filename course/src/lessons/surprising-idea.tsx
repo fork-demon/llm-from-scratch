@@ -15,9 +15,7 @@ export default function SurprisingIdeaLesson() {
         <p>So where was “Paris”? There is no table of capitals inside the model. There is no document about France. You could read every byte of the model file and never find the sentence “Paris is the capital of France”.</p>
         <p>And yet it answers. It also answers this, which nobody in history had written down before you asked:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 20 }}>“Write a limerick about a Kubernetes pod.”</div>
-        <Callout kind="idea">
-          An LLM is not a store of sentences. It is a <b>function</b>: text so far in, probabilities for the next token out. What it “knows” is not written anywhere in it. It is implicit in billions of numbers that shape that function.
-        </Callout>
+        <p>An LLM is not a store of sentences. It is a <b>function</b>: text so far in, probabilities for the next token out. What it “knows” is not written anywhere in it. It is implicit in billions of numbers that shape that function.</p>
       </Why>
 
       <Problem title="Every system you have built works differently">
@@ -64,11 +62,8 @@ def model(tokens_so_far: list[int]) -> list[float]:
           <br /><br />
           Where the analogy stops: a pianist understands music, has intentions and hears their mistakes. Do not carry those over. The only part to keep is this: <b>skill held in adjusted numbers, not in stored copies</b>.
         </Callout>
-        <Callout kind="dev">
-          You have met “knowledge as parameters” before. A spam filter does not store a list of spam emails: it stores a few thousand weights.
-          <br /><br />
-          A line fitted through data points does not store the points. It stores a slope and an intercept, and can answer for an x it never saw. An LLM is the same idea at an enormous scale: a curve fitted through human text.
-        </Callout>
+        <p>You have met “knowledge as parameters” before. A spam filter does not store a list of spam emails: it stores a few thousand weights.</p>
+        <p>A line fitted through data points does not store the points. It stores a slope and an intercept, and can answer for an x it never saw. An LLM is the same idea at an enormous scale: a curve fitted through human text.</p>
       </MentalModel>
 
       <TryIt title="Put the same question to four systems">

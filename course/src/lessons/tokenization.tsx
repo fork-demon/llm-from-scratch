@@ -7,6 +7,38 @@ import { Exercise, ExplainBack } from '../components/exercise'
 import { TokenizerPlayground } from '../interactive/TokenizerPlayground'
 import { TextToVector } from '../illustrations/TextToVector'
 
+// Try it: the training half of bpe_tokenizer.py, so the encode/decode excerpts below can run.
+const BPE_SETUP = `from collections import Counter
+
+class BPETokenizer:                          # training half of bpe_tokenizer.py
+    def __init__(self):
+        self.merges, self.vocab = [], {}
+    def train(self, text, vocab_size):
+        chars = sorted(set(text))
+        self.vocab = {i: c for i, c in enumerate(chars)}
+        stoi = {c: i for i, c in self.vocab.items()}
+        ids = [stoi[c] for c in text]
+        while len(self.vocab) < vocab_size:
+            pairs = Counter(zip(ids, ids[1:]))
+            if not pairs:
+                break
+            (a, b), count = pairs.most_common(1)[0]
+            if count < 2:
+                break
+            new_id = len(self.vocab)
+            self.vocab[new_id] = self.vocab[a] + self.vocab[b]
+            self.merges.append(((a, b), new_id))
+            ids = self._apply_merge(ids, (a, b), new_id)
+    @staticmethod
+    def _apply_merge(ids, pair, new_id):
+        out, i = [], 0
+        while i < len(ids):
+            if i < len(ids) - 1 and (ids[i], ids[i + 1]) == pair:
+                out.append(new_id); i += 2
+            else:
+                out.append(ids[i]); i += 1
+        return out`
+
 const Tok = ({ children }: { children: string }) => <span className="token">{children.replace(/ /g, '␣')}</span>
 
 export default function TokenizationLesson() {
@@ -22,33 +54,22 @@ export default function TokenizationLesson() {
         <TextToVector focus="token" id={4217} idNote="(number made up)" vector="[0.2, −1.3, …]" />
         <p>This lesson is about the first two hops. They sound like plumbing. They are not.</p>
         <p>The way text is cut into pieces decides what the model can <em>see</em>. It also decides what Paisa Pal’s bill is, and why a model that writes sonnets can miscount the letters in “strawberry”.</p>
-        <Callout kind="idea">
-          A model never sees letters or words. It sees a list of integers. The component that produces those integers is the <b>tokenizer</b>, and it is built <em>before</em> the neural network is trained, by a surprisingly simple algorithm.
-        </Callout>
+        <p>A model never sees letters or words. It sees a list of integers. The component that produces those integers is the <b>tokenizer</b>, and it is built <em>before</em> the neural network is trained, by a surprisingly simple algorithm.</p>
       </Why>
 
       <Problem title="The problem: what should one integer stand for?">
         <p>Dev, reading the invoice over her shoulder, is sure. “Tokens are just words, yaar. They made up a fancy name so they can charge more.”</p>
         <p>He is half right: someone does have to choose what the pieces are. There are two obvious choices, and both fail.</p>
-        <div className="grid-2">
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>One integer per word?</h4>
-            <p>“the” is one piece. Nice and short. But how long is the list of all words?</p>
-            <ul>
-              <li>English alone has hundreds of thousands, plus every plural, verb form and name.</li>
-              <li>A new word such as “unbelievableness” has <b>no ID</b>.</li>
-              <li>Neither does a typo (“teh”), nor <code>getUserById</code>, nor most of German.</li>
-            </ul>
-            <p>The list explodes, and it still fails on the first unseen word. All the model gets is a shrug: <code>&lt;unknown&gt;</code>.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>One integer per character?</h4>
-            <p>The list is tiny (about a hundred entries covers English) and nothing is ever unknown. But:</p>
-            <ul>
-              <li>Sequences get very long: “the cat sat on the mat” is 6 words but 22 characters. Longer input means more computation. It also means less of your text fits in the <G t="context-window">context window</G>, the fixed amount the model can read at once.</li>
-              <li>Each symbol carries almost no meaning. “t” tells you nothing. The model must spend effort re-learning, everywhere, that t-h-e belongs together.</li>
-            </ul>
-          </div>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th /><th>one integer per word</th><th>one integer per character</th></tr></thead>
+            <tbody>
+              <tr><td>list size</td><td>Hundreds of thousands for English alone, plus every plural, verb form and name. The list explodes.</td><td>Tiny: about a hundred entries covers English.</td></tr>
+              <tr><td>unseen text</td><td>A new word such as “unbelievableness” has <b>no ID</b>. Neither does a typo (“teh”), nor <code>getUserById</code>, nor most of German. All the model gets is a shrug: <code>&lt;unknown&gt;</code>.</td><td>Nothing is ever unknown.</td></tr>
+              <tr><td>sequence length</td><td>Short: “the” is one piece.</td><td>Very long: “the cat sat on the mat” is 6 words but 22 characters. Longer input means more computation, and less of your text fits in the <G t="context-window">context window</G>, the fixed amount the model can read at once.</td></tr>
+              <tr><td>meaning per piece</td><td>A lot.</td><td>Almost none. “t” tells you nothing, so the model must re-learn, everywhere, that t-h-e belongs together.</td></tr>
+            </tbody>
+          </table>
         </div>
         <WhyExists
           problem="Text must become a sequence of integers from a fixed list."
@@ -85,7 +106,7 @@ export default function TokenizationLesson() {
           <br /><br />
           Where the analogy stops: a compressor wants the smallest file and can build a new dictionary for every file. A tokenizer’s dictionary is built once and then frozen, because the model will learn one vector per entry. And the goal is not the smallest output. It is pieces that are useful units for a model to learn from.
         </Callout>
-        <Callout kind="dev">Notice that there is no neural network here, no gradient, no loss. Tokenizer training is a counting loop you could write in an afternoon. It runs once, before model training starts, and its result is a plain data file.</Callout>
+        <p>Notice that there is no neural network here, no gradient, no loss. Tokenizer training is a counting loop you could write in an afternoon. It runs once, before model training starts, and its result is a plain data file.</p>
       </MentalModel>
 
       <TryIt title="Train one, then use it">
@@ -150,7 +171,16 @@ self.merges.append(((a, b), new_id))                 # the ordered merge list
 ids = self._apply_merge(ids, (a, b), new_id)         # rewrite the corpus
 `}</Code>
         <p><code>_apply_merge</code> is a single left-to-right pass that replaces the pair wherever it occurs:</p>
-        <Code source="phase2-language/bpe_tokenizer.py" title="replace every occurrence of one pair">{`
+        <Code
+          source="phase2-language/bpe_tokenizer.py"
+          title="replace every occurrence of one pair"
+          show={`text = "the cat sat on the mat"
+stoi = {c: i for i, c in enumerate(sorted(set(text)))}   # step 1: one id per character
+ids = [stoi[c] for c in text]
+out = _apply_merge(ids, (stoi["a"], stoi["t"]), 10)       # merge 1 of the hand-worked table: a + t
+print(len(ids), "tokens ->", len(out), "tokens")
+print(out)`}
+        >{`
 def _apply_merge(ids, pair, new_id):
     out, i = [], 0
     while i < len(ids):
@@ -163,7 +193,17 @@ def _apply_merge(ids, pair, new_id):
     return out
 `}</Code>
         <p>Using the tokenizer is the same pass, once per learned rule, in training order. These are the real functions from the repository:</p>
-        <Code source="phase2-language/bpe_tokenizer.py" title="encode and decode">{`
+        <Code
+          source="phase2-language/bpe_tokenizer.py"
+          title="encode and decode"
+          setup={BPE_SETUP}
+          show={`BPETokenizer.encode, BPETokenizer.decode = encode, decode   # attach them as methods
+tok = BPETokenizer()
+tok.train("the cat sat on the mat", vocab_size=15)          # the hand-worked example: 5 merges
+for text in ["chat", "the hat"]:
+    ids = tok.encode(text)
+    print(repr(text), "->", [tok.vocab[i] for i in ids], ids, " decode:", repr(tok.decode(ids)))`}
+        >{`
 def encode(self, text):
     stoi = {s: i for i, s in self.vocab.items() if len(s) == 1}
     ids = [stoi[c] for c in text]        # KeyError on unseen char
@@ -271,7 +311,21 @@ def decode(self, ids):
           solution={<><p>Merges form a <b>dependency chain</b>: rule 3 (␣t + he) can only fire after rules 1 and 2 have created its two halves. Applied longest-first, the long rules run on raw characters and match nothing, so “ the fox” comes out as <Tok> t</Tok><Tok>he</Tok><Tok> </Tok><Tok>fo</Tok><Tok>x</Tok> instead of <Tok> the </Tok><Tok>fox</Tok>.</p><p>The nasty part: <code>decode</code> still returns the right text, so a round-trip test passes. But the model was trained on the other segmentation, and now receives ID sequences it has never seen. The fix is to delete the <code>sorted</code>: replay merges in exactly the order they were learned.</p></>}
         >
           <p>A colleague thinks applying the biggest merges first will be faster. Decoding still round-trips perfectly, yet the model’s output quality collapses. Why?</p>
-          <Code>{`
+          <Code
+            setup={`${BPE_SETUP}
+text = ("the quick brown fox jumps over the lazy dog. "
+        "the dog barked at the fox. the fox ran into the forest. "
+        "learning about the internals of the tokenizer teaches the "
+        "engineer the fundamentals of the language model. "
+        "the tokens in the text represent the meaning of the words. ") * 4   # the file's training text
+tok = BPETokenizer()
+tok.train(text, vocab_size=80)
+stoi = {s: i for i, s in tok.vocab.items() if len(s) == 1}`}
+            show={`BPETokenizer.encode = encode
+ids = tok.encode(" the fox")
+print("tokens: ", [tok.vocab[i] for i in ids])
+print("decoded:", repr("".join(tok.vocab[i] for i in ids)))`}
+          >{`
 def encode(self, text):
     ids = [stoi[c] for c in text]
     longest_first = sorted(self.merges, key=lambda m: -len(self.vocab[m[1]]))
@@ -281,6 +335,9 @@ def encode(self, text):
 `}</Code>
         </Exercise>
 
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
         <Exercise
           id="tokenization-implement-byte-fallback"
           type="implement"
@@ -300,16 +357,12 @@ def encode(self, text):
           prompt="A teammate asks: “Why can an LLM explain quantum physics but not reliably count the r’s in strawberry?” Explain it using what you know about tokens."
           modelAnswer={<p>The model never receives letters. The tokenizer turns “strawberry” into a few integer IDs (the pieces might be “str”, “aw”, “berry”), and an integer does not contain an r. To count letters, the model must have memorised the spelling of each token from the rare places in its training text where words are spelled out, and then do arithmetic across tokens. Explaining physics, by contrast, works at the level of words and ideas, which is exactly the level tokens are good at. It is a bit like asking a program to count the vowels in a string when all it was given is the string’s hash.</p>}
         />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
         questions={[
-          {
-            q: 'Why do LLMs not use one token per word?',
-            options: ['The list of words is unbounded, and any word not on the list (new words, typos, identifiers) would have no ID at all', 'Whole words are too long to store efficiently, so the vocabulary file would not fit in memory', 'Words cannot be converted to integers', 'Because characters carry more meaning than words'],
-            answer: 0,
-            explain: 'Subwords keep the vocabulary a fixed size while still being able to spell out anything from smaller pieces.',
-          },
           {
             q: 'After BPE training, what exactly has been “learned”?',
             options: ['A neural network that predicts word boundaries', 'The grammar of the language', 'An ordered list of merge rules (plus the vocabulary it produces)', 'One vector per token'],
@@ -321,12 +374,6 @@ def encode(self, text):
             options: ['It fails with an error', 'It translates the text to English first', 'It produces the same number of tokens, since length is what matters', 'The paragraph becomes many more tokens than an English paragraph of the same length, so it costs more and fills the context sooner'],
             answer: 3,
             explain: 'Few merges were earned by that language’s character sequences, so the text is spelled out in small pieces (down to bytes).',
-          },
-          {
-            q: 'Why must encoding replay the merges in training order?',
-            options: ['It is only a convention', 'Later merges are built out of tokens created by earlier merges, so in another order they cannot match', 'Because Python lists are ordered', 'Otherwise decoding would join the pieces in the wrong order and return different text'],
-            answer: 1,
-            explain: 'Decoding would still work. The problem is that the model would receive a different segmentation from the one it was trained on.',
           },
           {
             q: 'An API bills you for 1,000 tokens. Roughly how much English text is that?',
@@ -342,8 +389,7 @@ def encode(self, text):
           <>A model sees <b>integers, not text</b>. Text → tokens → token IDs happens before the neural network, and IDs → text after it.</>,
           <><b>Words</b> fail (unbounded list, unseen words have no ID). <b>Characters</b> fail (long sequences, little meaning per piece). <b>Subwords</b> are the compromise.</>,
           <><b>BPE</b>: repeatedly merge the most frequent adjacent pair. The trained tokenizer is the <b>ordered merge list</b>. Encode = replay in order. Decode = concatenate.</>,
-          <>Frequent strings become one token. Rare strings (typos, unusual names, under-represented languages) <b>shatter into many tokens</b>.</>,
-          <>Tokens are the unit of <b>cost and context limits</b>, and the reason models struggle with spelling, letter counting and long numbers.</>,
+          <>Frequent strings become one token. Rare strings (typos, unusual names, under-represented languages) <b>shatter into many tokens</b>. Tokens are the unit of <b>cost and context limits</b>, and the reason models struggle with spelling, letter counting and long numbers.</>,
         ]}
       />
 

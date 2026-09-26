@@ -37,7 +37,7 @@ export function Home() {
       </section>
 
       <div className="facts">
-        <div><b>Written for developers</b><span>Python or Java is enough. You need no machine-learning background, and the maths arrives only when an LLM needs it.</span></div>
+        <div><b>Written for developers</b><span>Python or Java is enough. You need no machine-learning background, and the maths arrives only when an LLM needs it. Never written code? Learn basic Python first: the lessons assume you can read a loop and a function.</span></div>
         <div><b>See it before the formula</b><span>Each lesson goes from a question to a picture, an experiment, the numbers, the maths, and then the code.</span></div>
         <div><b>Connected to real code</b><span>Every demo mirrors a runnable Python file in this repository. Your progress stays in your browser.</span></div>
       </div>

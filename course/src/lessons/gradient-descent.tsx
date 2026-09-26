@@ -16,15 +16,16 @@ export default function GradientDescentLesson() {
         <p>She never measures anything. She never looks at a recipe. Taste, correct a little, taste again.</p>
         <p>“Why not put everything in at once?” Riya asks. “Because then you have a whole pot of mistakes,” says Amma.</p>
         <p>On the train back to Bengaluru, Riya opens her laptop and writes a function she could write in ten seconds:</p>
-        <Code>{`
+        <Code
+          show={`for x in [1, 2, -1]:
+    print(f"predict({x}) = {predict(x)}")`}
+        >{`
 def predict(x):
     return 3.0 * x - 1.5
 `}</Code>
         <p>She chose the 3.0 and the −1.5. Now imagine nobody tells you those numbers. You only get examples: “for x = 1 the answer was 1.4, for x = 2 it was 4.6, …”. Could a program find the 3.0 and the −1.5 by itself, by tasting and correcting?</p>
         <p>That is the whole of machine learning. A language model is also a function with numbers in it. It has billions of them instead of two, and nobody could ever type them in by hand.</p>
-        <Callout kind="idea">
-          We need a procedure that starts with <em>wrong</em> numbers and improves them automatically, using only examples. That procedure is called <b>gradient descent</b>. With small variations, it is how every neural network you have heard of was trained, including GPT.
-        </Callout>
+        <p>We need a procedure that starts with <em>wrong</em> numbers and improves them automatically, using only examples. It is called <b>gradient descent</b>, and with small variations it is how every neural network you have heard of was trained, including GPT.</p>
       </Why>
 
       <Problem>
@@ -154,18 +155,46 @@ def predict(x):
 
       <CodeIt>
         <p>We build the loop one line at a time, first with a single parameter: the model <code>pred = w * x</code>, and data that secretly follows y = 3x.</p>
-        <Code title="Step 1: predict, then score the predictions">{`
+        <Code
+          title="Step 1: predict, then score the predictions"
+          setup={`import numpy as np
+rng = np.random.default_rng(42)                 # the seed of gradient_descent.py
+x = rng.uniform(-2, 2, size=100)
+y = 3.0 * x + rng.normal(0, 0.1, size=100)      # data that secretly follows y = 3x
+w = 0.0                                         # start knowing nothing`}
+          show={`print("w =", w, " loss =", round(loss, 3))`}
+        >{`
 pred = w * x                       # x and y are arrays of 100 numbers
 loss = np.mean((pred - y) ** 2)    # one number: how wrong are we?
 `}</Code>
-        <Code title="Step 2: the slope of the loss with respect to w">{`
+        <Code
+          title="Step 2: the slope of the loss with respect to w"
+          setup={`import numpy as np
+rng = np.random.default_rng(42)                 # the seed of gradient_descent.py
+x = rng.uniform(-2, 2, size=100)
+y = 3.0 * x + rng.normal(0, 0.1, size=100)      # data that secretly follows y = 3x
+w = 0.0
+pred = w * x`}
+          show={`print("grad =", round(grad, 3), " (negative: turning w up lowers the loss)")`}
+        >{`
 grad = np.mean(2 * (pred - y) * x)   # the formula from the math section
 `}</Code>
-        <Code title="Step 3: step against the slope">{`
+        <Code
+          title="Step 3: step against the slope"
+          setup={`w, lr = 0.0, 0.1
+grad = -7.137          # the slope from step 2`}
+          show={`print("w after one step:", round(w, 2))`}
+        >{`
 w -= lr * grad     # minus: the gradient points uphill, we want downhill
 `}</Code>
         <p>Wrap those three steps in a loop and you have Stage A of the repository file, unchanged:</p>
-        <Code source="phase1-foundations/gradient_descent.py" title="stage_a(): one parameter">{`
+        <Code
+          source="phase1-foundations/gradient_descent.py"
+          title="stage_a(): one parameter"
+          setup={`import numpy as np
+rng = np.random.default_rng(42)     # the file's seed`}
+          show={`print("final w =", round(w, 4), "  loss =", round(loss, 5), "  (true answer: 3.0)")`}
+        >{`
 x = rng.uniform(-2, 2, size=100)
 y = 3.0 * x + rng.normal(0, 0.1, size=100)   # ground truth w = 3.0
 
@@ -187,7 +216,18 @@ for step in range(30):
           example={<>1,000 points, batch of 32: each step is about 30× cheaper. The estimate is a bit noisy, but you take many steps and the noise averages out.</>}
           formal={<>Gradient descent with random batches is called stochastic gradient descent (SGD). “Stochastic” means “involving randomness”.</>}
         />
-        <Code source="phase1-foundations/gradient_descent.py" title="stage_c(): two parameters, mini-batches">{`
+        <Code
+          source="phase1-foundations/gradient_descent.py"
+          title="stage_c(): two parameters, mini-batches"
+          setup={`import numpy as np
+rng = np.random.default_rng(42)
+for _ in range(2):                  # stages A and B draw their data first
+    rng.uniform(-2, 2, size=100); rng.normal(0, 0.1, size=100)
+N = 1000
+x = rng.uniform(-2, 2, size=N)
+y = 3.0 * x - 1.5 + rng.normal(0, 0.3, size=N)   # truth: w = 3.0, b = -1.5`}
+          show={`print(f"learned w = {w:.3f}, b = {b:.3f}   (truth: 3.0, -1.5)")`}
+        >{`
 w, b = 0.0, 0.0
 lr, batch_size = 0.05, 32
 
@@ -209,7 +249,16 @@ for step in range(400):
         <Callout kind="dev">Look at the <em>shape</em> of that loop: forward, loss, gradients, update, over batches. When we train a GPT in <a href="#/lesson/training-gpt">Part 7</a>, the loop has exactly this shape. Only the line marked “forward” grows: from <code>w * xb + b</code> into a Transformer.</Callout>
         <DeepDive title="Stage B: gradients with no calculus at all, and why that is a great test">
           <p>You do not need a formula to get a slope. Use the definition: nudge the parameter, re-measure the loss, divide.</p>
-          <Code source="phase1-foundations/gradient_descent.py" title="stage_b(): the numerical gradient">{`
+          <Code
+            source="phase1-foundations/gradient_descent.py"
+            title="stage_b(): the numerical gradient"
+            setup={`import numpy as np
+rng = np.random.default_rng(42)
+rng.uniform(-2, 2, size=100); rng.normal(0, 0.1, size=100)   # stage A drew its data first
+x = rng.uniform(-2, 2, size=100)
+y = 3.0 * x + rng.normal(0, 0.1, size=100)`}
+            show={`print("final w =", round(w, 4), "  (no calculus anywhere)")`}
+          >{`
 def loss_fn(w):
     return np.mean((w * x - y) ** 2)
 
@@ -283,7 +332,15 @@ for step in range(30):
           solution={<><p>The sign. <code>w += lr * grad</code> steps <em>with</em> the gradient, which is uphill: this is gradient <em>ascent</em>, and it maximises the error. It must be <code>w -= lr * grad</code>.</p><p>The tell-tale symptom: the loss rises even with a tiny learning rate. A learning rate that is merely too large makes the loss explode, but a small enough one always fixes it. If no learning rate helps, suspect the sign (or the gradient formula).</p></>}
         >
           <p>A colleague’s training loop makes the loss <em>increase</em> smoothly at every step, even with <code>lr = 0.0001</code>. What is wrong?</p>
-          <Code>{`
+          <Code
+            setup={`import numpy as np
+rng = np.random.default_rng(42)                 # the seed of gradient_descent.py
+x = rng.uniform(-2, 2, size=100)
+y = 3.0 * x + rng.normal(0, 0.1, size=100)      # data that secretly follows y = 3x
+w, lr = 0.0, 0.0001
+print("loss before:", round(np.mean((w * x - y) ** 2), 4))`}
+            show={`print("loss after 30 steps:", round(np.mean((w * x - y) ** 2), 4), "  w =", round(w, 4))`}
+          >{`
 for step in range(30):
     pred = w * x
     loss = np.mean((pred - y) ** 2)
@@ -292,39 +349,44 @@ for step in range(30):
 `}</Code>
         </Exercise>
 
-        <Exercise
-          id="gradient-descent-predict"
-          type="predict"
-          title="Which way will the knob turn?"
-          answer={{ text: ['positive', 'pos', '+', 'plus', 'greater than zero', '> 0', '>0'] }}
-          answerLabel="positive or negative?"
-          hints={[
-            'The line is too steep. Would making w even bigger make the loss go up or down?',
-            'The gradient is the slope of the loss: it is positive when increasing the parameter increases the loss.',
-          ]}
-          solution={<><p><b>Positive.</b> The line is already too steep, so increasing w makes the fit worse: the loss rises with w, which is what a positive gradient means. The update subtracts it, so w goes down, toward 3.</p><p>Check it in mode A: set w = 5, b = −1.5. The hint reads “turn it DOWN, strongly”.</p></>}
-        >
-          <p>The data follows y = 3x − 1.5. Your current line has w = 5 and b = −1.5: right offset, far too steep. Without calculating: is grad_w positive or negative?</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="gradient-descent-predict"
+            type="predict"
+            title="Which way will the knob turn?"
+            answer={{ text: ['positive', 'pos', '+', 'plus', 'greater than zero', '> 0', '>0'] }}
+            answerLabel="positive or negative?"
+            hints={[
+              'The line is too steep. Would making w even bigger make the loss go up or down?',
+              'The gradient is the slope of the loss: it is positive when increasing the parameter increases the loss.',
+            ]}
+            solution={<><p><b>Positive.</b> The line is already too steep, so increasing w makes the fit worse: the loss rises with w, which is what a positive gradient means. The update subtracts it, so w goes down, toward 3.</p><p>Check it in mode A: set w = 5, b = −1.5. The hint reads “turn it DOWN, strongly”.</p></>}
+          >
+            <p>The data follows y = 3x − 1.5. Your current line has w = 5 and b = −1.5: right offset, far too steep. Without calculating: is grad_w positive or negative?</p>
+          </Exercise>
 
-        <Exercise
-          id="gradient-descent-implement"
-          type="implement"
-          title="Add a third parameter"
-          hints={[
-            'In stage_c(), make a second input array x2, generate y = 3.0*x + 2.0*x2 - 1.5 + noise, and give the model a second weight w2.',
-            'Copy the pattern: pred = w*xb + w2*x2b + b, and grad_w2 = np.mean(2 * err * x2b), then w2 -= lr * grad_w2.',
-          ]}
-          solution={<p>You needed one new line for the gradient and one for the update, and no new ideas. The sensitivity of the error to w2 is x2, for the same reason the sensitivity to w is x. This is why the method scales: a model with a billion parameters runs the same two lines a billion times (in practice, as a few large matrix operations).</p>}
-        >
-          <p>Open <code>phase1-foundations/gradient_descent.py</code>. Extend Stage C to fit <code>y = w1*x1 + w2*x2 + b</code> with a second random input. How many new ideas did you need?</p>
-        </Exercise>
+          <Exercise
+            id="gradient-descent-implement"
+            type="implement"
+            title="Add a third parameter"
+            hints={[
+              'In stage_c(), make a second input array x2, generate y = 3.0*x + 2.0*x2 - 1.5 + noise, and give the model a second weight w2.',
+              'Copy the pattern: pred = w*xb + w2*x2b + b, and grad_w2 = np.mean(2 * err * x2b), then w2 -= lr * grad_w2.',
+            ]}
+            solution={<p>You needed one new line for the gradient and one for the update, and no new ideas. The sensitivity of the error to w2 is x2, for the same reason the sensitivity to w is x. This is why the method scales: a model with a billion parameters runs the same two lines a billion times (in practice, as a few large matrix operations).</p>}
+          >
+            <p>Open <code>phase1-foundations/gradient_descent.py</code>. Extend Stage C to fit <code>y = w1*x1 + w2*x2 + b</code> with a second random input. How many new ideas did you need?</p>
+          </Exercise>
 
-        <ExplainBack
-          id="gradient-descent-explain"
-          prompt="A teammate asks: “How can a program possibly find good values for a million numbers without trying all the combinations?” Explain gradient descent to them in plain words. Include why the steps have to be small."
-          modelAnswer={<p>We define one number, the loss, that says how wrong the model is. For each adjustable number we work out the slope: if I turn this one up slightly, does the loss go up or down, and how fast? That list of slopes is the gradient. Then we move every number a small step in the direction that lowers the loss, all at once, and repeat. We never search combinations; we keep walking downhill. The steps must be small because a slope is only valid near where you measured it: a big leap can overshoot the valley and end up worse than before.</p>}
-        />
+          <ExplainBack
+            id="gradient-descent-explain"
+            prompt="A teammate asks: “How can a program possibly find good values for a million numbers without trying all the combinations?” Explain gradient descent to them in plain words. Include why the steps have to be small."
+            modelAnswer={<p>We define one number, the loss, that says how wrong the model is. For each adjustable number we work out the slope: if I turn this one up slightly, does the loss go up or down, and how fast? That list of slopes is the gradient. Then we move every number a small step in the direction that lowers the loss, all at once, and repeat. We never search combinations; we keep walking downhill. The steps must be small because a slope is only valid near where you measured it: a big leap can overshoot the valley and end up worse than before.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -342,18 +404,6 @@ for step in range(30):
             explain: 'Downhill only means something if there is one height. With one number per example, a change could help some and hurt others, and there would be no single direction to go.',
           },
           {
-            q: 'grad_w = +4 at the current position. What does gradient descent do to w?',
-            options: ['Increases it, because the gradient is positive', 'Decreases it: a positive slope means the loss rises as w rises, so go the other way', 'Sets it to 4', 'Leaves it; only negative gradients cause updates'],
-            answer: 1,
-            explain: 'w −= lr × 4. The gradient points uphill; the update steps downhill.',
-          },
-          {
-            q: 'Your loss goes 2.1, 4.7, 93.5, 8812, then overflows. What is the first thing to try?',
-            options: ['Train for more steps', 'Use more data', 'Lower the learning rate', 'Raise the learning rate to escape faster'],
-            answer: 2,
-            explain: 'Growing oscillation is the signature of steps that overshoot further each time. The slope is only locally valid, and the steps are leaving the region where it holds.',
-          },
-          {
             q: 'Why use a random mini-batch instead of all the data for each step?',
             options: ['It gives a more accurate gradient', 'It gives a slightly noisy gradient at a fraction of the cost, and many cheap steps beat a few expensive ones', 'Gradients cannot be computed on more than 32 examples', 'To make the results random on purpose'],
             answer: 1,
@@ -366,8 +416,7 @@ for step in range(30):
         items={[
           <><b>Parameters</b> are the adjustable numbers. The model <em>is</em> those numbers; learning means changing them.</>,
           <>The <b>loss</b> squeezes “how wrong are we?” into one number, so that “better” has a direction.</>,
-          <>The <b>gradient</b> is one slope per parameter: which way is uphill, and how steeply. We step the other way: <code>w -= lr * grad</code>.</>,
-          <>Steps are <b>small</b> because a slope is only valid near where it was measured. Too small a learning rate: slow. Too large: the loss explodes.</>,
+          <>The <b>gradient</b> is one slope per parameter: which way is uphill, and how steeply. We take a <b>small</b> step the other way, <code>w -= lr * grad</code>, because a slope is only valid near where it was measured. Too small a learning rate: slow. Too large: the loss explodes.</>,
           <>The loop <b>predict → loss → gradient → update → repeat</b>, on random mini-batches, is the same loop that trains GPT.</>,
         ]}
       />

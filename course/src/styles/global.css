@@ -530,7 +530,9 @@ table.plain td { border-bottom: 1px solid var(--rule); padding: 8px 10px 8px 0; 
 .section[hidden] { margin: 0 !important; padding: 0 !important; }
 .section > h2:focus { outline: none; }
 
-.lesson-pager { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule); }
+.lesson-feedback { margin: 48px 0 0; font-size: 13.5px; color: var(--ink-3); }
+.lesson-feedback a { color: var(--ink-2); }
+.lesson-pager { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 14px; padding-top: 20px; border-top: 1px solid var(--rule); }
 .lesson-pager-back {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px 8px 4px;
   border: 0; border-radius: 8px; background: none; color: var(--ink-2); font-size: 14.5px; font-weight: 600;
