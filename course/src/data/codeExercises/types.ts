@@ -16,6 +16,21 @@ export interface CodeExerciseDef {
   hints: string[]
   /** Why the solution is right, and what to notice. */
   explanation: string
+  /**
+   * Code that runs before the learner's code and before the tests, shown read-only above the editor.
+   * Project exercises use it for the shared Paisa Pal data (data/project/paisaPal.ts) plus any pieces
+   * "already written" earlier in the project. The learner's starter must not repeat it.
+   */
+  prelude?: string
+  /** Part of the Paisa Pal support-bot project: which piece of the bot this exercise builds. */
+  project?: { piece: string }
   /** Repo file this function lives in, e.g. "phase3-transformers/attention_numpy.py". */
   source?: string
 }
+
+/**
+ * The program actually run for an exercise: the prelude executes as its own file (paisa_pal.py), so
+ * tracebacks from the learner's code keep their own line numbers (off by one line only).
+ */
+export const withPrelude = (prelude: string | undefined, code: string) =>
+  prelude ? `exec(compile(${JSON.stringify(prelude)}, "paisa_pal.py", "exec"))\n${code}` : code

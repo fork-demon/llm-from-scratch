@@ -1,3 +1,4 @@
+import { CodeExercise } from '../components/python'
 import { RepoRunner } from '../components/RepoRunner'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
@@ -330,6 +331,8 @@ if len(transcript) > context_budget and len(scratchpad) > 2:
       </BreakIt>
 
       <Exercises>
+        <p>Back to the landlord ticket. In this piece of the <a href="#/project">Paisa Pal support bot</a>, the bot stops guessing: it asks for <code>get_balance</code> or <code>refund_status</code>, your loop runs the real function, and the model answers from the result.</p>
+        <CodeExercise id="agents-code-bot-tool-loop" />
         <OrderExercise
           id="agents-trace-loop"
           title="One turn of the loop"

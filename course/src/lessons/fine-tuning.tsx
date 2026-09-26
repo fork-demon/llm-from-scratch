@@ -225,19 +225,9 @@ opt = torch.optim.AdamW(params, lr=lr)
       </BreakIt>
 
       <Exercises>
+        <p>Riya’s lunch-time sample, fixed for real. In this piece of the <a href="#/project">Paisa Pal support bot</a>, a frozen layer that answers every customer in “Dear Valued Customer” style learns the Paisa Pal tone through two small matrices, and its own weights never move.</p>
+        <CodeExercise id="fine-tuning-code-bot-lora" />
         <CodeExercise id="fine-tuning-code-lora" />
-        <Exercise
-          id="fine-tuning-calc-lora"
-          type="calculate"
-          title="Count the adapter"
-          answer={{ value: 81920, tolerance: 0.5 }}
-          answerLabel="trainable numbers in A and B"
-          hints={['A has shape d_in × r and B has shape r × d_out.', 'A: 1024 × 16 = 16,384. B: 16 × 4096 = 65,536.', 'Add them. Or use r × (d_in + d_out) = 16 × 5120.']}
-          solution={<><p>16 × (1024 + 4096) = 16 × 5120 = <b>81,920</b>.</p><p>The full matrix has 1024 × 4096 = 4,194,304 numbers, so the adapter is 1.95% of it. Doubling r doubles the adapter. Doubling both dimensions of the layer quadruples the full count but only doubles the adapter, which is why LoRA looks better the bigger the model is.</p></>}
-        >
-          <p>A feed-forward layer maps 1024 inputs to 4096 outputs. You attach a LoRA adapter with rank r = 16. How many trainable numbers do A and B contain in total?</p>
-        </Exercise>
-
         <Exercise
           id="fine-tuning-predict-data"
           type="predict"
@@ -265,6 +255,18 @@ self.B = nn.Parameter(torch.zeros(r, base.out_features))
         <details className="deep">
           <summary>More practice (optional)</summary>
           <div className="details-body">
+          <Exercise
+            id="fine-tuning-calc-lora"
+            type="calculate"
+            title="Count the adapter"
+            answer={{ value: 81920, tolerance: 0.5 }}
+            answerLabel="trainable numbers in A and B"
+            hints={['A has shape d_in × r and B has shape r × d_out.', 'A: 1024 × 16 = 16,384. B: 16 × 4096 = 65,536.', 'Add them. Or use r × (d_in + d_out) = 16 × 5120.']}
+            solution={<><p>16 × (1024 + 4096) = 16 × 5120 = <b>81,920</b>.</p><p>The full matrix has 1024 × 4096 = 4,194,304 numbers, so the adapter is 1.95% of it. Doubling r doubles the adapter. Doubling both dimensions of the layer quadruples the full count but only doubles the adapter, which is why LoRA looks better the bigger the model is.</p></>}
+          >
+            <p>A feed-forward layer maps 1024 inputs to 4096 outputs. You attach a LoRA adapter with rank r = 16. How many trainable numbers do A and B contain in total?</p>
+          </Exercise>
+
           <Exercise
             id="fine-tuning-experiment"
             type="experiment"

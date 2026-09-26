@@ -282,23 +282,9 @@ out.append(draw(P[ctx], rng))                # all accepted: one bonus token
       </BreakIt>
 
       <Exercises>
+        <p>Back to the slide with the red circle. Before anyone promises finance a smaller bill, Riya shrinks her own support bot to int8 and measures what it costs in answers. This is the int8 weights piece of <a href="#/project">your support bot</a>.</p>
+        <CodeExercise id="making-models-cheaper-code-bot-int8" />
         <CodeExercise id="making-models-cheaper-code-int8" />
-        <Exercise
-          id="making-models-cheaper-outlier"
-          type="predict"
-          title="One outlier, one scale"
-          answer={{ value: 0, tolerance: 0 }}
-          answerLabel="ordinary weights that survive as non-zero"
-          hints={[
-            'The scale must reach the largest magnitude in the group: scale = max|w| ÷ 7.',
-            'scale = 1.4 ÷ 7 = 0.2. Each weight is stored as round(w ÷ 0.2).',
-            '0.06 ÷ 0.2 = 0.3, −0.02 ÷ 0.2 = −0.1, 0.012 ÷ 0.2 = 0.06. What does each round to?',
-          ]}
-          solution={<><p>The scale becomes 0.2, and 0.3, −0.1 and 0.06 all round to 0. <b>None</b> of the ordinary weights survives. The group is stored as [0, 0, 0, 7].</p><p>Without the outlier the scale would be 0.06 ÷ 7 = 0.0086 and the three weights would be stored as 7, −2 and 1. This is why int4 needs small groups: a group of 32 contains the damage to 31 neighbours, a per-tensor scale spreads it over millions.</p></>}
-        >
-          <p>A group of four weights is quantized to int4 (levels −7 to 7) with one absmax scale: <code>[0.06, −0.02, 0.012, 1.4]</code>. How many of the three ordinary weights are stored as something other than 0?</p>
-        </Exercise>
-
         <Exercise
           id="making-models-cheaper-int4-ceiling"
           type="calculate"
@@ -339,6 +325,22 @@ out.append(draw(P[ctx], rng))                # all accepted: one bonus token
         <details className="deep">
           <summary>More practice (optional)</summary>
           <div className="details-body">
+          <Exercise
+            id="making-models-cheaper-outlier"
+            type="predict"
+            title="One outlier, one scale"
+            answer={{ value: 0, tolerance: 0 }}
+            answerLabel="ordinary weights that survive as non-zero"
+            hints={[
+              'The scale must reach the largest magnitude in the group: scale = max|w| ÷ 7.',
+              'scale = 1.4 ÷ 7 = 0.2. Each weight is stored as round(w ÷ 0.2).',
+              '0.06 ÷ 0.2 = 0.3, −0.02 ÷ 0.2 = −0.1, 0.012 ÷ 0.2 = 0.06. What does each round to?',
+            ]}
+            solution={<><p>The scale becomes 0.2, and 0.3, −0.1 and 0.06 all round to 0. <b>None</b> of the ordinary weights survives. The group is stored as [0, 0, 0, 7].</p><p>Without the outlier the scale would be 0.06 ÷ 7 = 0.0086 and the three weights would be stored as 7, −2 and 1. This is why int4 needs small groups: a group of 32 contains the damage to 31 neighbours, a per-tensor scale spreads it over millions.</p></>}
+          >
+            <p>A group of four weights is quantized to int4 (levels −7 to 7) with one absmax scale: <code>[0.06, −0.02, 0.012, 1.4]</code>. How many of the three ordinary weights are stored as something other than 0?</p>
+          </Exercise>
+
           <Exercise
             id="making-models-cheaper-spec-debug"
             type="debug"

@@ -200,3 +200,31 @@ or `standalone` if it already runs and prints. The playground runs `setup`, then
 - `show` should print something that teaches: a shape, a probability, the value the lesson talks about.
 - `src/components/tryIt.test.tsx` runs every such program in real Python and fails if one errors or prints nothing:
   `npx vitest run src/components/tryIt.test.tsx`.
+
+## The Paisa Pal project (Parts 8 to 10)
+
+Paisa Pal wants a support bot (the story's premise). From Part 8 on, each lesson has one **project exercise**
+in which the learner writes one piece of that bot in the browser, against hidden tests. The plan, with the exact
+exercise ids and piece names, is `src/data/project/paisaPal.ts` (`PROJECT_PIECES`); the shared data is
+`src/data/project/paisa_pal.py` (help pages, 12 labelled customer questions, customers, transactions, tools,
+`tokenize`, `softmax`). `#/project` shows the learner which pieces they have built.
+
+Rules for a project exercise (`CodeExerciseDef`, in its own file `src/data/codeExercises/project-<group>.ts`):
+
+- `id`, `lesson` and `project: { piece }` exactly as listed in `PROJECT_PIECES`.
+- `prelude: PAISA_PAL + '\n' + <given code>` (`import { PAISA_PAL } from '../project/paisaPal'`). The given code
+  is anything the piece needs that is not the point of this lesson: a toy model, or a reference version of an
+  earlier piece. Every exercise must stand alone: never assume the learner finished another exercise. The prelude
+  runs first as its own file and is shown read-only above the editor.
+- `starter`: only the new function(s), with the signature, a docstring and `...` (or a deliberately naive body).
+  It must not pass. `solution`: 10 to 40 lines, NumPy and the standard library only, under 3 seconds in the browser.
+- Use the project data: the tests should talk about refunds, cashback, KYC, Riya's balance, the biryani question the
+  bot must refuse. 3 to 5 tests with helpful `assert ..., f"got {x}"` messages, including one that captures the
+  point of the lesson. 2 to 3 hints. The `explanation` says why it works **and what the real version adds**
+  (scale, GPUs, a trained model): be honest that this is the toy version of a real mechanism.
+- In the lesson: put `<CodeExercise id="..." />` first in `<Exercises>`, after a one- or two-sentence lead-in in the
+  story voice that says which piece of the bot this is and links to `#/project`. It counts as a core exercise:
+  if the lesson now has more than 4 core exercises, move one existing exercise (unchanged, same id) into the
+  "More practice (optional)" block.
+- `codeExercises.test.ts` runs the solution and the starter through real Python with the prelude;
+  `src/data/project/paisaPal.test.ts` checks the id, the piece name, the prelude and the placement.

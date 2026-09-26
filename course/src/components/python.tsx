@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { highlight } from '../lib/highlight'
 import { pythonIsWarm, runPython, summarise, type PyPhase, type PyRunResult, type PyTest } from '../lib/pyRunner'
 import { completeExercise, updateProgress, useProgress } from '../lib/progress'
-import { codeExerciseById } from '../data/codeExercises'
+import { codeExerciseById, withPrelude } from '../data/codeExercises'
 import { sourceUrl } from '../data/curriculum'
 
 /* ---------- editor ----------
@@ -216,7 +216,7 @@ export function CodeExercise({ id, children }: { id: string; children?: ReactNod
   const summary = result ? summarise(result) : null
 
   const check = async () => {
-    const r = await run(value)
+    const r = await run(withPrelude(def.prelude, value))
     if (summarise(r).allPassed) updateProgress((p) => completeExercise(p, id))
   }
 
@@ -230,9 +230,15 @@ export function CodeExercise({ id, children }: { id: string; children?: ReactNod
       <div className="exercise-body">
         <Prose text={def.prompt} />
         {children}
+        {def.prelude && (
+          <details className="py-prelude">
+            <summary>{def.project ? 'Project code you already have (paisa_pal.py)' : 'Code that runs before yours'}</summary>
+            <pre className="py-solution"><code>{highlight(def.prelude.trim()).map((t, i) => (t.kind ? <span key={i} className={`tok-${t.kind}`}>{t.text}</span> : t.text))}</code></pre>
+          </details>
+        )}
         <div className="py-cell">
           <div className="code-bar">
-            <span>your code</span>
+            <span>{def.project ? `your code: ${def.project.piece}` : 'your code'}</span>
             <span className="spacer" />
             {def.source && <a href={sourceUrl(def.source)} target="_blank" rel="noreferrer">{def.source.split('/').pop()} ↗</a>}
             <span className="py-badge">runs in your browser</span>

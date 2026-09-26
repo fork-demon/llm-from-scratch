@@ -2,6 +2,7 @@ import { TrainedGptExplorer } from '../interactive/TrainedGptExplorer'
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal } from '../components/ui'
 import { Code } from '../components/Code'
+import { CodeExercise } from '../components/python'
 import { Exercise, ExplainBack } from '../components/exercise'
 import { ClaimSorter } from '../interactive/ClaimSorter'
 import { SuperpositionLab } from '../interactive/SuperpositionLab'
@@ -270,20 +271,8 @@ for layer, h in enumerate(out.hidden_states):
       </BreakIt>
 
       <Exercises>
-        <Exercise
-          id="interpretability-dense"
-          type="predict"
-          title="How many survive?"
-          answer={{ value: 2, tolerance: 0 }}
-          answerLabel="features represented"
-          hints={[
-            'Dense means every feature is on in every example. Any two overlapping arrows interfere on every example.',
-            'With 2 dimensions there is room for exactly 2 perpendicular directions with zero overlap.',
-          ]}
-          solution={<><p><b>2</b>: the two most important features, at 90° to each other. The other three get arrows of length close to zero and a bias near 0.5, their average value.</p><p>Overlapping would add interference to every single example, which costs more than it gains. Superposition only pays when features are rarely active together.</p></>}
-        >
-          <p>Before pressing Train: in the dense setting (S = 0, importance 0.9<sup>i</sup>), how many of the 5 features will end up with an arrow longer than 0.5?</p>
-        </Exercise>
+        <p>Kabir’s probes are the part Riya can use on Monday. In this piece of the <a href="#/project">Paisa Pal support bot</a>, you look inside a toy model’s middle layer for the direction that means “this customer wants money back”, and check it on questions it has never seen.</p>
+        <CodeExercise id="interpretability-code-bot-probe" />
 
         <Exercise
           id="interpretability-leak"
@@ -330,6 +319,21 @@ for layer, h in enumerate(out.hidden_states):
         <details className="deep">
           <summary>More practice (optional)</summary>
           <div className="details-body">
+          <Exercise
+            id="interpretability-dense"
+            type="predict"
+            title="How many survive?"
+            answer={{ value: 2, tolerance: 0 }}
+            answerLabel="features represented"
+            hints={[
+              'Dense means every feature is on in every example. Any two overlapping arrows interfere on every example.',
+              'With 2 dimensions there is room for exactly 2 perpendicular directions with zero overlap.',
+            ]}
+            solution={<><p><b>2</b>: the two most important features, at 90° to each other. The other three get arrows of length close to zero and a bias near 0.5, their average value.</p><p>Overlapping would add interference to every single example, which costs more than it gains. Superposition only pays when features are rarely active together.</p></>}
+          >
+            <p>Before pressing Train: in the dense setting (S = 0, importance 0.9<sup>i</sup>), how many of the 5 features will end up with an arrow longer than 0.5?</p>
+          </Exercise>
+
           <Exercise
             id="interpretability-sae"
             type="calculate"

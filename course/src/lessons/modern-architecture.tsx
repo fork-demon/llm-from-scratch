@@ -3,6 +3,7 @@ import { Lesson, Why, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exe
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal } from '../components/ui'
 import { Code } from '../components/Code'
 import { Exercise, ExplainBack } from '../components/exercise'
+import { CodeExercise } from '../components/python'
 import { RopeLab } from '../interactive/RopeLab'
 import { GqaCalculator } from '../interactive/GqaCalculator'
 import { NormCompare } from '../interactive/NormCompare'
@@ -371,6 +372,9 @@ y = F.scaled_dot_product_attention(q, k, v, is_causal=True)   # same y, no (T, T
       </BreakIt>
 
       <Exercises>
+        <p>Kabir’s config rotates <span className="q">q</span> and <span className="k">k</span>, so the <a href="#/project">Paisa Pal support bot</a> will too. This piece gives the bot’s attention head rotary positions: a customer who opens with “hi paisa pal team” should not change how the words of their question look at each other.</p>
+        <CodeExercise id="modern-architecture-code-bot-rope" />
+
         <Exercise
           id="modern-architecture-kv-bytes"
           type="calculate"

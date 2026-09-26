@@ -382,20 +382,10 @@ def search_ivf(self, qvec, k=5, nprobe=1):
       </BreakIt>
 
       <Exercises>
+        <p>Back to Tuesday’s invented policy. The first piece of the <a href="#/project">Paisa Pal support bot</a> is its retriever: find the help page that answers the customer, and say so honestly when no page does.</p>
+        <CodeExercise id="rag-code-bot-retriever" />
         <CodeExercise id="rag-code-chunk" />
         <CodeExercise id="rag-code-retrieve" />
-        <Exercise
-          id="rag-calc-cosine"
-          type="calculate"
-          title="Cosine by hand"
-          answer={{ value: 0.96, tolerance: 0.006 }}
-          answerLabel="cosine similarity"
-          hints={['Dot product first: 3×4 + 4×3.', 'Lengths: √(3² + 4²) = 5 for both vectors.', 'cosine = 24 / (5 × 5).']}
-          solution={<><p>a·b = 12 + 12 = 24. Both lengths are √25 = 5. Cosine = 24 / 25 = <b>0.96</b>.</p><p>The vectors are different, but they point in nearly the same direction, so a vector store would rank b as a very close match for a.</p></>}
-        >
-          <p>A question embeds to <code>a = [3, 4]</code> and a chunk to <code>b = [4, 3]</code>. What is their cosine similarity? (Two decimals.)</p>
-        </Exercise>
-
         <Exercise
           id="rag-debug-miss"
           type="debug"
@@ -415,6 +405,18 @@ def search_ivf(self, qvec, k=5, nprobe=1):
         <details className="deep">
           <summary>More practice (optional)</summary>
           <div className="details-body">
+          <Exercise
+            id="rag-calc-cosine"
+            type="calculate"
+            title="Cosine by hand"
+            answer={{ value: 0.96, tolerance: 0.006 }}
+            answerLabel="cosine similarity"
+            hints={['Dot product first: 3×4 + 4×3.', 'Lengths: √(3² + 4²) = 5 for both vectors.', 'cosine = 24 / (5 × 5).']}
+            solution={<><p>a·b = 12 + 12 = 24. Both lengths are √25 = 5. Cosine = 24 / 25 = <b>0.96</b>.</p><p>The vectors are different, but they point in nearly the same direction, so a vector store would rank b as a very close match for a.</p></>}
+          >
+            <p>A question embeds to <code>a = [3, 4]</code> and a chunk to <code>b = [4, 3]</code>. What is their cosine similarity? (Two decimals.)</p>
+          </Exercise>
+
           <Exercise
             id="rag-predict-weights"
             type="predict"

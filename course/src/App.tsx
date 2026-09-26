@@ -9,6 +9,7 @@ import { ConceptMapPage } from './pages/ConceptMap'
 import { SelfTestPage } from './pages/SelfTest'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ReviewPage } from './pages/Review'
+import { ProjectPage } from './pages/Project'
 // the GPT-2 Explainer page is code-split: its engine and worker load only when someone opens it
 const Gpt2Page = lazy(() => import('./pages/Gpt2Page'))
 const PlaygroundPage = lazy(() => import('./pages/Playground').then((m) => ({ default: m.PlaygroundPage })))
@@ -87,6 +88,7 @@ function Sidebar({ open, current, onNavigate, theme, toggleTheme, onCollapse }: 
         <a href="#/review" aria-current={route.page === 'review' ? 'page' : undefined} onClick={onNavigate}>Review{dueCount > 0 ? ` (${dueCount})` : ''}</a>
         <a href="#/gpt2" aria-current={route.page === 'gpt2' ? 'page' : undefined} onClick={onNavigate}>GPT-2 Explainer</a>
         <a href="#/python" aria-current={route.page === 'python' ? 'page' : undefined} onClick={onNavigate}>Python playground</a>
+        <a href="#/project" aria-current={route.page === 'project' ? 'page' : undefined} onClick={onNavigate}>Your support bot</a>
       </div>
 
       <nav className="nav" aria-label="Lessons">
@@ -204,6 +206,7 @@ export function App() {
   else if (route.page === 'map') body = <ConceptMapPage />
   else if (route.page === 'selftest') body = <SelfTestPage />
   else if (route.page === 'review') body = <ReviewPage />
+  else if (route.page === 'project') body = <ProjectPage />
   else if (route.page === 'python') body = <Suspense fallback={<p className="muted">Loading the playground…</p>}><PlaygroundPage /></Suspense>
   else if (route.page === 'gpt2') body = <Suspense fallback={<p className="muted">Loading the GPT-2 Explainer…</p>}><Gpt2Page arg={route.arg} /></Suspense>
   else body = <Home />

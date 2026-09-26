@@ -1,6 +1,7 @@
 import { Lesson, Why, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, G, Term, ToyVsReal } from '../components/ui'
 import { Code } from '../components/Code'
+import { CodeExercise } from '../components/python'
 import { Exercise, ExplainBack } from '../components/exercise'
 import { RewardHackingLab } from '../interactive/RewardHackingLab'
 
@@ -275,6 +276,9 @@ print(f"attack success {len(harmful)/len(attack_set):.1%}, "
       </BreakIt>
 
       <Exercises>
+        <p>Dev’s attack is not the only thing the bot gets wrong. Asked about a failed payment, it sometimes invents a generous refund policy. A rater has picked the honest reply that quotes the refunds page over the invented one, and in this piece of the <a href="#/project">Paisa Pal support bot</a> you teach the bot that preference with DPO, on the same leash as the lab.</p>
+        <CodeExercise id="alignment-safety-code-bot-dpo" />
+
         <Exercise
           id="alignment-safety-calc-leash"
           type="calculate"

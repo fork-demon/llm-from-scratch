@@ -1,6 +1,7 @@
 import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
+import { CodeExercise } from '../components/python'
 import { Exercise, ExplainBack } from '../components/exercise'
 import { PatchLab } from '../interactive/PatchLab'
 import { ImageToTokens } from '../illustrations/ImageToTokens'
@@ -274,6 +275,9 @@ logits = language_model(x)      # from here on: the GPT you already built
       </BreakIt>
 
       <Exercises>
+        <p>Back to the ticket with no text. This piece of the <a href="#/project">Paisa Pal support bot</a> turns the failed-payment screenshot into tokens: cut it into patches, project them, add positions, and put them in the same sequence as the customer’s words.</p>
+        <CodeExercise id="multimodal-code-bot-screenshot" />
+
         <Exercise
           id="multimodal-llava"
           type="calculate"

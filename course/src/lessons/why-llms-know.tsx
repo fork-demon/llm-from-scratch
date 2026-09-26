@@ -2,6 +2,7 @@ import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, Bre
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
 import { Exercise, ExplainBack } from '../components/exercise'
+import { CodeExercise } from '../components/python'
 import { KnowledgeLab } from '../interactive/KnowledgeLab'
 import { ClaimSorter } from '../interactive/ClaimSorter'
 import { TextIntoWeights } from '../illustrations/TextIntoWeights'
@@ -192,6 +193,9 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
       </BreakIt>
 
       <Exercises>
+        <p>Riya’s first piece of the <a href="#/project">Paisa Pal support bot</a> is a guard in front of its mouth: before the bot answers, check how sure it is, and hand over to a human when it is not. Build it, then see what it cannot catch.</p>
+        <CodeExercise id="why-llms-know-code-bot-confidence" />
+
         <Exercise
           id="why-llms-know-chinchilla"
           type="calculate"
@@ -206,22 +210,6 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
           solution={<><p>70 × 10⁹ × 20 = 1.4 × 10¹² = <b>1.4 trillion tokens</b>.</p><p>For scale: that is more than a thousand times what a keen reader gets through in a lifetime. Many recent open models are deliberately trained on far more than this ratio, because a smaller model trained for longer is cheaper to run afterwards. Either way, data at this scale cannot be checked by hand, which is one reason the next lessons care so much about filtering.</p></>}
         >
           <p>Using the compute-optimal rule of thumb from the Chinchilla study, roughly how many training tokens go with a 70-billion-parameter model? Answer in trillions.</p>
-        </Exercise>
-
-        <Exercise
-          id="why-llms-know-powerlaw"
-          type="calculate"
-          title="Read a scaling law"
-          answer={{ value: 1.26, tolerance: 0.02 }}
-          answerLabel="removable loss at 100B"
-          hints={[
-            'Only the removable part A / N^α changes with size. Going from 1B to 100B multiplies N by 100.',
-            'Multiplying N by 100 multiplies A / N^α by 100^(−α) = 100^(−0.1).',
-            '100^(−0.1) = 10^(−0.2) ≈ 0.631. Multiply the old value by it.',
-          ]}
-          solution={<><p>2.0 × 100<sup>−0.1</sup> = 2.0 × 0.631 = <b>1.26</b>.</p><p>A hundred times the parameters (and far more than a hundred times the cost) removed 37% of the removable loss. Power laws mean steady, predictable, and increasingly expensive progress. The exponent 0.1 here is an illustration; measured exponents differ by setup.</p></>}
-        >
-          <p>A lab fits L(N) = L<sub>∞</sub> + A / N<sup>α</sup> with α = 0.1 (an illustrative number). At 1B parameters the removable part, A / N<sup>α</sup>, is 2.0. Predict the removable part at 100B parameters. (Two decimals.)</p>
         </Exercise>
 
         <Exercise
@@ -253,6 +241,22 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
         <details className="deep">
           <summary>More practice (optional)</summary>
           <div className="details-body">
+          <Exercise
+            id="why-llms-know-powerlaw"
+            type="calculate"
+            title="Read a scaling law"
+            answer={{ value: 1.26, tolerance: 0.02 }}
+            answerLabel="removable loss at 100B"
+            hints={[
+              'Only the removable part A / N^α changes with size. Going from 1B to 100B multiplies N by 100.',
+              'Multiplying N by 100 multiplies A / N^α by 100^(−α) = 100^(−0.1).',
+              '100^(−0.1) = 10^(−0.2) ≈ 0.631. Multiply the old value by it.',
+            ]}
+            solution={<><p>2.0 × 100<sup>−0.1</sup> = 2.0 × 0.631 = <b>1.26</b>.</p><p>A hundred times the parameters (and far more than a hundred times the cost) removed 37% of the removable loss. Power laws mean steady, predictable, and increasingly expensive progress. The exponent 0.1 here is an illustration; measured exponents differ by setup.</p></>}
+          >
+            <p>A lab fits L(N) = L<sub>∞</sub> + A / N<sup>α</sup> with α = 0.1 (an illustrative number). At 1B parameters the removable part, A / N<sup>α</sup>, is 2.0. Predict the removable part at 100B parameters. (Two decimals.)</p>
+          </Exercise>
+
           <Exercise
             id="why-llms-know-modify"
             type="modify"

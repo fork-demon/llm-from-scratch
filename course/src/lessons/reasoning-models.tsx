@@ -1,6 +1,7 @@
 import { Lesson, Why, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
 import { Callout, DeepDive, Equation, G, Term, ToyVsReal } from '../components/ui'
 import { Code } from '../components/Code'
+import { CodeExercise } from '../components/python'
 import { Exercise, ExplainBack, OrderExercise } from '../components/exercise'
 import { TestTimeCompute } from '../interactive/TestTimeCompute'
 import { DirectVsSteps } from '../interactive/DirectVsSteps'
@@ -203,6 +204,9 @@ best = accepted[0] if accepted else candidates[0]
       </BreakIt>
 
       <Exercises>
+        <p>Amma checks her margin; the support bot can check its answers too. In this piece of the <a href="#/project">Paisa Pal support bot</a>, a noisy bot answers each customer question several times, and you measure a checker against a majority vote on the real questions.</p>
+        <CodeExercise id="reasoning-models-code-bot-best-of-n" />
+
         <Exercise
           id="reasoning-models-bestofn"
           type="calculate"

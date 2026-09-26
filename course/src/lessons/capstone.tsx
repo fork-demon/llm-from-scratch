@@ -3,6 +3,7 @@ import { Lesson, Why, Remember, RealLLM } from '../components/lesson'
 import { Callout, DeepDive, Flow, G, ToyVsReal } from '../components/ui'
 import { Code } from '../components/Code'
 import { Exercise, ExplainBack } from '../components/exercise'
+import { CodeExercise } from '../components/python'
 import { MilestoneTracker } from '../interactive/MilestoneTracker'
 import { MILESTONES } from '../lib/milestones'
 
@@ -380,6 +381,14 @@ def test_unknown_tool_does_not_crash():
 `}</Code>
         <p className="muted" style={{ fontSize: 15 }}>The first test can import <code>verse_model</code> without loading any weights because <code>m6_agent.py</code> loads the model inside its <code>if __name__ == "__main__":</code> guard. The fake tool replaces <code>write_verse</code>, so the real model is never needed.</p>
       </Milestone>
+
+      <section className="section" id="support-bot" data-phase="build">
+        <div className="section-head"><span className="section-kicker">In your browser</span></div>
+        <h2>Assemble the Paisa Pal support bot</h2>
+        <p>The six milestones ran on your own machine. The support bot you built piece by piece in Parts 8 to 10 comes together right here in the page: the retriever, the guardrails around the tools, and the eval, all waiting in the project code.</p>
+        <p>Monday morning, Kabir forwards Riya the twelve real customer questions and one line: “Make it pass all twelve, and never move a rupee on its own.” Your pieces so far are listed on <a href="#/project">Your support bot</a>.</p>
+        <CodeExercise id="capstone-code-bot-assemble" />
+      </section>
 
       <section className="section" id="explain" data-phase="practice">
         <div className="section-head"><span className="section-kicker">Wrap up</span></div>

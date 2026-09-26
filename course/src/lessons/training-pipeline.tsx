@@ -3,6 +3,7 @@ import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, Bre
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
 import { Exercise, ExplainBack } from '../components/exercise'
+import { CodeExercise } from '../components/python'
 import { StageExplorer } from '../interactive/StageExplorer'
 import { ChatTemplateViewer } from '../interactive/ChatTemplateViewer'
 import { PreferenceLab } from '../interactive/PreferenceLab'
@@ -266,6 +267,9 @@ loss = -F.logsigmoid(r_chosen - r_rejected).mean()
       </BreakIt>
 
       <Exercises>
+        <p>The new joiner learns from real tickets, and so does the <a href="#/project">Paisa Pal support bot</a>. This piece turns a support conversation into training data: the chat template, and the mask that grades only the bot’s own answer.</p>
+        <CodeExercise id="training-pipeline-code-bot-chat-template" />
+
         <Exercise
           id="training-pipeline-calc-bt"
           type="calculate"

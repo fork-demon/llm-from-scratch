@@ -3,7 +3,7 @@
 // Needs a python3 with numpy on PATH, or set PYTHON=/path/to/python. Skips if none is found.
 import { describe, expect, it } from 'vitest'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { CODE_EXERCISES } from './index'
+import { CODE_EXERCISES, withPrelude } from './index'
 import { LESSONS } from '../curriculum'
 
 const candidates = [process.env.PYTHON, '/Users/arvind/miniconda3/bin/python3', 'python3', 'python'].filter(Boolean) as string[]
@@ -56,12 +56,12 @@ describe('coding exercises: structure', () => {
 describe.skipIf(!python)('coding exercises: checked with real Python', () => {
   for (const e of CODE_EXERCISES) {
     it(`${e.id}: the solution passes every test`, () => {
-      const r = run(e.solution, e.tests)
+      const r = run(withPrelude(e.prelude, e.solution), e.tests)
       expect(r.error).toBeNull()
       expect(r.results.filter(([, ok]) => !ok)).toEqual([])
     })
     it(`${e.id}: the starter does not already pass`, () => {
-      const r = run(e.starter, e.tests)
+      const r = run(withPrelude(e.prelude, e.starter), e.tests)
       const allPass = r.error === null && r.results.every(([, ok]) => ok)
       expect(allPass).toBe(false)
     })

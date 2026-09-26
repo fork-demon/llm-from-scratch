@@ -1,4 +1,5 @@
 import { RepoRunner } from '../components/RepoRunner'
+import { CodeExercise } from '../components/python'
 import { Lesson, Why, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal } from '../components/ui'
 import { Code } from '../components/Code'
@@ -373,6 +374,8 @@ span step kind  name             in cached   out result     ms     cost $  note
       </BreakIt>
 
       <Exercises>
+        <p>After that night, Riya has one rule for the support bot: no tool call runs unchecked, and no rupee moves without a person saying yes. This is the guardrails piece of <a href="#/project">your support bot</a>.</p>
+        <CodeExercise id="production-agents-code-bot-guardrails" />
         <Exercise
           id="production-agents-calc-billed"
           type="calculate"

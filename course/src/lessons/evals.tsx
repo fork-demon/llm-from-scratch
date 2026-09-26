@@ -427,6 +427,8 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
       </BreakIt>
 
       <Exercises>
+        <p>Before Riya runs the 200 tickets, she builds the harness on the twelve labelled questions she already has. This is the eval piece of <a href="#/project">your support bot</a>: one number, the breakdown behind it, and an honest interval around it.</p>
+        <CodeExercise id="evals-code-bot-eval" />
         <CodeExercise id="evals-code-bootstrap" />
         <Exercise
           id="evals-calc-interval"
@@ -458,22 +460,22 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
           <p>A team describes its process: “Every Friday we run our 100-question eval. We take the questions that failed, add them with the right answers to the few-shot examples in the system prompt, and re-run. The score has gone up every week, from 78% to 81% to 85%. The eval proves the bot is improving.” What is wrong?</p>
         </Exercise>
 
-        <Exercise
-          id="evals-predict-locate"
-          type="predict"
-          title="Locate the failure before fixing it"
-          hints={[
-            'Two numbers are given: retrieval recall@5 and answer correctness. Which one is low?',
-            'If the right passage is in the prompt 96% of the time and the answer is right 61% of the time, which component owns most of the gap?',
-          ]}
-          solution={<><p>The retriever is doing its job: the right passage reaches the prompt 96% of the time. Correctness is 61%, so in roughly a third of all cases the model had the answer in front of it and still got it wrong. A better embedding model can recover at most the 4% of retrieval misses.</p><p>The work is on the generation side: read the failures where retrieval hit, and sort them. Is the model answering from its weights instead of the context? Is the passage buried among 4 irrelevant ones, so try a smaller k or reranking? Is the prompt unclear about refusing? Also check the scorer on a sample: a strict scorer produces exactly this pattern.</p></>}
-        >
-          <p>A RAG system scores 61% answer correctness. The team plans to spend the next sprint swapping in a better embedding model. Their component metric says retrieval recall@5 is 96%. Predict how much the sprint can gain, and say what you would do instead.</p>
-        </Exercise>
-
         <details className="deep">
           <summary>More practice (optional)</summary>
           <div className="details-body">
+          <Exercise
+            id="evals-predict-locate"
+            type="predict"
+            title="Locate the failure before fixing it"
+            hints={[
+              'Two numbers are given: retrieval recall@5 and answer correctness. Which one is low?',
+              'If the right passage is in the prompt 96% of the time and the answer is right 61% of the time, which component owns most of the gap?',
+            ]}
+            solution={<><p>The retriever is doing its job: the right passage reaches the prompt 96% of the time. Correctness is 61%, so in roughly a third of all cases the model had the answer in front of it and still got it wrong. A better embedding model can recover at most the 4% of retrieval misses.</p><p>The work is on the generation side: read the failures where retrieval hit, and sort them. Is the model answering from its weights instead of the context? Is the passage buried among 4 irrelevant ones, so try a smaller k or reranking? Is the prompt unclear about refusing? Also check the scorer on a sample: a strict scorer produces exactly this pattern.</p></>}
+          >
+            <p>A RAG system scores 61% answer correctness. The team plans to spend the next sprint swapping in a better embedding model. Their component metric says retrieval recall@5 is 96%. Predict how much the sprint can gain, and say what you would do instead.</p>
+          </Exercise>
+
           <Exercise
             id="evals-calc-passk"
             type="calculate"

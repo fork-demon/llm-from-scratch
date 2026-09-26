@@ -2,6 +2,7 @@ import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, Bre
 import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
 import { Code } from '../components/Code'
 import { Exercise, ExplainBack } from '../components/exercise'
+import { CodeExercise } from '../components/python'
 import { DistillLab } from '../interactive/DistillLab'
 
 export default function DistillationLesson() {
@@ -325,6 +326,9 @@ loss = (s_logp - t_logp).mean()               # estimate of reverse KL
       </BreakIt>
 
       <Exercises>
+        <p>The support team’s laptops need a small bot. In this piece of the <a href="#/project">Paisa Pal support bot</a>, the small bot learns the next word of a refund answer from the big bot’s softened probabilities, not only from its top pick.</p>
+        <CodeExercise id="distillation-code-bot-soft-labels" />
+
         <Exercise
           id="distillation-calc-kl"
           type="calculate"
@@ -339,22 +343,6 @@ loss = (s_logp - t_logp).mean()               # estimate of reverse KL
           solution={<><p>0.8 × 0.4700 = 0.3760 and 0.2 × (−0.9163) = −0.1833. Total ≈ <b>0.193</b>.</p><p>The second term is negative, because the student gives token 2 more than the teacher does, but the total is still positive. KL is never negative, and reaches 0 only when the student matches the teacher exactly.</p></>}
         >
           <p>A teacher gives two tokens <code>p = [0.8, 0.2]</code>. An untrained student gives <code>q = [0.5, 0.5]</code>. What is KL(p ‖ q), using natural logs? (Three decimals.)</p>
-        </Exercise>
-
-        <Exercise
-          id="distillation-calc-temperature"
-          type="calculate"
-          title="How loud is the runner-up?"
-          answer={{ value: 0.269, tolerance: 0.005 }}
-          answerLabel="probability of the second token at T = 4"
-          hints={[
-            'Divide the logits by T first: [4, 0] ÷ 4 = [1, 0].',
-            'softmax([1, 0]): the second token gets e⁰ ÷ (e¹ + e⁰) = 1 ÷ (e + 1).',
-            'e ≈ 2.718, so 1 ÷ 3.718.',
-          ]}
-          solution={<><p>1 ÷ (1 + e) ≈ <b>0.269</b>. At T = 1 the same token gets 1 ÷ (1 + e⁴) ≈ 0.018, so the temperature made it about 15 times larger.</p><p>That is the point: at T = 1 this token contributes almost nothing to the student’s loss, so the student barely learns how it relates to the winner. At T = 4 it contributes about a quarter of the target.</p></>}
-        >
-          <p>A teacher has logits <code>[4, 0]</code> for two tokens. At temperature T = 4, what probability does it give the second token? (Three decimals.)</p>
         </Exercise>
 
         <Exercise
@@ -385,6 +373,22 @@ loss = F.kl_div(F.log_softmax(student_logits, dim=-1),
         <details className="deep">
           <summary>More practice (optional)</summary>
           <div className="details-body">
+            <Exercise
+              id="distillation-calc-temperature"
+              type="calculate"
+              title="How loud is the runner-up?"
+              answer={{ value: 0.269, tolerance: 0.005 }}
+              answerLabel="probability of the second token at T = 4"
+              hints={[
+                'Divide the logits by T first: [4, 0] ÷ 4 = [1, 0].',
+                'softmax([1, 0]): the second token gets e⁰ ÷ (e¹ + e⁰) = 1 ÷ (e + 1).',
+                'e ≈ 2.718, so 1 ÷ 3.718.',
+              ]}
+              solution={<><p>1 ÷ (1 + e) ≈ <b>0.269</b>. At T = 1 the same token gets 1 ÷ (1 + e⁴) ≈ 0.018, so the temperature made it about 15 times larger.</p><p>That is the point: at T = 1 this token contributes almost nothing to the student’s loss, so the student barely learns how it relates to the winner. At T = 4 it contributes about a quarter of the target.</p></>}
+            >
+              <p>A teacher has logits <code>[4, 0]</code> for two tokens. At temperature T = 4, what probability does it give the second token? (Three decimals.)</p>
+            </Exercise>
+
             <Exercise
               id="distillation-calc-collapse"
               type="calculate"

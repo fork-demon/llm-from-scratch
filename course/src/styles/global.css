@@ -592,3 +592,18 @@ kbd { font-family: var(--mono); font-size: 0.85em; border: 1px solid var(--rule-
 .code-bar .code-run:hover { border-color: #8fe3bd; }
 .playground-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0 4px; font-size: 14.5px; }
 .playground-bar .input { width: auto; max-width: 100%; }
+.py-prelude { margin: 12px 0 8px; font-size: 14px; }
+.py-prelude > summary { cursor: pointer; color: var(--ink-2); font-weight: 600; }
+.py-prelude .py-solution { max-height: 320px; overflow: auto; }
+
+/* ---------- the support-bot project ---------- */
+.project-progress { display: flex; align-items: center; gap: 14px; margin: 18px 0 8px; font-size: 14px; color: var(--ink-2); }
+.project-progress .meter { flex: 1; max-width: 320px; height: 6px; margin: 0; }
+.project-pieces { list-style: none; padding: 0; margin: 20px 0; border-top: 1px solid var(--rule); counter-reset: piece; }
+.project-pieces li { counter-increment: piece; display: grid; grid-template-columns: 26px 1fr; gap: 12px; margin: 0; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.project-mark { width: 20px; height: 20px; margin-top: 2px; border-radius: 50%; border: 2px solid var(--rule-strong); display: grid; place-items: center; font-size: 11px; color: var(--paper); }
+.project-pieces li.is-built .project-mark { background: var(--good); border-color: var(--good); }
+.project-pieces a { text-decoration: none; }
+.project-pieces a b::before { content: counter(piece) ". "; color: var(--ink-3); font-weight: 600; }
+.project-does { display: block; font-size: 14.5px; color: var(--ink-2); }
+.project-lesson { display: block; font-size: 13px; color: var(--ink-3); }

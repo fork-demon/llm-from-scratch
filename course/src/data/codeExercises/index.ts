@@ -5,3 +5,4 @@ const modules = import.meta.glob<{ default: CodeExerciseDef[] }>(['./*.ts', '!./
 export const CODE_EXERCISES: CodeExerciseDef[] = Object.values(modules).flatMap((m) => m.default)
 export const codeExerciseById = (id: string) => CODE_EXERCISES.find((e) => e.id === id)
 export type { CodeExerciseDef }
+export { withPrelude } from './types'
