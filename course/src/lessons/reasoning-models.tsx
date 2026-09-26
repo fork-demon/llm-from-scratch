@@ -1,87 +1,36 @@
-import type { ReactNode } from 'react'
-import { Lesson, Why, Problem, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
-import { Callout, DeepDive, Equation, Flow, G, Term, ToyVsReal, WhyExists } from '../components/ui'
+import { Lesson, Why, MentalModel, TryIt, Numbers, TheMath, CodeIt, BreakIt, Exercises, CheckYourself, Remember, RealLLM, BeforeMovingOn } from '../components/lesson'
+import { Callout, DeepDive, Equation, G, Term, ToyVsReal } from '../components/ui'
 import { Code } from '../components/Code'
 import { Exercise, ExplainBack, OrderExercise } from '../components/exercise'
 import { TestTimeCompute } from '../interactive/TestTimeCompute'
 import { DirectVsSteps } from '../interactive/DirectVsSteps'
-
-/** Every technique in Part 8 gets the same five rows, so none of them is only a name. */
-function Technique({ name, problem, idea, helps, tradeoff, where }: { name: string; problem: ReactNode; idea: ReactNode; helps: ReactNode; tradeoff: ReactNode; where: ReactNode }) {
-  const rows: [string, ReactNode][] = [['Problem', problem], ['Idea', idea], ['Why it helps', helps], ['Trade-off', tradeoff], ['Where it appears', where]]
-  return (
-    <div className="card" style={{ marginBottom: 12 }}>
-      <h4 style={{ fontSize: 17, marginBottom: 6 }}>{name}</h4>
-      <div className="table-scroll">
-        <table className="plain" style={{ marginBottom: 0 }}>
-          <tbody>
-            {rows.map(([k, v]) => <tr key={k}><th scope="row" style={{ whiteSpace: 'nowrap', verticalAlign: 'top', width: 130 }}>{k}</th><td>{v}</td></tr>)}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
 
 export default function ReasoningModelsLesson() {
   return (
     <Lesson id="reasoning-models">
       <Why>
         <p className="lede">Sunday afternoon in Mysuru. Amma has the newspaper puzzle page folded on the dining table, and Riya is teasing her the way she once teased her students.</p>
-        <p>“Seven eights?”</p>
-        <p>“Fifty-six.” Amma does not even look up.</p>
+        <p>“Seven eights?” “Fifty-six.” Amma does not even look up.</p>
         <p>“Forty-seven times eighty-six?”</p>
-        <p>This time Amma says nothing. She takes the pencil from behind her ear and writes in the margin: 47 × 80 = 3,760. 47 × 6 = 282. Add them. “Four thousand and forty-two,” she says, and goes back to her crossword.</p>
-        <p>She did not become cleverer in those thirty seconds. The pencil let her break one hard step into several easy ones, and the paper remembered the partial results for her.</p>
-        <p>Since about 2024, some models visibly do the same. They write a long stretch of “thinking” before the answer. They are slower, they cost more, and they score clearly higher on maths, code and multi-step benchmarks.</p>
-        <p>So here is the question. A normal language model can produce an answer directly. What changes when we allow it to spend more computation thinking?</p>
-        <Callout kind="idea">
-          Nothing about the architecture has to change for this. You already own every part of the explanation: the <a href="#/lesson/inference">generation loop</a>, one forward pass per token, and attention over everything written so far. This lesson connects them.
-        </Callout>
+        <p>This time Amma takes the pencil from behind her ear and writes in the margin: 47 × 80 = 3,760. 47 × 6 = 282. Add them. “Four thousand and forty-two,” she says, and goes back to her crossword.</p>
+        <p>She did not become cleverer in those thirty seconds. The pencil let her break one hard step into several easy ones, and the paper remembered the partial results.</p>
+        <p>Since about 2024, some models visibly do the same: they write a long stretch of “thinking” before the answer. They are slower, they cost more, and they score clearly higher on maths, code and multi-step problems. Why should writing help a model at all?</p>
+        <p>Go back to the loop from <a href="#/lesson/inference">Inference</a>. <b>One generated token is one forward pass, a fixed amount of compute.</b> “2 + 2 =” and “the 40th prime number is” get exactly the same number of matrix multiplications before the next token must come out. If the model has to answer at once, the hard part must fit inside that budget.</p>
+        <p>Dev has a fix ready. “Then use a bigger model, na.” But a bigger model makes every token more expensive, easy ones included, and its depth is still fixed while problems can need any number of steps. The other way out needs no new architecture: let the model write steps first.</p>
       </Why>
 
-      <Problem>
-        <p>Go back to the loop Riya built in <a href="#/lesson/inference">Inference</a>. To produce one token, the input passes through the N blocks once. Then the token is fixed, and the loop moves on.</p>
-        <Callout kind="established">
-          <b>One generated token = one forward pass = a fixed amount of compute.</b> The number of layers does not grow when the question gets harder. “2 + 2 =” and “the 40th prime number is” get exactly the same number of matrix multiplications before the next token must come out. (The one part that grows is attention, which reads a longer cache as the text gets longer. That depends on length, not on difficulty.)
-        </Callout>
-        <p>So if the model must answer immediately, the hard part of the problem has to fit inside that fixed budget. For many problems it does not.</p>
-        <p>Dev, back in Bengaluru, has a fix ready. “Then use a bigger model, na. Bigger is smarter.” It is a reasonable first guess. Here is why it is not enough.</p>
-        <WhyExists
-          problem="Some questions need more steps of computation than one forward pass provides."
-          naive="Make the model deeper and bigger, so a single pass can do more."
-          fails="That makes every token more expensive, including the easy ones. And however deep you go, the depth is still fixed, while problems can need any number of steps."
-          idea="Keep the model as it is. Let it generate intermediate steps as ordinary tokens before the answer. Each one is another forward pass, and each one can be read back through attention."
-          tradeoff="Those extra tokens are not free. You pay for them in latency and money, on every request."
-        />
-      </Problem>
-
       <MentalModel>
-        <p>A Transformer has no scratchpad inside it that survives from one token to the next, apart from the <G t="kv-cache">KV cache</G> of what is already on the page.</p>
-        <p>Kabir puts it in five words on the whiteboard: <b>the page is the scratchpad</b>.</p>
+        <p>A Transformer has no scratchpad that survives from one token to the next, apart from the <G t="kv-cache">KV cache</G> of what is already on the page. Kabir puts it in five words on the whiteboard: <b>the page is the scratchpad</b>.</p>
         <Term
           name="Chain of thought (a reasoning trace)"
           plain={<>Intermediate steps that the model writes out, as ordinary tokens, before it writes its final answer.</>}
           example={<>“17 × 3 = 51. 51 + 28 = 79. …” and only then “Answer: 113”.</>}
           formal={<>Nothing new in the maths: the model samples tokens r₁…r<sub>k</sub> first and the answer afterwards, so the answer is conditioned on the prompt <em>and</em> on r₁…r<sub>k</sub>.</>}
         />
-        <p>Writing steps does two separate things:</p>
-        <div className="grid-2">
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>More compute</h4>
-            <p>Fifty tokens of working means fifty forward passes aimed at your question instead of one.</p>
-          </div>
-          <div className="card">
-            <h4 style={{ fontSize: 17, marginBottom: 6 }}>Working memory</h4>
-            <p>A partial result that has been written down does not have to be held inside the vectors. Later tokens attend to it.</p>
-          </div>
-        </div>
+        <p>Writing steps does two things at once. It buys <b>more compute</b>: fifty tokens of working are fifty forward passes aimed at your question. And it gives <b>working memory</b>: a partial result that is written down does not have to be held inside the vectors, because later tokens attend to it.</p>
         <Callout kind="analogy">
-          It is Amma’s pencil margin. The paper holds the partial results, and each line only asks for one easy step.
-          <br /><br />
-          Where the analogy stops: Amma can look at her margin and see whether a line is right. The model has no such guarantee. A wrong line on the page is read back just as faithfully as a right one, and everything after it is built on top. And the text of the trace is not a readout of what happened inside the network (more on this at the end).
+          It is Amma’s pencil margin. Where the analogy stops: Amma can check a line of her margin; the model cannot. A wrong line is read back just as faithfully as a right one. And the visible trace is not a readout of the computation inside the network, only text that the next tokens read.
         </Callout>
-        <p>Before you press anything below, commit to a prediction.</p>
         <Exercise
           id="reasoning-models-direct-vs-steps"
           type="predict"
@@ -96,79 +45,39 @@ export default function ReasoningModelsLesson() {
           <p>“Start with 17. Multiply by 3. Add 28. Double it. Subtract 45. What do you get?” A model can reply with just the number, or write each step first. For each case, predict: how many forward passes run before the final answer is complete, and where are the intermediate results kept?</p>
         </Exercise>
         <DirectVsSteps />
-        <Callout kind="established">Asking a model to write intermediate steps improves accuracy on multi-step problems such as arithmetic word problems. This has been measured repeatedly since 2022 (“chain-of-thought prompting”), mostly in larger models. The per-token compute argument above is a fact about the architecture.</Callout>
-        <Callout kind="model">“The model thinks on the page” is a useful simplification. It correctly tells you that more tokens means more compute and more working memory. It does <em>not</em> tell you that the visible text is the reasoning. Computation also happens inside each forward pass, and that part is not written down.</Callout>
       </MentalModel>
 
       <TryIt title="Spend compute at answer time">
-        <p>Longer traces are one way to spend more compute on a question. The other way is to try <b>several times</b>.</p>
-        <p>That raises a question any developer will recognise: given N candidate answers, how do you choose one?</p>
+        <p>Longer traces are one way to spend more compute on a question. The other is to try <b>several times</b>, which raises a question any developer will recognise: given N candidate answers, how do you choose one?</p>
         <Term
           name="Test-time compute"
           plain={<>Computation spent while <em>answering</em> (longer reasoning, several attempts, checking), as opposed to computation spent while training.</>}
           example={<>Sample 16 solutions to a coding task and return the one that passes the unit tests.</>}
           formal={<>Roughly: (tokens generated per attempt) × (number of attempts) × (cost of one forward pass), plus the cost of any checker.</>}
         />
-        <p>The lab below compares three strategies on a pretend model. Try all three presets before you read on.</p>
+        <p>The lab compares strategies on a pretend model. Try all three presets before you read on.</p>
         <TestTimeCompute />
         <p>What you should have found:</p>
         <ul>
           <li><b>Majority vote</b> only helps when the right answer is the <em>most common</em> answer. If one wrong answer is more popular, voting makes things worse.</li>
-          <li>A <b>good verifier</b> helps far more, because it needs only one right attempt among the N. A sloppy verifier hits a ceiling that no amount of sampling can lift.</li>
+          <li>A <b>good verifier</b> helps far more, because it needs only one right attempt among the N. A sloppy verifier hits a ceiling that no amount of sampling lifts.</li>
           <li><b>Cost</b> is a straight line in N. Accuracy is not: each extra attempt buys less than the one before.</li>
         </ul>
-        <h3>The methods, one card each</h3>
-        <p>You have now used two of these. Here is the full set that people mean by “test-time compute” and “reasoning models”.</p>
-        <p>Each one exists because of a specific problem. Each one has a price.</p>
-        <Technique
-          name="Reasoning traces (chain of thought)"
-          problem="One forward pass is a fixed compute budget, and nothing but the page carries over between tokens."
-          idea="Generate intermediate steps as tokens before the answer."
-          helps="More forward passes on the question, and partial results become readable context."
-          tradeoff="More tokens: slower and more expensive. An early wrong step is read back and built upon. Little or no benefit on simple lookups."
-          where="Prompting (“think step by step”) on any capable model, and trained into reasoning models."
-        />
-        <Technique
-          name="Self-consistency (sample several, majority vote)"
-          problem="A single sampled trace can go wrong by chance."
-          idea="Sample N traces at temperature above 0, extract each final answer, return the most common."
-          helps="Different wrong paths tend to scatter over different wrong answers, while right paths agree. Needs no checker."
-          tradeoff="N times the cost. Only works when the right answer is the most common one, and only when answers can be compared (a number, a choice), not for essays."
-          where="Benchmark evaluation of maths and multiple-choice tasks; some production pipelines."
-        />
-        <Technique
-          name="Best-of-N with a verifier"
-          problem="Voting fails when the model is usually wrong, even if it is sometimes right."
-          idea="Generate N candidates and let a separate check choose: unit tests, a proof checker, an exact-match answer, or a trained scoring model."
-          helps="Checking is often much easier than generating. One right candidate among N is enough."
-          tradeoff="N times the cost plus the checker. Only as good as the verifier: false accepts set a ceiling. Many tasks have no reliable checker."
-          where="Code generation with tests, maths with known answers, formal proofs."
-        />
-        <Technique
-          name="Search over partial solutions"
-          problem="Sampling whole solutions wastes compute on attempts that were doomed at step two."
-          idea="Score partial solutions as they grow. Extend the promising ones, abandon the rest (a tree search or beam search over reasoning steps)."
-          helps="Compute is concentrated where it is likely to pay off."
-          tradeoff="Needs a trustworthy score for half-finished work, which is harder to get than a check on a final answer. More engineering."
-          where="Research systems and specialised domains such as theorem proving and games. How much general-purpose products rely on it is not public."
-        />
-        <Technique
-          name="Reinforcement learning on verifiable outcomes"
-          problem="Prompting for steps only elicits what the model can already do. We would like the model to get better at producing traces that end in right answers."
-          idea="Let the model attempt many problems with checkable answers. Reward the attempts that the checker accepts, and update the weights to make such traces more likely."
-          helps="The reward needs no human-written reasoning, only a checker. Behaviours that raise the success rate get reinforced."
-          tradeoff="Limited to domains with reliable rewards. The model can learn to exploit a flawed checker. Traces become long and costly."
-          where="DeepSeek-R1 (published recipe, open weights, 2025) and many open reasoning models since. Since 2025 the same idea has been applied to multi-step tasks with tools, and to fuzzier tasks scored against a written rubric (see Real LLMs below). Proprietary reasoning models are widely assumed to use related ideas, but their recipes are not public."
-        />
-        <Technique
-          name="Distilling reasoning traces into a small model"
-          problem="RL needs a model that already succeeds sometimes. A small model rarely does, so it has little to reinforce, and RL runs are expensive."
-          idea="Let a strong reasoning model write many traces, keep the ones that end in right answers, and fine-tune a small model on them with ordinary next-token training (SFT)."
-          helps="The small model copies the behaviour directly instead of discovering it. The DeepSeek-R1 paper reports that distilling R1’s traces into small models worked better than running RL on those small models directly."
-          tradeoff="The student can only be as good as the traces it sees, and it inherits the teacher’s mistakes and habits. You need the strong model first."
-          where={<>The distilled R1 models (1.5B to 70B parameters, built on Qwen and Llama), and many small open reasoning models since. The general idea is the subject of <a href="#/lesson/distillation">Small models from big ones</a>.</>}
-        />
-        <p>The vocabulary of reinforcement learning is the one from <a href="#/lesson/training-pipeline">the previous lesson</a>: the policy is the model, an action is the next token, and the reward arrives only at the end, when the final answer is checked.</p>
+        <h3>The methods behind “reasoning models”</h3>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>method</th><th>the idea</th><th>the price</th></tr></thead>
+            <tbody>
+              <tr><td><b>Reasoning trace</b></td><td>Write intermediate steps as tokens before the answer.</td><td>More tokens, more latency. An early wrong step gets built upon. No gain on simple lookups.</td></tr>
+              <tr><td><b>Self-consistency</b></td><td>Sample N traces at temperature above 0 and return the most common final answer.</td><td>N times the cost. Fails when a wrong answer is the most common one; needs comparable answers (a number, a choice).</td></tr>
+              <tr><td><b>Best-of-N with a verifier</b></td><td>Generate N candidates; a check (unit tests, a proof checker, an exact answer, a scoring model) picks one.</td><td>N times the cost plus the checker. Only as good as the verifier, and many tasks have none.</td></tr>
+              <tr><td><b>Search over partial solutions</b></td><td>Score solutions as they grow; extend the promising ones, drop the rest.</td><td>Needs a trustworthy score for half-finished work. Used in research systems; how much products use it is not public.</td></tr>
+              <tr><td><b>RL on checkable answers</b></td><td>Let the model attempt problems a checker can grade; make the traces that end in right answers more likely.</td><td>Limited to domains with reliable rewards; the model can learn to exploit a flawed checker. The open reference is DeepSeek-R1 (2025).</td></tr>
+              <tr><td><b>Distilled traces</b></td><td>Fine-tune a small model on a strong reasoner’s correct traces (see <a href="#/lesson/distillation">Small models from big ones</a>).</td><td>The student inherits the teacher’s mistakes, and you need the strong model first. R1’s authors found it beat RL for small models.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The RL vocabulary is the one from <a href="#/lesson/training-pipeline">the previous lesson</a>: the policy is the model, an action is the next token, and the reward arrives only at the end, when the final answer is checked.</p>
       </TryIt>
 
       <Numbers>
@@ -195,39 +104,24 @@ export default function ReasoningModelsLesson() {
       </Numbers>
 
       <TheMath>
-        <p>The perfect-checker case is worth having as a formula, because it sets the upper limit for any way of choosing among N attempts:</p>
+        <p>The perfect-checker case sets the upper limit for any way of choosing among N attempts:</p>
         <Equation
           label="Best of N with a perfect verifier equals one minus, one minus p, to the power N"
           symbols={[
             ['p', 'the chance that one attempt is right'],
-            ['1 − p', 'the chance that one attempt is wrong'],
             [<>(1 − p)<sup>N</sup></>, 'the chance that all N independent attempts are wrong: the only way a perfect checker can fail'],
             ['N', 'how many attempts you pay for'],
           ]}
         >
           accuracy = 1 − (1 − p)<sup>N</sup>
         </Equation>
-        <p>And the bill:</p>
-        <Equation
-          label="Tokens spent equals N times tokens per attempt"
-          symbols={[
-            ['N', 'number of attempts'],
-            ['tokens per attempt', 'reasoning trace plus final answer; each token is one forward pass'],
-          ]}
-        >
-          tokens spent = N × tokens per attempt
-        </Equation>
-        <p>Put the two side by side. Cost grows in a straight line.</p>
-        <p>The failure rate shrinks by the same <em>factor</em> (1 − p) with each attempt, so the gain from each extra attempt gets smaller and smaller. Going from 1 to 4 attempts at p = 0.4 buys 47 points. Going from 8 to 16 buys less than 2.</p>
+        <p>The bill is simpler: tokens spent = N × tokens per attempt, a straight line. The failure rate shrinks by the same <em>factor</em> (1 − p) with each attempt, so each extra attempt buys less. Going from 1 to 4 attempts at p = 0.4 buys 47 points. Going from 8 to 16 buys less than 2.</p>
         <DeepDive title="Why does a noisy verifier hit a ceiling?">
           <p>Our verifier accepts a right attempt with probability a and a wrong one with probability 1 − a. With many attempts, something is almost always accepted, so the result is “a random accepted attempt”. What fraction of accepted attempts is actually right?</p>
           <p className="mono">P(right | accepted) = p·a / ( p·a + (1 − p)(1 − a) )</p>
           <p>With p = 0.4 and a = 0.9: 0.36 / (0.36 + 0.06) = 0.857. No N gets you past 85.7%.</p>
-          <p>With a hard problem, p = 0.05 and the same verifier: 0.045 / (0.045 + 0.095) = 0.321. When right answers are rare, even a small false-accept rate lets wrong answers flood the accepted pile. This is the same arithmetic as false positives in medical screening or spam filters.</p>
-          <p>Practical consequence: sampling more is only as good as your checker. Unit tests, a proof checker or an exact numeric answer are near-perfect verifiers. “Ask another model whether this looks right” is not.</p>
-        </DeepDive>
-        <DeepDive title="How much compute is one forward pass?">
-          <p>A widely used rule of thumb: generating one token costs about 2 × (number of parameters) floating-point operations, ignoring the attention cost that grows with context length. For a model with 7 billion parameters that is about 14 billion operations per token, whatever the token is. A 2,000-token reasoning trace is 2,000 of those.</p>
+          <p>With a hard problem, p = 0.05 and the same verifier: 0.045 / (0.045 + 0.095) = 0.321. When right answers are rare, even a small false-accept rate floods the accepted pile, the same arithmetic as false positives in medical screening.</p>
+          <p>Sampling more is only as good as your checker. Unit tests, a proof checker or an exact numeric answer are near-perfect verifiers. “Ask another model whether this looks right” is not.</p>
         </DeepDive>
       </TheMath>
 
@@ -242,12 +136,8 @@ for _ in range(max_new_tokens):
     nxt = torch.multinomial(probs, num_samples=1)   # weighted die
     idx = torch.cat([idx, nxt], dim=1)              # feed back in
 `}</Code>
-        <p>The last line is the working memory. Whatever was just written is part of the input next time. A reasoning trace uses this loop exactly as it is, with a bigger <code>max_new_tokens</code>.</p>
-        <p>The sampling strategies are a few lines wrapped <em>around</em> the model. These are sketches, not files in the repository.</p>
-        <ul>
-          <li><code>sample</code> stands for “run the loop above and decode the text”.</li>
-          <li><code>final_answer</code> pulls the last line out of a trace.</li>
-        </ul>
+        <p>The last line is the working memory: whatever was just written is part of the input next time. A reasoning trace uses this loop exactly as it is, with a bigger <code>max_new_tokens</code>.</p>
+        <p>The sampling strategies are a few lines wrapped <em>around</em> the model. These are sketches, not files in the repository: <code>sample</code> runs the loop and decodes the text, and <code>final_answer</code> pulls the last line out of a trace.</p>
         <Code title="Sketch: self-consistency (majority vote)">{`
 from collections import Counter
 
@@ -263,17 +153,15 @@ candidates = [sample(prompt, temperature=0.8) for _ in range(N)]
 accepted = [c for c in candidates if passes_tests(c)]   # the verifier
 best = accepted[0] if accepted else candidates[0]
 `}</Code>
-        <Callout kind="dev">Best-of-N with tests is generate-and-test, the same shape as retrying a flaky operation until a health check passes. Self-consistency is a quorum read: ask several replicas and trust the majority. A quorum is only right if most replicas are right, which is exactly what the lab showed.</Callout>
+        <Callout kind="dev">Best-of-N with tests is generate-and-test, like retrying a flaky operation until a health check passes. Self-consistency is a quorum read: ask several replicas and trust the majority. A quorum is only right if most replicas are right, which is exactly what the lab showed.</Callout>
       </CodeIt>
 
       <BreakIt>
         <p>Back to the lab. Predict, then check.</p>
         <ul>
-          <li><b>Make voting harmful.</b> Choose “One popular wrong answer” and slide N upwards. Accuracy falls from 40% to 35.2% at N = 3 and 21.3% at N = 15. More votes make the popular wrong answer win more reliably.</li>
-          <li><b>Set N = 2</b> with any p and m. Majority vote equals p exactly. Why? Two attempts that disagree are a tie, and a coin flip between them is worth the same as one attempt.</li>
-          <li><b>Drag the verifier down to 50%.</b> The best-of-N curve goes flat at p. A checker that is no better than chance adds nothing, however many attempts you buy.</li>
-          <li><b>“Hard problem, perfect checker”</b>: p = 5%. At N = 32 the checker reaches 80.6%, while majority vote is under 1%. Now lower the verifier to 90%: the ceiling drops to 32.1%.</li>
-          <li><b>Raise tokens per attempt to 2,000</b> and read the bottom axis at N = 32: 64,000 tokens for one answer.</li>
+          <li><b>Make voting harmful.</b> Choose “One popular wrong answer” and slide N upwards. Accuracy falls from 40% to 35.2% at N = 3 and 21.3% at N = 15.</li>
+          <li><b>Drag the verifier down to 50%.</b> The best-of-N curve goes flat at p. A checker no better than chance adds nothing, however many attempts you buy.</li>
+          <li><b>“Hard problem, perfect checker”</b>: p = 5%. At N = 32 the checker reaches 80.6%, while majority vote is under 1%. Lower the verifier to 90%: the ceiling drops to 32.1%.</li>
         </ul>
       </BreakIt>
 
@@ -309,21 +197,6 @@ best = accepted[0] if accepted else candidates[0]
         </Exercise>
 
         <Exercise
-          id="reasoning-models-cost"
-          type="calculate"
-          title="The bill"
-          answer={{ value: 33600, tolerance: 1 }}
-          answerLabel="tokens generated"
-          hints={[
-            'One attempt = thinking tokens + answer tokens.',
-            'One attempt is 4,000 + 200 = 4,200 tokens. There are 8 attempts.',
-          ]}
-          solution={<><p>8 × (4,000 + 200) = <b>33,600</b> generated tokens, against 200 for a direct answer: 168 times as many forward passes. And since decoding is sequential, a single 4,200-token attempt is also roughly 21 times slower to arrive than the 200-token answer.</p><p>This is why “always use the reasoning model with maximum effort” is a poor default. “What is the capital of France?” gains nothing from 4,000 thinking tokens.</p></>}
-        >
-          <p>A direct answer takes 200 tokens. A reasoning model uses 4,000 thinking tokens and then the same 200-token answer. You run self-consistency with 8 samples. How many tokens are generated in total?</p>
-        </Exercise>
-
-        <Exercise
           id="reasoning-models-debug"
           type="debug"
           title="Sixteen samples, no improvement"
@@ -340,27 +213,47 @@ best = Counter(answers).most_common(1)[0][0]
 `}</Code>
         </Exercise>
 
-        <Exercise
-          id="reasoning-models-experiment"
-          type="experiment"
-          title="How many attempts for 90%?"
-          answer={{ value: 22, tolerance: 0 }}
-          answerLabel="smallest N"
-          hints={[
-            'Set p = 10% and the verifier to 100%, then slide N until best-of-N reaches 90%.',
-            'Or solve 1 − 0.9ᴺ ≥ 0.9, which means 0.9ᴺ ≤ 0.1.',
-            '0.9²¹ ≈ 0.109 and 0.9²² ≈ 0.098.',
-          ]}
-          solution={<><p><b>N = 22</b>: 1 − 0.9²² ≈ 0.902, while N = 21 gives 0.891.</p><p>Twenty-two full generations for one answer. It works, and with a perfect checker it is honest work, but compare the alternative: a model with p = 0.5 needs only 4 attempts for 94%. Test-time compute multiplies what the model can already do sometimes. It is no substitute for a better model, which is why reasoning models are also <em>trained</em>, not just sampled harder.</p></>}
-        >
-          <p>In the lab, take a hard problem: p = 10%, with a perfect verifier (100%). What is the smallest N at which best-of-N reaches 90% accuracy?</p>
-        </Exercise>
+        <details className="deep">
+          <summary>More practice (optional)</summary>
+          <div className="details-body">
+          <Exercise
+            id="reasoning-models-cost"
+            type="calculate"
+            title="The bill"
+            answer={{ value: 33600, tolerance: 1 }}
+            answerLabel="tokens generated"
+            hints={[
+              'One attempt = thinking tokens + answer tokens.',
+              'One attempt is 4,000 + 200 = 4,200 tokens. There are 8 attempts.',
+            ]}
+            solution={<><p>8 × (4,000 + 200) = <b>33,600</b> generated tokens, against 200 for a direct answer: 168 times as many forward passes. And since decoding is sequential, a single 4,200-token attempt is also roughly 21 times slower to arrive than the 200-token answer.</p><p>This is why “always use the reasoning model with maximum effort” is a poor default. “What is the capital of France?” gains nothing from 4,000 thinking tokens.</p></>}
+          >
+            <p>A direct answer takes 200 tokens. A reasoning model uses 4,000 thinking tokens and then the same 200-token answer. You run self-consistency with 8 samples. How many tokens are generated in total?</p>
+          </Exercise>
 
-        <ExplainBack
-          id="reasoning-models-explain"
-          prompt="Dev says: “Reasoning models are a new kind of AI that actually thinks, unlike normal LLMs that just predict tokens.” Using what you know about the generation loop, explain what is really different and what is not."
-          modelAnswer={<p>A reasoning model is still a next-token predictor running the same loop: one forward pass per token, a fixed amount of compute each time. What differs is how the tokens are used and how the model was trained. It writes intermediate steps before the answer, so it spends many forward passes on the question and can read its own partial results back through attention, like working on paper. Open recipes such as DeepSeek-R1 train this with reinforcement learning on problems whose answers can be checked, so traces that end in correct answers become more likely. The costs are real: more tokens, more latency, and no benefit on easy questions. And the visible trace is generated text, not a guaranteed faithful account of the computation inside the network.</p>}
-        />
+          <Exercise
+            id="reasoning-models-experiment"
+            type="experiment"
+            title="How many attempts for 90%?"
+            answer={{ value: 22, tolerance: 0 }}
+            answerLabel="smallest N"
+            hints={[
+              'Set p = 10% and the verifier to 100%, then slide N until best-of-N reaches 90%.',
+              'Or solve 1 − 0.9ᴺ ≥ 0.9, which means 0.9ᴺ ≤ 0.1.',
+              '0.9²¹ ≈ 0.109 and 0.9²² ≈ 0.098.',
+            ]}
+            solution={<><p><b>N = 22</b>: 1 − 0.9²² ≈ 0.902, while N = 21 gives 0.891.</p><p>Twenty-two full generations for one answer. It works, and with a perfect checker it is honest work, but compare the alternative: a model with p = 0.5 needs only 4 attempts for 94%. Test-time compute multiplies what the model can already do sometimes. It is no substitute for a better model, which is why reasoning models are also <em>trained</em>, not just sampled harder.</p></>}
+          >
+            <p>In the lab, take a hard problem: p = 10%, with a perfect verifier (100%). What is the smallest N at which best-of-N reaches 90% accuracy?</p>
+          </Exercise>
+
+          <ExplainBack
+            id="reasoning-models-explain"
+            prompt="Dev says: “Reasoning models are a new kind of AI that actually thinks, unlike normal LLMs that just predict tokens.” Using what you know about the generation loop, explain what is really different and what is not."
+            modelAnswer={<p>A reasoning model is still a next-token predictor running the same loop: one forward pass per token, a fixed amount of compute each time. What differs is how the tokens are used and how the model was trained. It writes intermediate steps before the answer, so it spends many forward passes on the question and can read its own partial results back through attention, like working on paper. Open recipes such as DeepSeek-R1 train this with reinforcement learning on problems whose answers can be checked, so traces that end in correct answers become more likely. The costs are real: more tokens, more latency, and no benefit on easy questions. And the visible trace is generated text, not a guaranteed faithful account of the computation inside the network.</p>}
+          />
+          </div>
+        </details>
       </Exercises>
 
       <CheckYourself
@@ -377,17 +270,6 @@ best = Counter(answers).most_common(1)[0][0]
             explain: 'Same architecture, same loop. The trace buys forward passes and puts partial results on the page where later tokens can attend to them.',
           },
           {
-            q: 'A model answers a question correctly 25% of the time, and gives one particular wrong answer 60% of the time. You take a majority vote over 25 samples. What happens?',
-            options: [
-              'Accuracy rises towards 100%',
-              'Accuracy stays at exactly 25%',
-              'Accuracy falls towards 0%, because the vote converges on the most common answer, which is wrong',
-              'The vote is always a tie',
-            ],
-            answer: 2,
-            explain: 'Majority vote finds the mode of the answer distribution. It only helps when the mode is the right answer.',
-          },
-          {
             q: 'Why does a verifier usually help more than voting?',
             options: [
               'Verifiers are larger models',
@@ -397,17 +279,6 @@ best = Counter(answers).most_common(1)[0][0]
             ],
             answer: 1,
             explain: 'Voting needs the right answer to be the most common. Checking only needs it to appear once, and checking is often easier than generating (running tests vs writing the code).',
-          },
-          {
-            q: 'Your verifier is 90% reliable: it wrongly accepts 10% of incorrect answers (and rejects 10% of correct ones). The problem is hard (p = 5%). You can afford unlimited samples. What limits your accuracy?',
-            options: [
-              'Nothing: enough samples always reach 100%',
-              'The context window',
-              'The false accepts: most accepted answers are wrong ones that slipped through, so accuracy tops out far below 100%',
-              'The tokenizer',
-            ],
-            answer: 2,
-            explain: 'With rare right answers, even a small false-accept rate floods the accepted pile: about 32% of accepted answers are right in this case. Sampling more is only as good as the checker.',
           },
           {
             q: 'Which statement about visible reasoning traces is the most accurate?',
@@ -427,71 +298,30 @@ best = Counter(answers).most_common(1)[0][0]
         items={[
           <><b>One token = one forward pass = fixed compute.</b> A model that must answer at once has a fixed budget for the hard part.</>,
           <>A <b>reasoning trace</b> buys more forward passes and uses the model’s own output as <b>working memory</b>, through the same generation loop you built.</>,
-          <><b>Test-time compute</b> has three dials: longer traces, more attempts, and checking. <b>Majority vote</b> helps only if the right answer is the most common one. A <b>good verifier</b> helps much more, and a poor one sets a ceiling.</>,
-          <>Reasoning models are <b>trained</b> for this, in open recipes by reinforcement learning on problems with <b>checkable answers</b>. That is why maths and code improved first. Small reasoning models are often made by <b>distilling</b> a big model’s traces instead.</>,
-          <>Thinking is <b>not free</b> (cost is linear in tokens and attempts, gains flatten out), not every question benefits, and a trace is <b>not a guaranteed faithful explanation</b>.</>,
+          <><b>Majority vote</b> helps only if the right answer is the most common one. A <b>good verifier</b> helps much more; a poor one sets a ceiling.</>,
+          <>Reasoning models are <b>trained</b> for this, in open recipes by reinforcement learning on <b>checkable answers</b>. Thinking is not free, and a trace is <b>not a guaranteed faithful explanation</b>.</>,
         ]}
       />
 
       <RealLLM>
-        <Flow horizontal steps={[{ label: 'Base model', sub: 'next-token prediction' }, { label: 'Assistant', sub: 'SFT + preferences' }, { label: 'Reasoning model', sub: 'RL on checkable problems' }, { label: 'At answer time', sub: 'you choose how much thinking to buy' }]} active={2} />
         <ToyVsReal
           toy={<ul><li>Each attempt is right with a fixed probability p</li><li>Attempts are independent; wrong answers are spread evenly</li><li>The verifier is a biased coin</li><li>“Tokens per attempt” is a slider</li></ul>}
-          real={<ul><li>p differs for every question, and nobody tells you what it is</li><li>Errors are correlated: a model tends to repeat the same misconception, which is the “one popular wrong answer” case</li><li>Verifiers are tests, proof checkers, exact answers, or another model with its own blind spots</li><li>The model decides how long to think, often within an effort or budget setting chosen by the caller</li></ul>}
+          real={<ul><li>p differs for every question, and nobody tells you what it is</li><li>Errors are correlated: a model tends to repeat the same misconception, the “one popular wrong answer” case</li><li>Verifiers are tests, proof checkers, exact answers, or another model with its own blind spots</li><li>The model decides how long to think, often within an effort or budget setting chosen by the caller</li></ul>}
         />
-        <Callout kind="established">
-          The public reference point is <b>DeepSeek-R1</b> (2025), whose paper and weights are open. Its core is reinforcement learning on problems with automatically checkable results: maths answers, and code that must pass tests.
-          <br /><br />
-          The rewards are simple rules. An <b>accuracy reward</b> for a correct final answer. A <b>format reward</b> for putting the thinking between the required tags. In a later stage, a <b>language-consistency reward</b> as well, because the traces kept switching between languages mid-thought. There is no learned reward model for the reasoning tasks at all.
-          <br /><br />
-          The algorithm is <b>GRPO</b>, group relative policy optimization. The idea in one line: for each problem, sample a group of answers, and judge each one against how the rest of the group did rather than against an absolute target. An answer better than its siblings gets pushed up. A worse one gets pushed down. No separate value network is needed, which saves a lot of memory.
-          <br /><br />
-          For the variant trained by RL alone (R1-Zero), the authors report that responses grew longer, and that behaviours such as re-checking and trying a second approach became more frequent without being scripted. The released R1 model adds more stages: a small supervised “cold start” before the RL, then the reasoning RL, then supervised fine-tuning on filtered samples of its own output, then a final RL round that also uses learned preference rewards for helpfulness and harmlessness.
-        </Callout>
-        <h3>After R1: what changed in 2025 and 2026</h3>
-        <p>R1 was the start of a very busy period, not the end of the story. Five threads are worth knowing by name.</p>
-        <div className="table-scroll">
-          <table className="plain">
-            <thead><tr><th>thread</th><th>what it is</th><th>status</th></tr></thead>
-            <tbody>
-              <tr>
-                <td><b>GRPO variants</b></td>
-                <td>Fixes to the training algorithm, each aimed at a flaw found in practice. <b>DAPO</b> (ByteDance and Tsinghua) changes the clipping, drops groups where every answer scored the same, and averages the loss per token so long answers are not under-weighted. <b>Dr. GRPO</b> removes two normalisations: one, by answer length, quietly favoured long wrong answers; the other, by the spread of scores in a group, gave extra weight to questions that were nearly always right or nearly always wrong. <b>GSPO</b> (Qwen team) judges the whole answer as one unit rather than token by token, which made training more stable, especially for mixture-of-experts models.</td>
-                <td>Published, open code</td>
-              </tr>
-              <tr>
-                <td><b>RL on agent tasks</b></td>
-                <td>The same loop, but one “attempt” is now many steps: the model calls tools (a search engine, a terminal, a code runner), reads the results, and carries on. The reward arrives at the end, for example when a software task’s tests pass. Open model reports from 2025, such as Kimi K2 and GLM-4.5, describe this kind of training.</td>
-                <td>Published for open models; widely used</td>
-              </tr>
-              <tr>
-                <td><b>Rubric and judge rewards</b></td>
-                <td>For tasks with no checker (writing, advice, research reports), another model grades the answer against a written rubric: “mentions the refund deadline”, “does not invent a policy”. This stretches RL beyond maths and code. It inherits the noisy-verifier ceiling from the deep dive above: the policy can learn to please the judge.</td>
-                <td>Active research; used in some published recipes</td>
-              </tr>
-              <tr>
-                <td><b>Hybrid thinking models</b></td>
-                <td>One model with two modes: answer at once, or think first. The caller can switch thinking off, or set a <b>thinking budget</b> (a cap on thinking tokens). Qwen3 made this public in an open model in 2025, and several commercial APIs expose an effort or budget setting.</td>
-                <td>Common in 2026 products</td>
-              </tr>
-              <tr>
-                <td><b>Distilled reasoners</b></td>
-                <td>Small models fine-tuned on a big reasoner’s traces, as in the card above. The R1 paper found this beat RL for small models. See <a href="#/lesson/distillation">Small models from big ones</a>.</td>
-                <td>Published; standard practice</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <Callout kind="warn" label="What is not public">
-          The internals and training recipes of proprietary reasoning models are <b>not published</b>. Statements of the form “model X runs a tree search inside” or “model X uses N hidden samples” are guesses unless the vendor has documented them. Several vendors also hide or summarise the raw trace. What you can observe from outside: a thinking phase that costs tokens and time, often with a setting that controls how much.
-        </Callout>
+        <h3>The open reference: DeepSeek-R1</h3>
+        <p>DeepSeek-R1 (2025) published its paper and weights. Its core is reinforcement learning on problems with automatically checkable results: maths answers, and code that must pass tests. The rewards are simple rules: an <b>accuracy reward</b> for a correct final answer, a <b>format reward</b> for putting the thinking between the required tags, and later a <b>language-consistency reward</b>, because traces kept switching language mid-thought. There is no learned reward model for the reasoning tasks.</p>
+        <p>The algorithm is <b>GRPO</b>: for each problem, sample a group of answers and judge each against how the rest of the group did. Better than its siblings, pushed up; worse, pushed down. No separate value network is needed. For the variant trained by RL alone (R1-Zero), the authors report that responses grew longer and that re-checking and trying a second approach became more frequent without being scripted.</p>
+        <h3>Since R1</h3>
+        <ul>
+          <li><b>Better GRPO.</b> DAPO, Dr. GRPO and GSPO fix flaws found in practice, such as a length normalisation that quietly favoured long wrong answers. Published, with open code.</li>
+          <li><b>RL on agent tasks.</b> One attempt is now many steps with tools (search, a terminal, a code runner), rewarded at the end, for example when a software task’s tests pass. Open 2025 reports such as Kimi K2 and GLM-4.5 describe it.</li>
+          <li><b>Rubric rewards.</b> For tasks with no checker, another model grades against a written rubric. It inherits the noisy-verifier ceiling: the policy can learn to please the judge.</li>
+          <li><b>Hybrid thinking.</b> One model that can answer at once or think first, with a <b>thinking budget</b> set by the caller. Qwen3 did this openly in 2025; many APIs now expose an effort setting.</li>
+        </ul>
         <Callout kind="research">
-          <b>Are traces faithful?</b> The trace is real input to later tokens, so it does shape the answer. But experiments have found models whose stated reasoning omits the factor that actually changed their answer (for example a hint planted in the prompt). How far a trace can be trusted as an explanation, or used for oversight, is actively studied.
-          <br /><br />
-          Also open: how well training on checkable domains transfers to fuzzy ones such as writing or strategy, how to build reliable checkers for half-finished work, and whether RL teaches genuinely new abilities or mainly makes the model reliably do what it could already do sometimes.
+          <b>Not public, and not settled.</b> Proprietary reasoning models do not publish their recipes, so claims like “model X runs a tree search inside” are guesses unless documented. Whether traces are faithful explanations is open: experiments have found stated reasoning that omits what actually changed the answer. Also open: how far training on checkable domains transfers to fuzzy ones, and whether RL teaches new abilities or mainly makes the model reliable at what it could already do sometimes.
         </Callout>
-        <Callout kind="dev">If you call these models through an API, reasoning is a budget line. Thinking tokens are typically billed as output tokens and add latency before the first visible word. Route easy requests to a fast path, or switch thinking off, and keep long thinking for the requests that need it. You will meet the same loop again in <a href="#/lesson/agents">Agents</a>, where the “checker” is a tool result.</Callout>
-        <p>That evening Riya sets the Paisa Pal bot’s thinking budget to zero for “what is my balance” questions, and leaves it on for disputed refunds. Amma, told about it on the phone, approves. “Nobody needs a pencil for seven eights.”</p>
+        <p>That evening Riya sets the Paisa Pal bot’s thinking budget to zero for “what is my balance” questions, and leaves it on for disputed refunds, since thinking tokens are billed like any other output. Amma, told about it on the phone, approves. “Nobody needs a pencil for seven eights.”</p>
       </RealLLM>
 
       <BeforeMovingOn
