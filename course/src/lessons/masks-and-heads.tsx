@@ -412,7 +412,7 @@ out = weights @ V
               'H = 4 and H = 8 work. For H = 3: what is 8 // 3, and can 8 numbers be cut into 3 equal slices?',
               'After the call, add: assert np.allclose(w.sum(-1), 1) and print(w.shape).',
             ]}
-            solution={<><p>With H = 4 you get <code>w.shape == (4, 5, 5)</code>: four different 5×5 patterns from the same input, each row summing to 1, each with zeros above the diagonal. With H = 8 every head works with a single number per token.</p><p>H = 3 crashes: <code>ValueError: cannot reshape array of size 40 into shape (5,3,2)</code>. 8 numbers cannot be cut into 3 equal slices. That is why real configurations always have D divisible by the number of heads (768 = 12 × 64).</p></>}
+            solution={<><p>With H = 4 you get <code>w.shape == (4, 5, 5)</code>: four different 5×5 patterns from the same input, each row summing to 1, each with zeros above the diagonal. With H = 8 every head works with a single number per token.</p><p>H = 3 crashes: <code>ValueError: cannot reshape array of size 40 into shape (5,3,2)</code>. 8 numbers cannot be cut into 3 equal slices. That is why GPT-2-style configurations always have D divisible by the number of heads (768 = 12 × 64). Some newer models set the head width separately, so their heads need not add up to exactly D.</p></>}
           >
             <p>Open <code>attention_numpy.py</code> and find <code>demo_multi_head()</code>. Change <code>H</code> from 2 to 4, then 8, then 3. Before each run, predict the shape of <code>w</code> and whether it will run at all. Add an assert that every row of every head sums to 1.</p>
           </Exercise>
@@ -454,7 +454,7 @@ out = weights @ V
           <>Without a mask, position t can look straight at token t+1 and copy it. The <b>causal mask</b> sets every score for a later token to −∞ <em>before</em> softmax. Weight exactly 0, and the remaining weights still sum to 1.</>,
           <>The mask also matches generation, where the future does not exist, and it makes training efficient: <b>one pass over T tokens = T training examples</b>.</>,
           <>One softmax row is one blend. <b>Multi-head attention</b> runs h thinner attentions in parallel, each with its own Q/K/V slice and its own weight table, then concatenates and mixes with W<sub>O</sub>.</>,
-          <>Heads <b>split</b> the D numbers (width D/h each). Same parameters as one big head. Shapes: (T, D) → (h, T, D/h) → (T, D).</>,
+          <>Heads <b>split</b> the D numbers (width D/h each, in GPT-2-style models). Same parameters as one big head. Shapes: (T, D) → (h, T, D/h) → (T, D).</>,
         ]}
       />
 

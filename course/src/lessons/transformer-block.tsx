@@ -56,7 +56,7 @@ export default function TransformerBlockLesson() {
         />
 
         <h3>4. Numbers drift in size</h3>
-        <p>If every block adds something to x, the numbers in x tend to grow. A sub-layer that receives inputs of size 1 today and size 50 after a few training steps is chasing a moving target. Training becomes jumpy, or fails.</p>
+        <p>If every block adds something to x, the numbers in x tend to grow with depth. Large, uneven inputs make a sub-layer’s outputs and gradients large and uneven too, so a learning rate that is safe for one layer is too big for another. Training becomes jumpy, or fails.</p>
         <p>The fix is unglamorous: before each sub-layer, <b>rescale each token’s vector to a standard size</b>. That operation is called layer normalisation.</p>
       </Problem>
 
@@ -143,7 +143,7 @@ export default function TransformerBlockLesson() {
           <p>It is different. Here are the two versions side by side.</p>
           <ul>
             <li><b>Post-norm</b> (the original 2017 paper): normalise <em>after</em> the addition. <span className="mono">x ← LN(x + Attn(x))</span></li>
-            <li><b>Pre-norm</b> (GPT-2, our <code>tiny_gpt.py</code>, practically all current LLMs): normalise a copy <em>before</em> the sub-layer, and leave the residual stream itself untouched. <span className="mono">x ← x + Attn(LN(x))</span></li>
+            <li><b>Pre-norm</b> (GPT-2, our <code>tiny_gpt.py</code>, practically all current LLMs, some with an extra norm after the sub-layer too): normalise a copy <em>before</em> the sub-layer, and leave the residual stream itself untouched. <span className="mono">x ← x + Attn(LN(x))</span></li>
           </ul>
           <p>Why does that matter? Follow the gradient.</p>
           <ol>

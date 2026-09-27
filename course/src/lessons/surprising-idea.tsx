@@ -224,7 +224,7 @@ def model(tokens_so_far: list[int]) -> list[float]:
         <p>This is the question that should be nagging you. Guessing the next word does sound like autocomplete. How does that produce working code, or a correct explanation of why the sky is blue?</p>
         <p>Consider what it takes to be <em>good</em> at the guessing game on different kinds of text:</p>
         <ul>
-          <li>To predict the next token of <span className="mono">23 + 58 = </span> across millions of such lines, memorising fails. Something like addition has to be captured.</li>
+          <li>To predict the next token of <span className="mono">48213 + 90577 = </span> across millions of such lines with different numbers, memorising fails. Something like addition has to be captured.</li>
           <li>To predict the next line of a Python function, it pays to track which variables exist and what the function is for.</li>
           <li>To predict the end of “The ball was dropped from the tower. After two seconds it had fallen about…”, it pays to have captured some regularity about falling objects.</li>
           <li>To predict the last page of a detective story, it pays to have tracked who was where.</li>

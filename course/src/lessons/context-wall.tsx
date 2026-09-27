@@ -328,7 +328,7 @@ loss_C = train_context3(ids, V, ctx=200)
           <li><b>A fixed-size bottleneck.</b> Everything read so far must be squeezed into one vector of fixed size. By the time the model reaches “it”, “animal” has been overwritten many times. Distant details fade.</li>
           <li><b>Strictly sequential.</b> Step 500 needs the summary from step 499. You cannot compute the positions of a sequence in parallel. GPUs are fast because they do thousands of things at once, so training on long texts makes poor use of them.</li>
         </ul>
-        <Callout kind="established">Both limitations are well documented in the research of that period, and they are the stated motivation for the architecture that replaced RNNs in 2017. (Recurrent ideas have not disappeared. Some current research architectures revisit them with new tricks. Every mainstream LLM today is built on the alternative you are about to meet.)</Callout>
+        <Callout kind="established">Both limitations are well documented in the research of that period, and they are the stated motivation for the architecture that replaced RNNs in 2017. (Recurrent ideas have not disappeared. Several released models are hybrids that mix recurrent-style layers with the alternative you are about to meet. That alternative is the core of every mainstream LLM today.)</Callout>
         <h3>The question you should now be asking</h3>
         <Callout kind="idea">
           <b>How can a model use relationships between tokens that are far apart, when which tokens matter changes with every sentence?</b>

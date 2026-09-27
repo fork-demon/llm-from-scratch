@@ -24,7 +24,7 @@ export default function AttentionLesson() {
         <p>What does “it” refer to? The animal. Now change one word: “…because it was <em>flooded</em>.” Suddenly “it” is the road.</p>
         <p>You worked that out by looking at <em>other words</em> in the sentence. A model that predicts the next token needs the same ability. The meaning of one token depends on the tokens around it. And <em>which</em> ones matter changes from sentence to sentence.</p>
         <Callout kind="idea">
-          The model needs a mechanism that lets one token look at the other tokens and pull in the information that is relevant to it. That mechanism is called <b>attention</b>. It is the central idea of every modern LLM.
+          The model needs a mechanism that lets one token look at the other tokens and pull in the information that is relevant to it. That mechanism is called <b>attention</b>. It is the central idea of modern LLMs.
         </Callout>
       </Why>
 
@@ -103,7 +103,7 @@ export default function AttentionLesson() {
             [<span className="k">K</span>, 'one row per token: what that token offers for matching'],
             [<span className="v">V</span>, 'one row per token: the information that token can contribute'],
             [<>Q K<sup>T</sup></>, <>every query dotted with every key: a T×T table of match scores (<a href="#/lesson/matrices">a matrix multiply is many dot products at once</a>)</>],
-            [<>√d</>, 'd is the length of a key vector; dividing keeps the scores in a range where softmax stays soft'],
+            [<>√d</>, 'd is how many numbers a key vector has; dividing keeps the scores in a range where softmax stays soft'],
             ['softmax', <>turns each row of scores into weights that are positive and sum to 1 (<a href="#/lesson/softmax">lesson 1.3</a>)</>],
             ['… V', 'uses each row of weights to blend the value vectors'],
           ]}
@@ -344,7 +344,7 @@ out = weights @ V
           toy={<ul><li>4 numbers per token, hand-picked so you can read them</li><li>Wq and Wk written by hand to make the point</li><li>3 tokens</li><li>one attention operation</li></ul>}
           real={<ul><li>Thousands of numbers per token; no dimension has a clean human meaning</li><li>All weights learned from data; nobody chooses what to attend to</li><li>Thousands to millions of tokens</li><li>Dozens of heads in each of dozens of layers, plus a causal mask</li></ul>}
         />
-        <Callout kind="established">The computation itself is identical. softmax(QKᵀ/√d)V, as you just coded it, is what runs inside GPT-2 and Llama, whose code is public, and by every public account inside closed models such as Claude and Gemini too. Production systems mostly change how it is <em>executed</em>, not what it computes: fused GPU kernels such as <G t="flash-attention">FlashAttention</G> get the same result without ever storing the full T × T table (so memory stops growing with T², while the arithmetic still does), and the <G t="kv-cache">KV cache</G> avoids recomputing keys and values. Some variants you will meet in <a href="#/lesson/modern-architecture">Modern LLM architecture</a> share keys and values between heads or limit how far back a token may look. The formula per head stays this one.</Callout>
+        <Callout kind="established">The computation itself is identical. softmax(QKᵀ/√d)V, as you just coded it, is what runs inside GPT-2 and Llama, whose code is public, and by every public account inside closed models such as Claude and Gemini too. Production systems mostly change how it is <em>executed</em>, not what it computes: fused GPU kernels such as <G t="flash-attention">FlashAttention</G> get the same result without ever storing the full T × T table (so memory stops growing with T², while the arithmetic still does), and the <G t="kv-cache">KV cache</G> avoids recomputing keys and values. Some variants you will meet in <a href="#/lesson/modern-architecture">Modern LLM architecture</a> share keys and values between heads or limit how far back a token may look. In every softmax attention layer, the formula per head stays this one. (Some recent hybrid models replace many of their layers with cheaper linear-attention or state-space layers, which compute something different.)</Callout>
         <Callout kind="research">What individual attention heads “mean” in a trained model is an open research area. Some heads have been found with clear roles (for example, copying a token that followed an earlier occurrence of the current token), but most are not cleanly interpretable. Treat any diagram that labels a head “the grammar head” as an illustration.</Callout>
         <p>See it in real GPT-2: the <a href="#/gpt2">GPT-2 Explainer</a> runs the full model in your browser. Open any block to see the queries, keys, values and attention of all 12 heads on your own prompt.</p>
         <p>Back at her desk, Riya types “the river bank”, then “the money bank”, and watches “bank” come out as two different vectors. She thinks of the stone steps by the Kaveri. Her embedding table finally has help.</p>

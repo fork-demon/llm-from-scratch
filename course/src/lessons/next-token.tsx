@@ -51,7 +51,7 @@ export default function NextTokenLesson() {
         <Callout kind="analogy">
           Think of your phone keyboard’s suggestion bar, pressed again and again. Each press is reasonable given what is on screen. Nobody decided in advance where the sentence would end up.
           <br /><br />
-          Where the analogy stops: your keyboard looks at a word or two. An LLM bases each prediction on everything in its <G t="context-window">context window</G> (all the text it can see), through billions of learned weights. That is why its text stays on topic for pages. The loop is the same. The predictor inside it is far better.
+          Where the analogy stops: your keyboard runs a tiny on-device model that sees only a short stretch of text. An LLM bases each prediction on everything in its <G t="context-window">context window</G> (all the text it can see), through billions of learned weights. That is why its text stays on topic for pages. The loop is the same. The predictor inside it is far better.
         </Callout>
         <h3>Where do the examples come from? From the text itself</h3>
         <p>Take any text. Slide it one position to the left. Every position is now a labelled example: input = this token, correct answer = the token that actually came next.</p>
@@ -352,7 +352,7 @@ MODEL B: neural bigram -- watch it CONVERGE TO MODEL A's loss
       <BreakIt>
         <p>Back to the playground. Predict first.</p>
         <ul>
-          <li><b>Remove the die.</b> Tick “always take the most likely character”, start from “t”, and roll 40. You get “the the the the …” forever. The most likely <em>next step</em>, taken every time, gives very unlikely <em>text</em>. A little randomness is a feature. How much is the <G t="temperature">temperature</G> dial, in <a href="#/lesson/inference">a later lesson</a>.</li>
+          <li><b>Remove the die.</b> Tick “always take the most likely character”, start from “t”, and roll 40. You get “the the the the …” forever. The most likely <em>next step</em>, taken every time, gives text the model itself rates as likely, yet it loops and looks nothing like real <em>text</em>. A little randomness is a feature. How much is the <G t="temperature">temperature</G> dial, in <a href="#/lesson/inference">a later lesson</a>.</li>
           <li><b>Change the seed.</b> Same model, same start, different text. The model is a distribution over texts, not a store of one text.</li>
           <li><b>Change the training text.</b> Open “Edit the training text” and paste some source code, or another language. The rows change, and the gibberish takes on the flavour of the new text. The model is nothing but the statistics of what it read.</li>
           <li><b>Look for meaning.</b> Roll 200 characters. You will see real fragments (“the”, “ing”) and no sense at all. Hold on to the question “what is missing?”. That is the next lesson.</li>
@@ -481,7 +481,7 @@ MODEL B: neural bigram -- watch it CONVERGE TO MODEL A's loss
         <Flow horizontal steps={[{ label: 'Tokens so far' }, { label: 'Model', sub: 'here: one table row. GPT: a Transformer' }, { label: 'Probabilities for every next token', sub: 'this lesson' }, { label: 'Sample one' }, { label: 'Append, repeat' }]} active={2} />
         <ToyVsReal
           toy={<ul><li>Tokens are 27 characters</li><li>Sees 1 previous token</li><li>The “model” is a 27 × 27 table of counts</li><li>1,479 characters of training text</li><li>Perplexity 5.76 per character</li></ul>}
-          real={<ul><li>Tokens are roughly 30,000 to 250,000 subwords</li><li>Sees thousands to millions of previous tokens</li><li>The model is a Transformer with billions of learned weights</li><li>Trillions of tokens of training text</li><li>Same loss: average −log P(actual next token)</li></ul>}
+          real={<ul><li>Tokens are roughly 30,000 to 260,000 subwords</li><li>Sees thousands to millions of previous tokens</li><li>The model is a Transformer with billions of learned weights</li><li>Trillions of tokens of training text</li><li>Same loss: average −log P(actual next token)</li></ul>}
         />
         <Callout kind="established">The objective you just implemented, next-token cross-entropy on shifted text, is the <G t="pretraining">pretraining</G> objective of GPT-style models. The generation loop you clicked through is how they produce output. Chat behaviour is added later by further training, which we cover in <a href="#/lesson/training-pipeline">From raw text to assistant</a>, but it does not replace this loop.</Callout>
         <p>This explains several things you see as an API user. Output <b>streams</b> token by token because it is produced token by token. The same prompt can give <b>different answers</b> because each token is a random draw. And output tokens cost more than input tokens partly because each one needs its own pass through the model.</p>

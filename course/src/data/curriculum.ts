@@ -50,7 +50,7 @@ export const PARTS: PartMeta[] = [
       { id: 'vectors', title: 'Vectors and the dot product', question: 'How do you ask two lists of numbers "do you agree?"', minutes: 55, here: 'math', sources: [{ path: 'phase1-foundations/math_primer.py', note: 'every calculation in this part, verified in NumPy' }], notes: 'phase1-foundations/00-math-primer.md' },
       { id: 'matrices', title: 'Matrices: many dot products at once', question: 'Why is everything in an LLM a matrix multiply?', minutes: 50, here: 'math', sources: [{ path: 'phase1-foundations/math_primer.py', note: 'matrix shapes and the transpose, worked by hand' }], notes: 'phase1-foundations/00-math-primer.md' },
       { id: 'softmax', title: 'Scores into probabilities: softmax', question: 'How does a model turn raw scores into "70% sure"?', minutes: 50, here: 'math', sources: [{ path: 'phase1-foundations/mlp_numpy.py', note: 'the numerically stable softmax and cross-entropy used by every later file' }] },
-      { id: 'derivatives', title: 'Nudges: derivatives and the chain rule', question: 'If I nudge this number, how much does the result move?', minutes: 50, here: 'math', sources: [{ path: 'phase1-foundations/math_primer.py', note: 'the nudge experiment and the chain rule pipeline' }], notes: 'phase1-foundations/00-math-primer.md' },
+      { id: 'derivatives', title: 'Nudges: derivatives and the chain rule', question: 'If I nudge this number, how much does the result move?', minutes: 55, here: 'math', sources: [{ path: 'phase1-foundations/math_primer.py', note: 'the nudge experiment and the chain rule pipeline' }], notes: 'phase1-foundations/00-math-primer.md' },
     ],
   },
   {
@@ -111,7 +111,7 @@ export const PARTS: PartMeta[] = [
     lessons: [
       { id: 'build-gpt', title: 'Build GPT', question: 'Can you trace one token from text to prediction?', minutes: 50, here: 'transformer', sources: [{ path: 'phase3-transformers/tiny_gpt.py', note: 'a complete GPT in ~250 lines of PyTorch' }], notes: 'phase3-transformers/08-tiny-gpt.md' },
       { id: 'training-gpt', title: 'Training GPT', question: 'What actually happens during "training"?', minutes: 55, here: 'training', sources: [{ path: 'phase3-transformers/tiny_gpt.py', note: 'main(): batches, AdamW, train vs validation loss, samples during training' }], notes: 'phase3-transformers/09-training-and-inference.md' },
-      { id: 'inference', title: 'Inference: sampling and the KV cache', question: 'What do temperature and top-p really do, and why is generation slow?', minutes: 60, here: 'sampling', sources: [{ path: 'phase3-transformers/kv_cache_demo.py', note: 'naive vs cached generation, proven identical, plus sampling policies' }], notes: 'phase3-transformers/09-training-and-inference.md' },
+      { id: 'inference', title: 'Inference: sampling and the KV cache', question: 'What do temperature and top-p really do, and why is generation slow?', minutes: 65, here: 'sampling', sources: [{ path: 'phase3-transformers/kv_cache_demo.py', note: 'naive vs cached generation, proven identical, plus sampling policies' }], notes: 'phase3-transformers/09-training-and-inference.md' },
     ],
   },
   {
@@ -120,7 +120,7 @@ export const PARTS: PartMeta[] = [
     title: 'From GPT to Modern LLMs',
     blurb: 'What changed since 2019, and what we honestly do not know.',
     lessons: [
-      { id: 'why-llms-know', title: 'Why LLMs know things', question: 'Where is the knowledge, and why do models make things up?', minutes: 45, here: 'llm', notes: 'phase4-modern-llms/10-knowledge-scaling-hallucination.md' },
+      { id: 'why-llms-know', title: 'Why LLMs know things', question: 'Where is the knowledge, and why do models make things up?', minutes: 50, here: 'llm', notes: 'phase4-modern-llms/10-knowledge-scaling-hallucination.md' },
       { id: 'modern-architecture', title: 'Modern LLM architecture', question: 'What is different inside a 2020s model compared with our tiny GPT?', minutes: 60, here: 'block', notes: 'phase4-modern-llms/10-knowledge-scaling-hallucination.md' },
       { id: 'training-pipeline', title: 'From raw text to assistant', question: 'How does a next-token predictor become a helpful assistant?', minutes: 55, here: 'training', notes: 'phase3-transformers/09-training-and-inference.md' },
       { id: 'distillation', title: 'Small models from big ones', question: 'How does a 3-billion-parameter model learn from a 600-billion-parameter one?', minutes: 45, here: 'training' },

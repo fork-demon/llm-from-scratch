@@ -40,8 +40,8 @@ export default function MakingModelsCheaperLesson() {
           <p>Real integer methods improve on plain rounding. You will meet these names on model cards:</p>
           <ul>
             <li><b>LLM.int8()</b> (Dettmers et al., NeurIPS 2022) keeps the few outlier activation dimensions in 16-bit and quantizes the rest.</li>
-            <li><b>GPTQ</b> (Frantar et al., ICLR 2023) rounds the weights one at a time and nudges the not-yet-rounded ones to make up for each rounding error.</li>
-            <li><b>AWQ</b> (Lin et al., MLSys 2024) rescales the roughly 1% of weight channels that meet large activations, so they survive the grid.</li>
+            <li><b>GPTQ</b> (Frantar et al., ICLR 2023) rounds a layer column by column and nudges the not-yet-rounded columns to make up for each rounding error, using second-order (Hessian) information from sample inputs.</li>
+            <li><b>AWQ</b> (Lin et al., MLSys 2024) starts from the observation that about 1% of weight channels, the ones that meet large activations, matter most, and scales every input channel by a searched factor so those salient ones survive the grid, all still in 4 bits.</li>
             <li><b>NF4</b> (QLoRA, Dettmers et al., NeurIPS 2023) spaces its 16 levels closer together in the middle, where bell-shaped weights actually sit.</li>
           </ul>
         </DeepDive>
@@ -52,7 +52,7 @@ export default function MakingModelsCheaperLesson() {
           name="FP8 (E4M3 and E5M2)"
           plain={<>An 8-bit float. E4M3 has 4 exponent bits and 3 mantissa bits: more precision, largest value 448. E5M2 has 5 and 2: less precision, but reaches 57,344.</>}
           example={<>Weights and activations usually use E4M3. Gradients in training, which swing across a wide range, have often used E5M2.</>}
-          formal={<>Supported natively by NVIDIA Hopper (H100, H200) and later GPUs and by AMD’s MI300 series and later. Each tensor, or each block of a tensor, carries a higher-precision scale so that its values land inside the format’s range.</>}
+          formal={<>Supported natively by NVIDIA Hopper (H100, H200) and later GPUs and by AMD’s MI350 series and later. AMD’s earlier MI300 uses a close variant whose E4M3 tops out at 240, so its checkpoints need rescaling. Each tensor, or each block of a tensor, carries a higher-precision scale so that its values land inside the format’s range.</>}
         />
         <p>FP8 is now a standard way to serve large open models: the weights halve, and the matrix multiplies themselves run in 8 bits. It is used in training too: DeepSeek-V3 (December 2024) trained most of its matrix multiplies in FP8 E4M3, one of the first openly documented runs at that scale to do so.</p>
         <p>Below 8 bits, FP4 formats such as <b>MXFP4</b> give every block of 32 weights its own shared scale, about 4.25 bits per weight. OpenAI’s open-weight gpt-oss models (August 2025) shipped their mixture-of-experts weights in MXFP4, which is how the 120B-parameter model fits on a single 80 GB GPU.</p>
@@ -99,7 +99,7 @@ export default function MakingModelsCheaperLesson() {
           <li><b>A draft head</b> on the target itself, one light extra layer that reads its hidden vectors and guesses ahead. EAGLE-3 (Li et al., 2025) is the best-known.</li>
           <li><b>Multi-token prediction heads</b> trained with the model. DeepSeek-V3’s report says its extra token was accepted 85% to 90% of the time.</li>
         </ul>
-        <p>It is a latency technique that only works <em>because</em> decode is memory-bound. It does not help when the drafter is often wrong (little is accepted, and its own time is wasted), or when the server already runs large batches (the arithmetic is no longer idle, so verifying extra positions is no longer free).</p>
+        <p>It is a latency technique that only works <em>because</em> decode is memory-bound. It does not help when the drafter is often wrong (little is accepted, and its own time is wasted), or when the server already runs large batches (the arithmetic is no longer idle, so verifying extra positions is no longer free). The gain shrinks as batches grow rather than vanishing: with long contexts the cache reads keep even a big batch memory-bound, and speculation can still pay.</p>
         <Callout kind="dev">
           Branch prediction, with a guarantee. A processor guesses the next instructions and throws the work away when it guessed wrong. Here the check is a rule chosen so that the final text has exactly the big model’s own distribution. A wrong guess costs time, never correctness.
         </Callout>
@@ -434,7 +434,7 @@ for x in proposals:
           toy={<ul><li>Round-to-nearest quantization of one random matrix</li><li>Error measured on one layer’s output, not on any task</li><li>Speculative decoding between two 6-token Markov chains</li><li>Parallelism described, not run: one process, one machine</li></ul>}
           real={<ul><li>FP8 and FP4 (MXFP4, NVFP4) run natively by the hardware, plus GPTQ, AWQ and similar integer methods</li><li>Quality measured with task evals on the quantized model before it ships</li><li>EAGLE-style draft heads, native multi-token-prediction heads, draft models or n-gram lookups as the proposer, verified in batches</li><li>Tensor parallel inside a server over fast links, replicas across servers</li></ul>}
         />
-        <p>Where you will meet these: a model-card name like “FP8”, “MXFP4”, “GPTQ int4, group 128” or “AWQ 4-bit” tells you the format, the method and the granularity. llama.cpp’s GGUF schemes such as Q4_K_M (1.5 to 8 bits) are what make a 7B model run on a laptop. vLLM, SGLang and TensorRT-LLM all serve FP8 and 4-bit weights, offer a low-precision KV cache and support speculative decoding. And “tensor parallel size”, a launch flag on every serving engine, set to the number of GPUs in one server, is the usual first answer to “the model does not fit”.</p>
+        <p>Where you will meet these: a model-card name like “FP8”, “MXFP4”, “GPTQ int4, group 128” or “AWQ 4-bit” tells you the format, the method and the granularity. llama.cpp’s GGUF schemes, which range from 1.5 to 8 bits (Q4_K_M averages about 4.8), are what make a 7B model run on a laptop. vLLM, SGLang and TensorRT-LLM all serve FP8 and 4-bit weights, offer a low-precision KV cache and support speculative decoding. And “tensor parallel size”, a launch flag on every serving engine, set to the number of GPUs in one server, is the usual first answer to “the model does not fit”.</p>
         <Callout kind="established">
           The mechanisms here are published and open: LLM.int8() (NeurIPS 2022), the OCP Microscaling formats (2023), FP8 training in the DeepSeek-V3 report (2024), EAGLE-3 (2025), GPTQ (ICLR 2023), AWQ (MLSys 2024), NF4 and QLoRA (NeurIPS 2023), speculative decoding with its exactness proof (Leviathan et al., ICML 2023; Chen et al., 2023), Megatron-LM tensor parallelism (Shoeybi et al., 2019) and GPipe (Huang et al., 2019). The exactness of the acceptance rule is a proved theorem, not a measured tendency, and <code>speculative_demo.py</code> checks it empirically as well.
         </Callout>

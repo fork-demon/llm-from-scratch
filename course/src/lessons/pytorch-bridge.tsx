@@ -255,7 +255,7 @@ def sample_next(logits, temperature=1.0, top_k=None, generator=None):
     return int(torch.multinomial(probs, num_samples=1, generator=generator))
 `}</Code>
         <p>Wrap that in “run the model, take the last row, sample, append” and you have <code>model.generate(ids, do_sample=True, temperature=0.8, top_k=40, max_new_tokens=25)</code>. The script proves it for greedy decoding: your loop and <code>generate(do_sample=False)</code> return identical ids.</p>
-        <p>What <code>generate</code> adds is engineering you also know: the <G t="kv-cache">KV cache</G>, stopping at <code>eos_token_id</code>, batching with padding, and more knobs (<code>top_p</code>, <code>repetition_penalty</code>). <code>do_sample=False</code> is the default, and then <code>temperature</code> is ignored.</p>
+        <p>What <code>generate</code> adds is engineering you also know: the <G t="kv-cache">KV cache</G>, stopping at <code>eos_token_id</code>, batching with padding, and more knobs (<code>top_p</code>, <code>repetition_penalty</code>). <code>do_sample=False</code> is the library’s default, and then <code>temperature</code> is ignored. But a model’s <code>generation_config.json</code> overrides it, and most chat models, Qwen2.5-Instruct included, switch sampling on there.</p>
         <h3>5. Chat models: let the tokenizer build the prompt</h3>
         <p>GPT-2 is a base model and has no chat template. An instruction-tuned model does. This is real output from the tokenizer of <code>Qwen/Qwen2.5-0.5B-Instruct</code>, a small open chat model:</p>
         <Code title="apply_chat_template">{`
@@ -337,7 +337,7 @@ def masked_next_token_loss(logits, labels):
         <Term
           name="Adapter (as a file)"
           plain={<>The small set of extra weights that LoRA trained, saved without the base model. To use it you need the adapter and the exact base model it was trained on.</>}
-          example={<>The script saves <code>adapter_config.json</code> (1 kB: rank, alpha, target modules, base model name) and <code>adapter_model.safetensors</code> (1,775,520 bytes). The base model is 498 MB in fp32: a ratio of 1 to 279.</>}
+          example={<>The script saves <code>adapter_config.json</code> (1 kB: rank, alpha, target modules, base model name) and <code>adapter_model.safetensors</code> (1,775,520 bytes). The base model is 498 MB in fp32: a ratio of 1 to 280.</>}
           formal={<>Attached: base and adapter stay separate, the adapter can be switched off or swapped per request, at the cost of a little extra compute. Merged (<code>merge_and_unload()</code>): scale · A·B is added into each frozen weight, giving a plain model of the original shape with no extra latency, which can no longer be detached. The script does both and checks the logits agree.</>}
         />
         <DeepDive title="Two flags you will meet in every real training script">

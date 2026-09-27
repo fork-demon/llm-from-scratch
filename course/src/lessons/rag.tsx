@@ -53,6 +53,7 @@ export default function RagLesson() {
         <RagTwoLanes />
         <p>Follow the highlighted rows. The three best-scoring chunks leave the table, land under “Context:” in the prompt, and come out as the citation. Nothing else in the picture is new to the model: the box marked “LLM, unchanged” is the same model with the same weights.</p>
         <p>Two pieces are new. The rest you already own.</p>
+        <p>A note on the name. The original RAG paper (Lewis and colleagues, 2020) also fine-tuned the question encoder and the generator together. Today “RAG” almost always means the version in this lesson: a frozen model and a search step in front of it.</p>
         <Term
           name="Chunk"
           plain={<>A passage of a document, small enough to be about one thing. Documents are cut into chunks because we retrieve passages, not whole files.</>}
@@ -224,6 +225,7 @@ def embed(text):
     return v / (np.linalg.norm(v) + 1e-9)   # length 1: dot product == cosine
 `}</Code>
         <p>This embedder is deliberately crude: it matches <em>strings</em>, not meanings. A real system replaces this one function with a Transformer encoder, and every other line of the file stays the same.</p>
+        <p>How does a real encoder learn that “sick” belongs near “medical leave”? The same way CLIP learns to match photos and captions, which you can see written out in <a href="#/lesson/multimodal">the multimodal lesson’s contrastive loss</a>. Take millions of (question, passage that answers it) pairs. In each batch, the question’s vector must score its own passage higher than every other passage in the batch, and higher than a few deliberately similar wrong ones (“hard negatives”). Such a model embeds question and passage separately (a <b>bi-encoder</b>), which is what makes precomputed vectors possible. A <b>re-ranker</b> is a <b>cross-encoder</b>: it reads question and passage together, so it is more accurate and far slower, and is used only on the top few candidates.</p>
         <p>Third, the store. Exact search is the matrix multiply you know:</p>
         <Code
           source="phase4-modern-llms/mini_rag.py"

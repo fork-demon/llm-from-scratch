@@ -28,8 +28,15 @@ const importsOf = (text: string): string[] => {
   return [...mods]
 }
 
+// sys.stdlib_module_names needs Python 3.10+; on older interpreters, list the stdlib folder instead
+const STDLIB_NAMES = `import sys, json, sysconfig, pkgutil
+names = getattr(sys, "stdlib_module_names", None)
+if names is None:
+    std = sysconfig.get_paths()["stdlib"]
+    names = set(sys.builtin_module_names) | {m.name for m in pkgutil.iter_modules([std, std + "/lib-dynload"])}
+print(json.dumps(sorted(names)))`
 const stdlib: Set<string> = python
-  ? new Set(JSON.parse(execFileSync(python, ['-c', 'import sys, json; print(json.dumps(sorted(sys.stdlib_module_names)))'], { encoding: 'utf8' })))
+  ? new Set(JSON.parse(execFileSync(python, ['-c', STDLIB_NAMES], { encoding: 'utf8' })))
   : new Set()
 
 describe('repo files for the in-browser runner', () => {

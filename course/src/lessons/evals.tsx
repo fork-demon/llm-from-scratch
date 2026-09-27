@@ -599,7 +599,7 @@ A = default, B = refusal threshold 0.90 (refuses almost everything)
                 <tr><td><b>SWE-bench Pro</b></td><td>Longer, multi-file software tasks (Scale AI, 2025)</td><td>Includes repositories under copyleft licences and a private held-out set, to keep the tasks out of training data.</td></tr>
                 <tr><td><b>Terminal-Bench</b></td><td>Tasks done in a real command-line environment: build, configure, debug</td><td>Scored by running checks on the final state of the machine, not by reading the answer.</td></tr>
                 <tr><td><b>τ-bench</b> (tau-bench)</td><td>An agent helping a simulated customer, with tools and a policy to follow (retail, airline)</td><td>Reports pass^k: the chance that <em>all</em> k repeated tries succeed. It measures reliability, the opposite question from pass@k.</td></tr>
-                <tr><td><b>METR time horizon</b></td><td>The length of task, measured in how long it takes a skilled human, that a model finishes with 50% success</td><td>Not a fixed pass rate but a scale in minutes and hours, so it keeps growing instead of hitting 100%. METR measured it doubling roughly every seven months over 2019 to 2025.</td></tr>
+                <tr><td><b>METR time horizon</b></td><td>The length of task, measured in how long it takes a skilled human, that a model finishes with 50% success</td><td>Not a fixed pass rate but a scale in minutes and hours, so it keeps growing instead of hitting 100%. METR measured it doubling roughly every seven months over 2019 to 2025, and its January 2026 update puts the doubling since 2023 closer to four months.</td></tr>
               </tbody>
             </table>
           </div>

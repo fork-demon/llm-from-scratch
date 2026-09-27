@@ -327,7 +327,7 @@ def cosine(x, y):
         </Callout>
         <Callout kind="model">“Each slot is a feature like comedy or romance” is a simplification to build intuition. In trained models, meaning is spread across many slots at once. You will look at real learned vectors in <a href="#/lesson/embeddings">Embeddings</a>.</Callout>
         <p>Keep the two meters apart: the dot product is not the cosine. Attention and the output layer use the raw dot product, so there a vector’s length does count, and the model is free to use it.</p>
-        <p>Dividing the lengths out is a choice. Similarity search often makes it; attention does not.</p>
+        <p>Dividing the lengths out is a choice. Similarity search often makes it. Attention only divides by a fixed number (the square root of the vector size), though some recent models also normalise the query and key vectors first.</p>
         <p>As for Friday night: Riya and Dev’s agreement score came out negative. They watched separate films, on separate laptops, in the same room.</p>
       </RealLLM>
     </Lesson>

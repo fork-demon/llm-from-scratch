@@ -12,9 +12,9 @@ import { PreferenceLab } from '../interactive/PreferenceLab'
 const PIPELINE: { label: string; you: string; scale: string }[] = [
   { label: 'Dataset', you: 'One text file: about 1 MB of Shakespeare.', scale: 'Trillions of tokens gathered from the web, code, books and papers. Most of the engineering effort goes here: removing spam and boilerplate, removing near-duplicate pages, filtering for quality, choosing the mix of languages and code. The same architecture trained on better-filtered data gives a clearly better model.' },
   { label: 'Tokenizer', you: 'One token per character.', scale: 'A BPE tokenizer with anywhere from about 30,000 up to about 260,000 tokens (Gemma 3 uses 262,144), trained once before anything else, plus a handful of reserved special tokens (end of text, and later the chat role markers you will meet below).' },
-  { label: 'Batches', you: '32 random windows of 64 characters.', scale: 'Millions of tokens per batch. No single GPU can hold the model or the batch, so both are split across thousands of GPUs: each GPU works on its slice, and the gradients are averaged over the network before every update. Conceptually it is still one big batch and one update.' },
+  { label: 'Batches', you: '32 random windows of 64 characters.', scale: 'Millions of tokens per batch. No single GPU can hold the model or the batch, so both are split across thousands of GPUs. Each GPU takes a slice of the batch, and the gradients are averaged over the network before every update (data parallelism). The model itself is split too: its weights and optimizer state are sharded across GPUs (FSDP), each matrix is cut into pieces (tensor parallelism), the layers are divided into stages (pipeline parallelism), and MoE experts sit on different GPUs (expert parallelism). Those splits send activations, not just gradients, between GPUs at every step. Conceptually it is still one big batch and one update.' },
   { label: 'Forward', you: 'model(x, y) gives logits.', scale: 'The same forward pass, in lower-precision numbers to save memory and time. The standard is BF16 mixed precision: most maths in 16-bit, with a 32-bit master copy of the weights. At the largest scale some labs go further and run much of the maths in 8-bit (FP8), as DeepSeek-V3 reports.' },
-  { label: 'Loss', you: 'Cross-entropy on the next character.', scale: 'Identical: cross-entropy on the next token. Nothing about the objective gets cleverer in pretraining.' },
+  { label: 'Loss', you: 'Cross-entropy on the next character.', scale: 'Mostly identical: cross-entropy on the next token. Some runs add extras: small balancing terms for MoE routers, extra heads that also predict the token after next (multi-token prediction, in DeepSeek-V3), or a bigger model’s probabilities as targets (distillation, as in Gemma 2’s smaller models). The core stays next-token prediction.' },
   { label: 'Backprop', you: 'loss.backward()', scale: 'Identical, spread across the GPUs.' },
   { label: 'Optimizer', you: 'AdamW, lr = 3e-4, constant.', scale: 'AdamW is still the default, with a learning rate that warms up and then decays on a schedule. Newer optimizers have started to appear in frontier runs: Kimi K2 was trained with a variant of Muon. Either way, the run cannot be restarted from scratch if it diverges in week five, so stability tricks matter a great deal.' },
   { label: 'Checkpoint', you: 'None: the run takes minutes.', scale: 'The weights and optimizer state are saved regularly. With thousands of GPUs running for weeks, hardware failures are routine, and training resumes from the last checkpoint. Checkpoints are also what later stages start from: the “base model” is a checkpoint.' },
@@ -72,7 +72,7 @@ export default function TrainingPipelineLesson() {
             <thead><tr><th>teacher</th><th>stage</th><th>where the right answer comes from</th></tr></thead>
             <tbody>
               <tr><td>1 · Read everything</td><td><G t="pretraining">Pretraining</G></td><td>The next token of a real document. No labelling, so trillions of tokens.</td></tr>
-              <tr><td>2 · Watch demonstrations</td><td><G t="sft">Supervised fine-tuning</G> (SFT)</td><td>The next token of a reply people wrote. Each costs human time, so far fewer.</td></tr>
+              <tr><td>2 · Watch demonstrations</td><td><G t="sft">Supervised fine-tuning</G> (SFT)</td><td>The next token of a demonstration reply: written by people, or today often by a strong model and then filtered. Far fewer than pretraining tokens.</td></tr>
               <tr><td>3 · Feedback on your own attempts</td><td>Preference optimisation</td><td>No single right token for “write a haiku”, but a person can say which of two attempts is better.</td></tr>
             </tbody>
           </table>
@@ -88,7 +88,7 @@ export default function TrainingPipelineLesson() {
           name="Chat template"
           plain={<>A fixed recipe for flattening a list of messages into one long token sequence, using special marker tokens to say “a new message by this role starts here” and “this message ends here”.</>}
           example={<><code>&lt;|im_start|&gt;user⏎What is a cat?&lt;|im_end|&gt;⏎&lt;|im_start|&gt;assistant⏎</code> … and the model continues from there.</>}
-          formal={<>A deterministic function from a list of (role, content) pairs to a token sequence. The markers are extra entries in the vocabulary whose embeddings are learned during fine-tuning. Each model family defines its own.</>}
+          formal={<>A deterministic function from a list of (role, content) pairs to a token sequence. The markers are extra entries in the vocabulary. Their embeddings are learned from whichever training data contains them: sometimes already in late pretraining, otherwise only in fine-tuning (some base models ship with such tokens still untrained, a known fine-tuning pitfall). Each model family defines its own.</>}
         />
         <Callout kind="dev">
           A chat API is a thin wrapper. Your JSON list of messages is serialised with the template into one string, the model continues it, and the server stops when the model emits the end marker.
@@ -144,8 +144,8 @@ export default function TrainingPipelineLesson() {
         </div>
         <p>This is the same “minus log of the probability given to what actually happened” that you have used since <a href="#/lesson/softmax">softmax</a>. Only the event changed: not “which token came next” but “which answer did the person pick”.</p>
         <p><b>Third, one update.</b> In the lab, all three weights start at 0. In comparison 1 you prefer “Paris.” with features <span className="mono">[0.03, 0, 1]</span> over the long non-answer with features <span className="mono">[1, 1, 0]</span>. The model gave A a probability of 0.5, so the surprise is 1 − 0.5 = 0.5. Each weight moves by 0.5 × (chosen feature − rejected feature):</p>
-        <p className="mono center">w = [0.5 × (0.03 − 1), 0.5 × (0 − 1), 0.5 × (1 − 0)] = [−0.48, −0.50, +0.50]</p>
-        <p>Click “Paris.” in a freshly reset lab and you will see exactly these weights.</p>
+        <p className="mono center">w = [0.5 × (0.03 − 1), 0.5 × (0 − 1), 0.5 × (1 − 0)] = [−0.485, −0.50, +0.50]</p>
+        <p>Click “Paris.” in a freshly reset lab and you will see these weights, rounded to two decimals (the lab displays −0.485 as −0.48).</p>
       </Numbers>
 
       <TheMath>
@@ -187,7 +187,7 @@ export default function TrainingPipelineLesson() {
           <p>Substitute that into the Bradley-Terry loss and the reward model disappears:</p>
           <p className="mono" style={{ fontSize: 14 }}>loss = −log σ( β × [ log(π(chosen)/π_ref(chosen)) − log(π(rejected)/π_ref(rejected)) ] )</p>
           <p>Here π is the model being tuned and π_ref is the frozen SFT model. In words: make the chosen answer more likely, relative to the reference, than the rejected answer. It is an ordinary supervised loss on fixed pairs: no sampling, no separate reward network.</p>
-          <p>Trade-off: DPO learns only from the fixed pairs in the dataset, not from fresh attempts of the current model. Which approach gives better models, and when, is an active debate, and many published recipes combine several methods.</p>
+          <p>Trade-off: plain (offline) DPO learns only from the fixed pairs in the dataset, not from fresh attempts of the current model. Iterative DPO fixes part of that by sampling new pairs from the current model each round, as Llama 3 did. Which approach gives better models, and when, is an active debate, and many published recipes combine several methods.</p>
         </DeepDive>
         <DeepDive title="How does a gradient flow through “sample an answer, then score it”?">
           <p>Sampling a token is not differentiable, so you cannot backpropagate from the reward into the weights directly. The basic trick (the policy gradient) is: sample an answer, look at its reward, and then take a gradient step on the <em>log-probability of the tokens you sampled</em>, scaled by how much better than average the reward was.</p>

@@ -143,6 +143,7 @@ phase2-language/      bpe_tokenizer.py  tiny_word2vec.py  bigram_lm.py
 phase3-transformers/  attention_numpy.py  tiny_gpt.py  kv_cache_demo.py
 phase4-modern-llms/   vector_db.py  mini_rag.py  finetune_tiny_gpt.py
 phase5-agents/        mini_agent.py
+phase6-engineering/   eval_harness.py
 tests/                pytest tests for all of the above
 `}</Code>
         <p>You need Python 3 and NumPy. Nothing else until you reach <a href="#/lesson/build-gpt">Build GPT</a>, where PyTorch comes in.</p>

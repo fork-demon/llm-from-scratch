@@ -361,7 +361,7 @@ assert a == b, "cache changed the output -- that's a bug!"
 
   cache size at T=123: 123.0 KB for this toy.
 `}</Code>
-        <p>The speedup <em>grows</em> with length, because the naive loop’s waste does. At 120 tokens it is 6×; at 4,000 tokens the naive loop is unusable.</p>
+        <p>The cache size is 123 KB if stored as float32; the demo’s NumPy arrays are float64, so they take twice that. The speedup <em>grows</em> with length, because the naive loop’s waste does. At 120 tokens it is 6×; at 4,000 tokens the naive loop is unusable.</p>
         <RepoRunner path="phase3-transformers/kv_cache_demo.py" title="Run kv_cache_demo.py in your browser">
           <p>This is the whole file from the repository, running in your browser. Press Run to see what it prints, then edit a copy and change things.</p>
         </RepoRunner>
@@ -370,7 +370,7 @@ assert a == b, "cache changed the output -- that's a bug!"
       <BreakIt>
         <p>Predict first, then check in the two labs.</p>
         <ul>
-          <li><b>Greedy, whole sentences.</b> Select the Greedy preset. All three sentences are identical, stuck in “sat on the cat sat on the cat…” until max tokens cuts them off. Greedy can never leave a loop.</li>
+          <li><b>Greedy, whole sentences.</b> Select the Greedy preset. All three sentences are identical, stuck in “sat on the cat sat on the cat…” until max tokens cuts them off. In this toy, greedy can never leave a loop; in a real model it tends to stay in one.</li>
           <li><b>Max tokens = 3.</b> The sentence stops mid-thought. Max tokens is a hard budget; the model does not know it is about to be cut off.</li>
           <li><b>T = 3, top-k off.</b> Count the junk. Then set top-k to 4: the temperature is still 3, but junk has probability exactly 0.</li>
           <li><b>Top-p = 0.4 at T = 1.</b> How many tokens survive? (One: “mat” alone holds 40.3%.) Top-p can quietly turn sampling into greedy.</li>
@@ -540,7 +540,7 @@ def generate(self, idx, max_new_tokens, temperature=1.0, top_k=None):
       <RealLLM>
         <Flow horizontal steps={[{ label: 'prompt tokens' }, { label: 'prefill', sub: 'fills the KV cache' }, { label: 'logits' }, { label: 'sampling policy', sub: 'T, top-k, top-p' }, { label: 'one token', sub: 'append, decode again' }]} active={3} />
         <ToyVsReal
-          toy={<ul><li>11 hand-picked logits</li><li>A 2-layer random-weight Transformer in NumPy</li><li>A cache of 123 KB at 123 tokens</li><li>One sequence, prefill token by token</li></ul>}
+          toy={<ul><li>11 hand-picked logits</li><li>A 2-layer random-weight Transformer in NumPy</li><li>A cache of 123 KB at 123 tokens (if stored as float32)</li><li>One sequence, prefill token by token</li></ul>}
           real={<ul><li>50,000 to 200,000 logits per step, from the trained network</li><li>Dozens of layers, fused GPU kernels</li><li>Gigabytes of cache per long conversation, carefully paged in GPU memory</li><li>Many users batched together; prompts prefilled in parallel</li></ul>}
         />
         <Callout kind="established">The parameters you see in an LLM API are this lesson. <code>temperature</code>, <code>top_p</code>, <code>top_k</code>: reshaping the die. <code>max_tokens</code>: the hard budget. <code>stop</code> sequences and the end-of-sequence token: the stop conditions. “Prompt caching” on a pricing page is a KV cache kept <em>between</em> requests that share the same beginning, so the shared part is not prefilled again.</Callout>

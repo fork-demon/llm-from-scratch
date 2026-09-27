@@ -37,7 +37,7 @@ export default function ProductionAgentsLesson() {
         <ul>
           <li><b>Money.</b> Input tokens are billed on every call. A token that sits in the history for 20 steps is paid for 20 times.</li>
           <li><b>Latency.</b> The whole input is <a href="#/lesson/inference">prefilled</a> before the first output token appears.</li>
-          <li><b>Attention.</b> Liu et al. (2023), “Lost in the Middle”, found that models use information best at the start or end of the input and markedly worse in the middle.</li>
+          <li><b>Attention.</b> Liu et al. (2023), “Lost in the Middle”, found that models use information best at the start or end of the input and markedly worse in the middle. Newer models find a single fact almost anywhere, but still get worse when they must combine many facts spread across a long input.</li>
         </ul>
         <Callout kind="dev">
           You already know this resource: a request-scoped memory arena with a hard limit and no garbage collector, where every allocation is billed per use. Nobody would design a service that appends every intermediate result to the request and re-parses the lot on each iteration. An agent loop does exactly that by default.
@@ -121,7 +121,7 @@ export default function ProductionAgentsLesson() {
           <li>Without caching the run costs <b>$0.225</b>.</li>
           <li>With caching it costs <b>$0.087</b>, which is 61% less.</li>
         </ul>
-        <p>The window did not change by one token: call 10 is still 11,000 tokens long. <b>Caching is a discount, not a compression.</b> And it only works while the prefix is byte-for-byte identical. Rewrite the history, reorder the tools, or put a timestamp in the system prompt, and everything after the change is a cache miss. Entries also expire after minutes without use.</p>
+        <p>The window did not change by one token: call 10 is still 11,000 tokens long. <b>Caching is a discount, not a compression.</b> And it only works while the prefix is byte-for-byte identical. Rewrite the history, reorder the tools, or put a timestamp in the system prompt, and everything after the change is a cache miss. Entries also expire after minutes without use. Real providers also skip short prompts (a minimum of about 1,024 tokens is common) and some cache only up to breakpoints you mark in the request; the numbers here assume every shared prefix is cacheable, so treat them as the best case.</p>
         <p><b>The real run.</b> This is Riya’s stuck agent, reproduced by <code>python phase6-engineering/agent_budget.py</code>: 8 steps, tokens estimated as characters ÷ 4, the same example prices. Three strategies, each costed with and without caching:</p>
         <figure style={{ margin: '12px 0' }}>
           <div className="table-scroll">

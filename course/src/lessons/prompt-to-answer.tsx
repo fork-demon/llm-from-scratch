@@ -62,7 +62,7 @@ export default function PromptToAnswerLesson() {
         <Callout kind="analogy">
           Think of your phone keyboard’s next-word suggestions, and imagine tapping a suggestion again and again to write a whole message. The loop is the same: look at the text so far, propose next words, pick one, repeat.
           <br /><br />
-          Where the analogy stops: your keyboard looks at a couple of words and uses simple statistics. An LLM reads the <em>entire</em> text so far, and runs it through a calculation with billions of adjustable numbers.
+          Where the analogy stops: your keyboard runs a tiny model on your phone and sees only a short stretch of text. An LLM reads the <em>entire</em> text so far, and runs it through a calculation with billions of adjustable numbers.
           <br /><br />
           The loop is the same. The quality of the prediction is not even close.
         </Callout>
@@ -200,7 +200,7 @@ export default function PromptToAnswerLesson() {
         <p>The explorer is a cardboard model of the machine. Here is what is cardboard and what is real.</p>
         <ToyVsReal
           toy={<ul><li>18 tokens, split on spaces</li><li>4 hand-picked numbers per token</li><li>“Transformer” = a hand-written table that looks at the last 1 to 2 tokens</li><li>Plain weighted random pick</li></ul>}
-          real={<ul><li>Roughly 30,000 to 250,000 tokens, learned from data; rare words split into pieces</li><li>Hundreds to thousands of learned numbers per token</li><li>Dozens of Transformer layers, billions of learned numbers, reading the entire text so far</li><li>The same pick, with knobs such as <G t="temperature">temperature</G> and <G t="top-k">top-k</G></li></ul>}
+          real={<ul><li>Roughly 30,000 to 260,000 tokens, learned from data; rare words split into pieces</li><li>Hundreds to thousands of learned numbers per token</li><li>Dozens of Transformer layers, billions of learned numbers, reading the entire text so far</li><li>The same pick, with knobs such as <G t="temperature">temperature</G> and <G t="top-k">top-k</G></li></ul>}
         />
         <Callout kind="established">
           The shape of the pipeline is not a simplification. GPT, Llama, Claude and Gemini all generate text with this loop: tokenize, embed, run a Transformer, get next-token probabilities, sample, append, repeat. What you watched stream into a chat window was this loop running.

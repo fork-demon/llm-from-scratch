@@ -162,7 +162,7 @@ export default function FromMemoryLesson() {
             q: 'Part 7. What does a KV cache change about the generated text?',
             options: ['Nothing: it stores past keys and values so they are not recomputed, trading memory for speed', 'It makes the output more deterministic', 'It lets the model remember earlier conversations', 'It lowers quality slightly in exchange for speed'],
             answer: 0,
-            explain: 'Earlier tokens cannot see later ones, so their keys and values never change. Caching them is pure memoisation: cached and naive generation are identical.',
+            explain: 'Earlier tokens cannot see later ones, so their keys and values never change. Caching them is pure memoisation: cached and naive generation are identical in exact arithmetic. On a GPU, different kernels can add numbers in a different order, so tiny floating-point differences are normal.',
           },
           {
             q: 'Parts 8 and 9. Your assistant must answer from a policy handbook that changes every week. Which approach fits best, and why?',

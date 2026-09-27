@@ -27,7 +27,7 @@ export default function DistillationLesson() {
           naive="Train the small model from scratch on the same data, with the same hard labels."
           fails="The small model has less capacity, and each hard label tells it one token per position. It has to rediscover, from raw text, every similarity the big model already found. It ends up clearly weaker."
           idea="Use the big model as the source of targets. Train the student to match the teacher’s probabilities (or the text the teacher writes), so each example carries the teacher’s judgement about every option."
-          tradeoff="The student can only become as good as its teacher, including the teacher’s mistakes and blind spots. You also need to run the teacher over all the training data, which is expensive in its own right."
+          tradeoff="Pure imitation tends to cap the student near its teacher, mistakes and blind spots included. (Filtering the teacher’s answers with checkers, or adding RL, can push a student past it.) You also need to run the teacher over all the training data, which is expensive in its own right."
         />
         <p>Dev tries one more angle. “Isn’t that a zip file for models?” Not quite. The student has its own architecture and its own weights, often a different shape entirely. It copies the teacher’s <em>behaviour</em>, through training, never its weights. (Shrinking the weights themselves is a different family of tricks, in <a href="#/lesson/making-models-cheaper">Making the model itself cheaper</a>.)</p>
       </Problem>
@@ -161,7 +161,7 @@ export default function DistillationLesson() {
           <p>KL is not symmetric. In the worked example, KL(p ‖ q) = 0.0851 but KL(q ‖ p) = 0.0920.</p>
           <p><b>Forward KL(teacher ‖ student)</b>, as above, is large wherever the teacher has probability and the student does not. It punishes the student for missing anything the teacher might say, so the student spreads itself to cover all of it (“mode-covering”). A small student that cannot fit everything ends up vague.</p>
           <p><b>Reverse KL(student ‖ teacher)</b> is large wherever the student puts probability the teacher would not. It punishes the student for saying things the teacher would not say, so a small student concentrates on a few answers the teacher likes (“mode-seeking”).</p>
-          <p>On-policy distillation (MiniLLM by Gu and colleagues; GKD by Agarwal and colleagues, both published in 2024) typically uses the reverse direction, estimated on text the student wrote itself. Which divergence works best depends on the task and is still studied.</p>
+          <p>On-policy distillation (MiniLLM by Gu and colleagues; GKD by Agarwal and colleagues, both published in 2024) works on text the student wrote itself. MiniLLM uses the reverse direction; GKD tries a family of divergences between the two and often finds reverse KL or a blend works best. Which divergence works best depends on the task and is still studied.</p>
         </DeepDive>
       </TheMath>
 
@@ -367,7 +367,7 @@ loss = F.kl_div(F.log_softmax(student_logits, dim=-1),
         <ExplainBack
           id="distillation-explain"
           prompt="Dev asks: “If the student ends up imitating the teacher, why not train it on the same internet text the teacher read? Why go through the teacher at all?” Answer him in three or four sentences, using the words hard label, soft target and temperature."
-          modelAnswer={<p>The internet text gives hard labels: one next token per position, with every other token treated as equally wrong. The teacher has already learned, at great cost, how plausible every alternative is, and its soft targets hand that over with every single example: sofa is nearly right, moon is absurd. A small student learns faster and ends up better from those richer targets than from rediscovering all of it through hard labels. Temperature flattens the teacher’s distribution so its small probabilities are large enough to matter in the loss. The price is that the student inherits the teacher’s mistakes and cannot become better than it.</p>}
+          modelAnswer={<p>The internet text gives hard labels: one next token per position, with every other token treated as equally wrong. The teacher has already learned, at great cost, how plausible every alternative is, and its soft targets hand that over with every single example: sofa is nearly right, moon is absurd. A small student learns faster and ends up better from those richer targets than from rediscovering all of it through hard labels. Temperature flattens the teacher’s distribution so its small probabilities are large enough to matter in the loss. The price is that the student inherits the teacher’s mistakes, and pure imitation rarely takes it past the teacher.</p>}
         />
 
         <details className="deep">
@@ -452,7 +452,7 @@ loss = F.kl_div(F.log_softmax(student_logits, dim=-1),
           <><b>Distillation</b> trains a small student to imitate a big teacher’s behaviour, never its weights. The student can differ in size and shape.</>,
           <>A <b>hard label</b> names one right token. A <b>soft target</b> is the teacher’s whole distribution, and its small probabilities (the “dark knowledge”) say which wrong answers are nearly right.</>,
           <>Loss: <b>T² × KL(p(T) ‖ q(T))</b>, both at temperature T, often mixed with ordinary cross-entropy. <b>Temperature</b> above 1 makes the small probabilities loud enough to learn.</>,
-          <>Three flavours: match probabilities (logit), fine-tune on the teacher’s text (sequence-level, i.e. <b>synthetic data</b>), or let the student write and the teacher grade (<b>on-policy</b>). Synthetic data risks <b>model collapse</b> when own outputs replace real data, <b>contamination</b> and inherited errors. The student is capped by its teacher.</>,
+          <>Three flavours: match probabilities (logit), fine-tune on the teacher’s text (sequence-level, i.e. <b>synthetic data</b>), or let the student write and the teacher grade (<b>on-policy</b>). Synthetic data risks <b>model collapse</b> when own outputs replace real data, <b>contamination</b> and inherited errors. Pure imitation roughly caps the student at its teacher; filtering and RL can lift that cap.</>,
         ]}
       />
 
@@ -462,7 +462,7 @@ loss = F.kl_div(F.log_softmax(student_logits, dim=-1),
           real={<ul><li>Billions of contexts and a vocabulary of 100,000 or more tokens</li><li>A student network with far fewer weights than the teacher, so it can only approximate it</li><li>Teacher probabilities computed (or stored, often only the top few per position) for trillions of tokens</li><li>Teacher-written datasets of hundreds of thousands to millions of examples, heavily filtered</li></ul>}
         />
         <Callout kind="established">
-          The idea predates LLMs: Buciluă, Caruana and Niculescu-Mizil compressed large ensembles into small models in 2006, and Hinton, Vinyals and Dean introduced the temperature form in 2015. DistilBERT (2019) applied it to Transformers. Google’s Gemma 2 report (2024) says the 2B and 9B models were trained with distillation from a larger model instead of plain next-token prediction. Meta’s Llama 3.2 1B and 3B models (2024) used the logits of Llama 3.1 8B and 70B as token-level targets during pretraining.
+          The idea predates LLMs: Buciluă, Caruana and Niculescu-Mizil compressed large ensembles into small models in 2006, and Hinton, Vinyals and Dean introduced the temperature form in 2015. DistilBERT (2019) applied it to Transformers. Google’s Gemma 2 report (2024) says the 2B and 9B models were trained with distillation from a larger model instead of plain next-token prediction. Meta’s Llama 3.2 1B and 3B models (2024) combined both families of tricks: they started from a pruned Llama 3.1 8B and used the logits of Llama 3.1 8B and 70B as token-level targets during pretraining.
           <br /><br />
           It also works for <b>reasoning models</b>, which write out long step-by-step working before they answer (<a href="#/lesson/reasoning-models">Reasoning models</a>). DeepSeek-R1 (2025) has 671 billion parameters in total (a mixture-of-experts model that uses about 37 billion per token). Its authors fine-tuned six much smaller open models (Qwen2.5 models from 1.5B to 32B, and Llama models of 8B and 70B) on about 800,000 examples written by R1, with SFT only. On the AIME 2024 maths benchmark the distilled 32B model scored 72.6% (pass@1) against 47.0% for a 32B base model trained by large-scale RL directly. Their conclusion: for small models, distilling a stronger model beat the expensive RL recipe, while pushing beyond the teacher still needs a stronger base model and RL.
         </Callout>
@@ -472,7 +472,7 @@ loss = F.kl_div(F.log_softmax(student_logits, dim=-1),
           The risks of synthetic data are also active research. One 2025 study (Cloud and colleagues, “subliminal learning”) found that a student could pick up a teacher’s trait, such as a preference for owls, from teacher-written data that were only lists of numbers with no mention of the trait, when teacher and student shared the same base model. How much hidden behaviour travels through synthetic data in general is not known.
         </Callout>
         <p>One practical warning: before you distil from a commercial model, read its terms of service. Several major providers forbid using their outputs to train models that compete with theirs. Open-weight teachers come with their own licence, which may also say something about derived models.</p>
-        <p>By the end of the month the support team has a 3-billion-parameter model on their laptops. It answers the common tickets almost as well as the big one, and it gets the rare ones wrong in exactly the places the big one was unsure. Riya writes that down. The student is only ever as good as its teacher.</p>
+        <p>By the end of the month the support team has a 3-billion-parameter model on their laptops. It answers the common tickets almost as well as the big one, and it gets the rare ones wrong in exactly the places the big one was unsure. Riya writes that down. A student that only imitates is rarely better than its teacher.</p>
       </RealLLM>
     </Lesson>
   )

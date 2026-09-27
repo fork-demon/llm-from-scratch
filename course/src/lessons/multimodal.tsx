@@ -128,6 +128,7 @@ export default function MultimodalLesson() {
         <p>1,024 tokens for one small image is a lot, and neighbouring patches often say almost the same thing (look at the sky in the sunset picture). So many models <b>merge</b> each 2 × 2 block of neighbouring patch vectors into one token. Pixel shuffle stacks the four vectors side by side (4 times longer, 4 times fewer), then the projector shrinks the width back. Four times fewer tokens, and four times less work in every layer that grows with the token count.</p>
         <h3>A bigger picture: tiles</h3>
         <p>An encoder is trained at one size. A tall phone screenshot squeezed to 448 × 448 loses its small text. The common fix is <b>dynamic resolution</b>: cut the image into several 448 × 448 tiles, encode each one, and add one shrunken thumbnail of the whole image so the model still sees the overall layout.</p>
+        <p>Tiling is one common fix, not the only one. Since Qwen2-VL (2024), several leading open models skip the fixed tile and encode the image at its own size and shape, giving each patch a rotary position for its row and column (2D RoPE) instead of an added position vector; SigLIP 2 (2025) offers a native-aspect-ratio encoder too. The token count still follows the area formula below.</p>
         <div className="table-scroll">
           <table className="plain mono" style={{ fontSize: 13.5 }}>
             <thead><tr><th>image 896 × 1344</th><th>calculation</th><th>result</th></tr></thead>
@@ -409,7 +410,7 @@ def patchify(img, p):
         </ul>
         <p>Since 2025 some chat assistants generate images “natively” rather than by handing off to a separate model, and hybrids exist. Which recipe a given closed product uses is mostly <b>not disclosed</b>. What is established: both families work, and both need huge amounts of paired image-text data.</p>
         <Callout kind="established">
-          For reading images, the pipeline in this lesson is not a simplification of the open models: LLaVA, InternVL and Qwen-VL publish their code, and it is patchify → vision Transformer → merge → projector → language model. The differences are in sizes, resolutions and training data.
+          For reading images, the pipeline in this lesson is the real shape of the open models: LLaVA, InternVL and Qwen-VL publish their code, and it is patchify → vision Transformer → (optional merge or resampler) → projector → language model. LLaVA-1.5 does not merge at all, and the first Qwen-VL used a cross-attention resampler. The other differences are in sizes, resolutions, position encodings and training data.
         </Callout>
         <p>Riya writes the week’s ticket numbers on the whiteboard next to Kabir’s map. Every screenshot is about 1,800 tokens before the customer has said a word. “So images go in the budget,” she says. Kabir adds one line under “tokenizer”: <em>pixels too</em>.</p>
       </RealLLM>

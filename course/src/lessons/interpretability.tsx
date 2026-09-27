@@ -63,7 +63,7 @@ export default function InterpretabilityLesson() {
 
         <h3>3. Some attention heads have readable jobs</h3>
         <p>A few heads jump out. A <b>previous-token head</b> always looks one position back. An <b>induction head</b> is cleverer: if the text contains “Paisa Pal … Paisa”, it looks at what followed the earlier “Paisa” and pushes the model to predict “Pal” again.</p>
-        <p>Induction heads (Olsson et al., Anthropic, 2022) are a previous-token head feeding an induction head. They appear fairly suddenly early in training, together with a jump in the model’s use of context. The evidence is strongest in small attention-only models, partly correlational in large ones. Most heads in a large model have no one-line job description.</p>
+        <p>Induction heads (Olsson et al., Anthropic, 2022) work as a two-head circuit: a previous-token head in an earlier layer writes “the token before me was Paisa” into each position, and the induction head in a later layer uses that to find where the current token appeared before. They appear fairly suddenly early in training, together with a jump in the model’s use of context. The evidence is strongest in small attention-only models, partly correlational in large ones. Most heads in a large model have no one-line job description.</p>
 
         <h3>4. Features and superposition</h3>
         <p>If single neurons are not the unit of meaning, what is? The current best answer is <b>directions</b>.</p>
@@ -100,7 +100,7 @@ export default function InterpretabilityLesson() {
             <thead><tr><th>Tool</th><th>How it works</th><th>Best-known result</th></tr></thead>
             <tbody>
               <tr><td>Activation patching</td><td>Run a “clean” prompt and a “corrupted” one that changes the answer. Copy one activation from the clean run into the corrupted run. If the right answer comes back, that activation carries the information.</td><td>A 2022 circuit of 26 attention heads in GPT-2 small that picks the right name in “When Mary and John went to the store, John gave a drink to …”.</td></tr>
-              <tr><td>Probes</td><td>Train a small classifier (often one linear layer) to predict a property from the activations. Success shows the information is <em>present</em>, not that the model uses it.</td><td>A GPT trained only on Othello moves holds the board state in its activations.</td></tr>
+              <tr><td>Probes</td><td>Train a small classifier (often one linear layer) to predict a property from the activations. Success shows the information is <em>present</em>, not that the model uses it.</td><td>A GPT trained only on Othello moves holds the board state in its activations. The first study needed non-linear probes; a linear probe works once squares are labelled “mine” and “theirs” instead of black and white. How you frame the probe matters.</td></tr>
               <tr><td>Steering vectors</td><td>Take the difference between activations for two contrasting prompts (say, “Love” and “Hate”) and add it during generation. The output shifts that way.</td><td>A 2024 study: refusing harmful requests in several chat models is largely one direction. Remove it and the model stops refusing.</td></tr>
             </tbody>
           </table>
@@ -182,6 +182,7 @@ export default function InterpretabilityLesson() {
         >
           f = ReLU(W<sub>enc</sub> a + b<sub>enc</sub>) &nbsp;&nbsp; â = W<sub>dec</sub> f &nbsp;&nbsp; L = ‖a − â‖<sup>2</sup> + λ Σ<sub>j</sub> f<sub>j</sub>
         </Equation>
+        <p>This is the teaching form, the 2023 “vanilla” SAE. The λ penalty also shrinks the features that should be on, so newer SAEs mostly swap it out: TopK keeps exactly the k largest features (OpenAI, 2024), JumpReLU gives each feature its own threshold (used for Gemma Scope), and Anthropic weights each feature’s penalty by the length of its decoder direction.</p>
         <p>And the logit lens is one line: take the residual stream h<sub>ℓ</sub> after layer ℓ and apply the model’s own last two steps.</p>
         <Equation
           label="logits at layer l equal the final norm of h l times the unembedding matrix"
@@ -396,7 +397,7 @@ for layer, h in enumerate(out.hidden_states):
           toy={<ul><li>5 features in 2 dimensions, chosen by us</li><li>Synthetic data with known sparsity</li><li>You can see the true answer (the pentagon) and check it by hand</li><li>Trains in under a second</li></ul>}
           real={<ul><li>Unknown number of features in thousands of dimensions per layer, across dozens of layers</li><li>Features must be discovered, not listed; SAEs with millions of entries</li><li>No ground truth: every interpretation needs an intervention to test it</li><li>SAE training and circuit tracing need large compute and expert time</li></ul>}
         />
-        <p>Real, reproducible results exist: induction heads in small models, the name-finding circuit in GPT-2 small, board-state probes in Othello-GPT, SAE features that steer behaviour when clamped, and a refusal direction in chat models. Open tools and pretrained SAEs (for example Gemma Scope for Google’s Gemma 2 models) let anyone repeat parts of this work.</p>
+        <p>Real, reproducible results exist: induction heads in small models, the name-finding circuit in GPT-2 small, board-state probes in Othello-GPT, SAE features that steer behaviour when clamped, and a refusal direction in chat models. Open tools and pretrained SAEs (for example Gemma Scope for Google’s Gemma 2 models, and Gemma Scope 2, released in December 2025 for the Gemma 3 family with transcoders and crosscoders as well) let anyone repeat parts of this work.</p>
         <Callout kind="research">
           What we cannot yet do: give a complete, checked account of how any frontier model produces a given answer; list everything a model represents; or certify that a model does <em>not</em> have some hidden behaviour. Safety teams use interpretability as one source of evidence among several (evaluations, red-teaming), not as proof. As of 2026 it is one of the most active research areas, and these methods are likely to be refined or replaced.
         </Callout>

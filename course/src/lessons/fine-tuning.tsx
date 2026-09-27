@@ -140,7 +140,7 @@ export default function FineTuningLesson() {
             ['A', 'trainable, d_in × r. Starts as small random numbers (the LoRA paper uses a random Gaussian)'],
             ['B', 'trainable, r × d_out. Starts as all zeros, so A·B = 0 and the layer starts out exactly equal to the pretrained one'],
             ['r', 'the rank: the width of the thin path. Typical values are 4 to 64'],
-            ['α / r', 'a fixed volume knob on the whole correction (in the repo: 8 / 4 = 2). Alpha is a number you choose, like r. Dividing by r is what makes the knob mean the same thing at different ranks, which is the paper’s stated reason: you do not have to retune the learning rate every time you change r'],
+            ['α / r', 'a fixed volume knob on the whole correction (in the repo: 8 / 4 = 2). Alpha is a number you choose, like r. Dividing by r is what makes the knob mean the same thing at different ranks, which is the paper’s stated reason: you do not have to retune the learning rate every time you change r. A later study (rsLoRA, 2023) found α / r shrinks the updates too much at high ranks and proposed α / √r, which libraries now offer as an option'],
           ]}
         >
           h = x W + (x A) B · (α / r)

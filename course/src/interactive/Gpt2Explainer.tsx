@@ -330,7 +330,7 @@ function Loader({ status, cached, size, onLoad }: { status: Status; cached: 'unk
         <p>
           {cached === 'yes'
             ? <>Your browser kept the weights from last time, so it starts in a second or two.</>
-            : <>The weights are {size ? MB(size) : 'about 127 MB'}: all 124,439,808 of GPT-2’s numbers, one byte each. They download once and your browser keeps them. On a phone, use Wi-Fi.</>}
+            : <>The weights are {size ? MB(size) : 'about 127 MB'}: nearly all of GPT-2’s 124,439,808 numbers stored as one byte each (a few, such as biases and per-row scales, stay 32-bit). They download once and your browser keeps them. On a phone, use Wi-Fi.</>}
           {' '}Everything runs on your device; nothing you type is sent anywhere.
         </p>
         <button className="btn primary" onClick={onLoad} disabled={status.kind === 'loading'}>

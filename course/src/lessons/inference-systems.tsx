@@ -66,7 +66,7 @@ export default function InferenceSystemsLesson() {
         <p>On an 8 TB/s part the same ceiling is about 571. Four times the bandwidth, four times the tokens.</p>
         <p>It is an upper bound. It ignores the KV cache reads, kernel overheads and sampling, and it assumes the whole model sits on one GPU. Real single-stream numbers are lower.</p>
         <p>But it explains the order of magnitude, and it tells you what helps: more bandwidth, or fewer bytes. A faster arithmetic unit does nothing. That is the answer to Dev’s “faster GPU”: faster at moving bytes, yes; faster at arithmetic, no.</p>
-        <p><b>Prefill is the opposite.</b> A 1,000-token prompt goes through in one pass. The weights are still read once, but now there is 1,000 times more arithmetic per byte read. So prefill is limited by arithmetic. That is why the two phases get separate metrics.</p>
+        <p><b>Prefill is the opposite.</b> A 1,000-token prompt goes through in one pass. The weights are still read once, but now there is 1,000 times more arithmetic per byte read. So prefill is limited by arithmetic, once the prompt is longer than about 75 tokens on this GPU (the critical batch size in The math below). That is why the two phases get separate metrics.</p>
         <Callout kind="dev">
           You have met this in a storage-bound service. When every request costs one disk seek and a microsecond of CPU, a faster CPU changes nothing. The fix is to serve many requests per seek.
           <br /><br />
@@ -89,7 +89,7 @@ export default function InferenceSystemsLesson() {
             <thead><tr><th>metric</th><th>what it measures</th><th>who cares</th></tr></thead>
             <tbody>
               <tr><td><b>TTFT</b></td><td>queue wait + prefill</td><td>the user: does it feel responsive?</td></tr>
-              <tr><td><b>Time per output token (TPOT)</b>, also called inter-token latency</td><td>the gap between streamed tokens: one decode step, plus any stalls</td><td>the user: does the stream keep up with reading?</td></tr>
+              <tr><td><b>Time per output token (TPOT)</b></td><td>the average gap between streamed tokens in one request: one decode step, plus any stalls. Benchmarks also report <b>inter-token latency</b>, every individual gap, whose p99 shows the stalls an average hides</td><td>the user: does the stream keep up with reading?</td></tr>
               <tr><td><b>End-to-end latency</b></td><td>TTFT + (output tokens − 1) × TPOT</td><td>programs that wait for the whole answer, such as agents</td></tr>
               <tr><td><b>Throughput</b></td><td>tokens per second across all users</td><td>whoever pays for the GPUs</td></tr>
               <tr><td><b>Goodput</b></td><td>requests per second that met the latency objective</td><td>whoever answers for the service level objective</td></tr>
@@ -121,8 +121,8 @@ export default function InferenceSystemsLesson() {
         <Callout kind="dev">
           This is virtual memory. Blocks are pages, the block table is a page table, a sequence is a process with a contiguous <em>logical</em> address space and scattered physical pages. The same benefits follow. No external fragmentation, because any free block fits. Internal fragmentation limited to the last block. And <b>sharing</b>: two sequences with the same prompt prefix can map the same physical blocks, copy-on-write, exactly like forked processes.
         </Callout>
-        <p>That sharing, kept across requests, is <b>prefix caching</b> (vLLM calls it automatic prefix caching, SGLang’s version is RadixAttention). A long system prompt or a shared document is prefilled once, and later requests skip straight to their own suffix. It is what “prompt caching” on an API price list means. It cuts TTFT and prefill cost. It does nothing for decode.</p>
-        <p>When blocks run out mid-generation, the scheduler <b>preempts</b> a sequence: it frees its blocks and later recomputes them by prefilling again (vLLM can also swap them to CPU memory). Users see a pause, not an error.</p>
+        <p>That sharing, kept across requests, is <b>prefix caching</b> (vLLM calls it automatic prefix caching, SGLang’s version is RadixAttention). A long system prompt or a shared document is prefilled once, and later requests skip straight to their own suffix. It is what “prompt caching” on an API price list means. It cuts TTFT and prefill cost. It does not shorten a decode step, but shared blocks free KV memory, so more sequences fit in the batch.</p>
+        <p>When blocks run out mid-generation, the scheduler <b>preempts</b> a sequence: it frees its blocks and later recomputes them by prefilling again (older vLLM versions could swap them to CPU memory instead). Users see a pause, not an error.</p>
         <p>Those four points are one idea seen from four sides: the weight read is shared, so the batch is what you are selling, and KV memory limits the batch. Continuous batching fills it; paging fits more sequences into the same memory.</p>
       </MentalModel>
 

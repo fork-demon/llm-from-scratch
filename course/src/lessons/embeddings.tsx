@@ -142,7 +142,7 @@ export default function EmbeddingsLesson() {
         >
           P(neighbour | c) = softmax( E[c] · W ) &nbsp;&nbsp;&nbsp; loss = −log P(true neighbour | c)
         </Equation>
-        <p>When training is over, W is thrown away. E is the product.</p>
+        <p>When training is over, W is thrown away. E is the product. (The original word2vec avoided this full softmax over the vocabulary, which is expensive, with a cheaper approximation called negative sampling. The idea is the same.)</p>
         <DeepDive title="Why does only one row of E change per example?">
           <p>The loss for one example depends on E only through the row that was looked up, E[c]. Every other row was multiplied by zero in the one-hot view, so its gradient is exactly zero.</p>
           <p>So with plain gradient descent (the update in this file), a training step on “cat” moves row “cat” and leaves the other rows where they are.</p>
@@ -389,9 +389,9 @@ x = self.tok_emb(idx) + self.pos_emb(pos)                 # look up every token 
         <p>(<code>pos_emb</code> adds information about word order. That is a later lesson.)</p>
         <ToyVsReal
           toy={<ul><li>70 words, 32 numbers each</li><li>Trained separately, on a fake task (predict a neighbouring word)</li><li>28 sentences</li><li>The output matrix W is thrown away</li></ul>}
-          real={<ul><li>50,000 to 200,000 tokens, 768 to 16,384 numbers each</li><li>No separate step: the table is trained <em>jointly</em> with every other layer, on next-token prediction</li><li>Trillions of tokens of text</li><li>The same table is often reused at the top of the model to score the next token. That trick is called weight tying, and you will build it in <a href="#/lesson/build-gpt">Build a GPT</a></li></ul>}
+          real={<ul><li>30,000 to 260,000 tokens, 768 to 16,384 numbers each</li><li>No separate step: the table is trained <em>jointly</em> with every other layer, on next-token prediction</li><li>Trillions of tokens of text</li><li>The same table is often reused at the top of the model to score the next token. That trick is called weight tying, and you will build it in <a href="#/lesson/build-gpt">Build a GPT</a></li></ul>}
         />
-        <p>The mechanism is the same: rows of a matrix, looked up by token ID, shaped by gradients from a prediction task. Modern LLMs do not run word2vec. They do not need to, because next-token prediction shapes the table in the same way.</p>
+        <p>The mechanism is the same: rows of a matrix, looked up by token ID, shaped by gradients from a prediction task. Modern LLMs do not run word2vec. They do not need to, because next-token prediction also pushes similar tokens toward similar rows, though in an LLM most of the meaning in context is built by the later layers.</p>
         <Callout kind="model" label="About the famous arithmetic">
           “king − man + woman ≈ queen” is real but oversold. It is <b>approximate</b>: the result lands <em>near</em> queen, and standard evaluations exclude the three input words from the candidates (otherwise the nearest word is often just “king”). The well-known examples are the ones that worked. Many analogies fail. Treat it as evidence that some directions carry consistent meaning, not as a reasoning engine.
         </Callout>

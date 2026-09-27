@@ -151,7 +151,7 @@ export default function TrainingGptLesson() {
         <ul>
           <li><b>Momentum.</b> Do not trust one noisy batch. Keep a running average of recent gradients and step along that. Like a heavy ball that keeps rolling through small bumps.</li>
           <li><b>A step size per parameter.</b> Some weights get huge gradients, others tiny ones. AdamW divides each weight’s step by the typical size of its recent gradients, so every weight moves at a sensible pace.</li>
-          <li><b>Weight decay</b> (the W). Pull every weight slightly toward zero at each step. A mild brake on memorising.</li>
+          <li><b>Weight decay</b> (the W). Pull weights slightly toward zero at each step. A mild brake on memorising. (<code>tiny_gpt.py</code> decays every weight; larger recipes usually exempt biases and LayerNorm gains.)</li>
         </ul>
         <p>That is why AdamW works with a learning rate like 0.0003 while our plain gradient descent wants 0.3: the two numbers are not comparable.</p>
         <DeepDive title="The AdamW update, written out">
@@ -162,7 +162,7 @@ export default function TrainingGptLesson() {
             <li><span className="mono">m̂ = m / (1 − β₁ᵗ)</span>, <span className="mono">v̂ = v / (1 − β₂ᵗ)</span>: corrections for the fact that both averages start at zero.</li>
             <li><span className="mono">w ← w − lr · ( m̂ / (√v̂ + ε) + λ·w )</span>: the step. ε = 1e-8 avoids dividing by zero, λ is the weight decay (PyTorch default 0.01).</li>
           </ul>
-          <p>Notice m̂ / √v̂ is roughly “gradient divided by its usual size”, a number near ±1. So every weight moves by about <span className="mono">lr</span> per step, whatever the raw scale of its gradient. The price: two extra numbers (m and v) stored for every parameter. Weights, m and v together take three times the memory of the weights alone, before counting gradients and activations.</p>
+          <p>Notice m̂ / √v̂ is roughly “gradient divided by its usual size”, a number no bigger than about ±1. So every weight moves by at most about <span className="mono">lr</span> per step, whatever the raw scale of its gradient (less when its gradients are noisy and partly cancel in m). The price: two extra numbers (m and v) stored for every parameter. Weights, m and v together take three times the memory of the weights alone, before counting gradients and activations.</p>
         </DeepDive>
       </TheMath>
 
@@ -396,7 +396,7 @@ print("final loss", loss.item())
           toy={<ul><li>One CPU, a 1 MB text file</li><li>300 to 3,000 steps, 2,048 tokens per step</li><li>Constant learning rate 3e-4</li><li>Overfitting is a real risk: the file is small</li><li>No checkpoints: a crash costs two minutes</li></ul>}
           real={<ul><li>Thousands of GPUs, trillions of tokens of filtered web text, code and books</li><li>Hundreds of thousands of steps, millions of tokens per step</li><li>Learning rate warms up from zero, then decays</li><li>Often about one epoch: most text is seen once, so classic overfitting is less of a worry than data quality</li><li>Checkpoints every few hours; runs are restarted from them after hardware failures and loss spikes</li></ul>}
         />
-        <Callout kind="established">The loop is the same. Pretraining a frontier model is this lesson’s five steps, the same cross-entropy loss and the same AdamW family of optimizers. What changes is the engineering needed to run it on thousands of machines at once, and the care put into the data.</Callout>
+        <Callout kind="established">The loop is the same. Pretraining a frontier model is this lesson’s five steps, the same cross-entropy loss and usually the same AdamW optimizer (a few recent runs, such as Kimi K2, use newer ones like Muon). What changes is the engineering needed to run it on thousands of machines at once, and the care put into the data.</Callout>
         <h3>Two back-of-envelope numbers</h3>
         <p><b>Memory: about 16 bytes per parameter.</b> A common setup is AdamW with mixed precision: the maths runs in 16-bit, but a 32-bit copy of the weights is kept for the updates. Per parameter that is:</p>
         <div className="table-scroll">

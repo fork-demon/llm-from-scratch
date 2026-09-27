@@ -24,7 +24,7 @@ export default function ModernArchitectureLesson() {
   return (
     <Lesson id="modern-architecture">
       <Why>
-        <p className="lede">Friday afternoon. Kabir plugs his laptop into the big screen in the meeting room and opens a plain text file. “This is the config of DeepSeek-V3,” he says. “An open-weight model. Many 2025 and 2026 models borrow its design.”</p>
+        <p className="lede">Friday afternoon. Kabir plugs his laptop into the big screen in the meeting room and opens a plain text file. “This is the config of DeepSeek-V3,” he says. “An open-weight model from late 2024. DeepSeek has since superseded it with V3.2 and V4, but many 2025 and 2026 models borrow its design, and it is still the clearest config to learn from.”</p>
         <Code lang="output" title="config.json (a few lines of it)">{`
 "num_hidden_layers": 61,
 "hidden_size": 7168,
@@ -54,7 +54,7 @@ export default function ModernArchitectureLesson() {
               <tr><td>MLP</td><td>2 matrices + GELU</td><td>3 matrices, gated (SwiGLU)</td><td>quality per parameter</td></tr>
               <tr><td>Attention heads</td><td>one K/V head per query head</td><td>shared K/V heads (GQA), a compressed cache (MLA), or a sliding window in some layers</td><td>memory</td></tr>
               <tr><td>Attention execution</td><td>build the full T×T table</td><td>FlashAttention: same result, tiled</td><td>memory, speed</td></tr>
-              <tr><td>Context window</td><td>64 (GPT-2: 1,024)</td><td>tens of thousands to over a hundred thousand tokens</td><td>usefulness</td></tr>
+              <tr><td>Context window</td><td>64 (GPT-2: 1,024)</td><td>about 128 thousand is common; some 2026 models accept 262 thousand to 1 million tokens</td><td>usefulness</td></tr>
               <tr><td>Size</td><td>0.8M parameters, all used</td><td>billions; dense or, increasingly, mixture-of-experts (MoE)</td><td>capability per unit of compute</td></tr>
             </tbody>
           </table>
@@ -108,19 +108,20 @@ export default function ModernArchitectureLesson() {
           tradeoff="Slightly less expressive attention. MQA showed measurable quality loss in some studies; GQA with around 8 K/V heads stayed close to full multi-head quality (Ainslie et al., 2023)."
         />
 
-        <h3>5. Beyond GQA: three more ways to shrink the cache</h3>
-        <p>Since 2024, open models have tried three bolder answers, each attacking a different factor of the cache.</p>
+        <h3>5. Beyond GQA: four more ways to shrink the cache</h3>
+        <p>Open models have tried four bolder answers, each attacking a different factor of the cache. Sliding windows are the oldest (Mistral 7B used one in every layer in 2023); the others arrived from 2024 on.</p>
         <div className="table-scroll">
           <table className="plain">
             <thead><tr><th>Idea</th><th>What changes</th><th>In open models</th><th>Cost</th></tr></thead>
             <tbody>
               <tr><td><b>Compress what you store</b> (MLA, multi-head latent attention)</td><td>Cache one short latent vector per token per layer; rebuild each head’s keys and values from it.</td><td>DeepSeek-V2 and V3, Kimi K2. DeepSeek-V3: 512 numbers plus a 64-number RoPE key part.</td><td>More arithmetic per step, a more complex layer. Reported quality comparable or better.</td></tr>
-              <tr><td><b>Look back only so far</b> (sliding windows)</td><td>Most layers attend only to the last W tokens; some “global” layers see everything.</td><td>Gemma 2: one to one, W = 4,096. Gemma 3: five local per global, W = 1,024. gpt-oss: a 128-token window alternating with full attention.</td><td>Far-back information travels only through global layers, whose cache still grows.</td></tr>
-              <tr><td><b>A fixed-size memory</b> (hybrids)</td><td>Most layers are <em>linear attention</em> or <em>state-space</em> layers with a fixed-size running summary; a few full-attention layers remain.</td><td>Qwen3-Next: Gated DeltaNet and gated attention, about three to one. Kimi Linear: Kimi Delta Attention and MLA, about three to one.</td><td>A fixed-size summary must forget; exact recall relies on the few full-attention layers.</td></tr>
+              <tr><td><b>Look back only so far</b> (sliding windows)</td><td>Most layers attend only to the last W tokens; some “global” layers see everything.</td><td>Gemma 2: one to one, W = 4,096. Gemma 3: five local per global, W = 1,024. gpt-oss: a 128-token window alternating with full attention, plus a learned “attention sink” per head that lets a head attend to nothing.</td><td>Far-back information travels only through global layers, whose cache still grows.</td></tr>
+              <tr><td><b>A fixed-size memory</b> (hybrids)</td><td>Most layers are <em>linear attention</em> or <em>state-space</em> layers with a fixed-size running summary; a few full-attention layers remain.</td><td>Qwen3-Next: Gated DeltaNet and gated attention, about three to one. Kimi Linear: Kimi Delta Attention and MLA, about three to one. Qwen3.5-397B-A17B (2026), a flagship, uses the same three-to-one Gated DeltaNet layout.</td><td>A fixed-size summary must forget; exact recall relies on the few full-attention layers.</td></tr>
+              <tr><td><b>Read only what matters</b> (sparse and compressed attention)</td><td>A small, cheap scorer picks, for each query, the few past tokens (or compressed blocks of tokens) worth attending to; full attention runs only on those.</td><td>DeepSeek-V3.2: a “lightning indexer” picks the top tokens per query. DeepSeek-V4 (2026): blocks of the cache compressed 4× with an indexer choosing among them, alternating with layers compressed 128× and read in full. DeepSeek reports about 10% of V3.2’s KV cache at 1 million tokens.</td><td>An extra scorer to train and run, and a query can miss a token the scorer skipped.</td></tr>
             </tbody>
           </table>
         </div>
-        <Callout kind="research">MLA and interleaved sliding windows are established in widely used open models. Hybrid linear-attention designs are newer: how well they hold up on long, recall-heavy tasks compared with full attention, and what mix is best, is still being measured. Treat the ratios above as one lab’s choices, not settled rules.</Callout>
+        <Callout kind="research">MLA and interleaved sliding windows are established in widely used open models. Hybrid linear-attention and sparse-attention designs are newer. They now ship in flagship open models (Qwen3.5, DeepSeek-V4), but how well they hold up on long, recall-heavy tasks compared with full attention, and what mix is best, is still being measured. Treat the ratios above as individual labs’ choices, not settled rules.</Callout>
 
         <h3>6. FlashAttention: same maths, less memory traffic</h3>
         <p><code>att = q @ k.transpose(-2, -1)</code> in <code>tiny_gpt.py</code> builds a full T×T table per head. At T = 4,096 in 16-bit numbers that is 4,096 × 4,096 × 2 bytes = 32 MiB; with 32 heads, 1 GiB per layer, per sequence, written to the GPU’s slow main memory and read back. The arithmetic is quick. Moving the tables takes the time.</p>
@@ -141,15 +142,15 @@ export default function ModernArchitectureLesson() {
         <p>And “fits in the window” is not “is used well”: “Lost in the Middle” (Liu et al., 2023) found some models used the middle of a long prompt much worse than its start and end. Test on your own task before trusting a model card.</p>
         <DeepDive title="How the rotations are slowed: position interpolation, base scaling, YaRN">
           <p>A model trained on 4,096 positions has only ever seen rotation angles up to 4,096 × θ. Show it position 20,000 and the fast pairs have spun into angles it has never met.</p>
-          <p><b>Position interpolation</b> squeezes the positions: divide every position by the stretch factor, so 16,000 tokens use the same angles 4,000 used to. <b>Base scaling</b> (sometimes called NTK-aware scaling) raises the RoPE base instead, which slows the slow pairs a lot and the fast pairs hardly at all, so nearby tokens stay sharp. <b>YaRN</b> combines the two per pair and adds a small correction to the attention scores. Qwen and DeepSeek models use YaRN; you saw <code>"type": "yarn"</code> in Kabir’s config.</p>
+          <p><b>Position interpolation</b> squeezes the positions: divide every position by the stretch factor, so 16,000 tokens use the same angles 4,000 used to. <b>Base scaling</b> (sometimes called NTK-aware scaling) raises the RoPE base instead, which slows the slow pairs a lot and the fast pairs hardly at all, so nearby tokens stay sharp. <b>YaRN</b> treats each pair by its speed: slow pairs are interpolated, fast pairs are left alone, pairs in between get a blend. It also scales the attention scores up slightly. Llama 3.1 uses its own, similar per-pair recipe. Qwen and DeepSeek models use YaRN; you saw <code>"type": "yarn"</code> in Kabir’s config.</p>
           <p>All of these need some further training on long text to work well. Which method is best is still argued about, and each lab tunes its own recipe. Newer models do better on simple find-the-sentence tests, but how reliably they reason over very long inputs is still being measured.</p>
         </DeepDive>
 
         <h3>8. More parameters, and mixture-of-experts</h3>
-        <p>Our model has under a million <G t="parameters">parameters</G>; open models range from about 1 billion to around a trillion (<a href="#/lesson/why-llms-know">Why LLMs know things</a> covered why bigger helps). In a dense model every parameter works on every token, so twice the parameters is twice the compute. Mixture-of-experts breaks that link, and by 2025 it was the usual design for the largest open-weight models.</p>
+        <p>Our model has under a million <G t="parameters">parameters</G>; open models range from well under 1 billion (Gemma 3 270M) to over a trillion (DeepSeek-V4-Pro, 1.6 trillion in total) (<a href="#/lesson/why-llms-know">Why LLMs know things</a> covered why bigger helps). In a dense model every parameter works on every token, so twice the parameters is twice the compute. Mixture-of-experts breaks that link, and by 2025 it was the usual design for the largest open-weight models.</p>
         <Fix
           problem="In a dense model, compute per token grows in step with parameter count."
-          idea="Replace each block’s MLP with many smaller MLPs (“experts”) and a small learned router that picks a few per token. Only those run. Many designs add one “shared” expert every token uses."
+          idea="Replace the MLP in most blocks with many smaller MLPs (“experts”) and a small learned router that picks a few per token. Only those run. Many designs add one “shared” expert every token uses."
           tradeoff="All experts must sit in GPU memory. The router must be trained to spread tokens evenly, and splitting experts across GPUs makes training and serving harder."
         />
         <div className="table-scroll">
@@ -161,16 +162,19 @@ export default function ModernArchitectureLesson() {
               <tr><td>Qwen3-235B-A22B</td><td className="mono">128</td><td className="mono">8</td><td className="mono">235B / 22B</td></tr>
               <tr><td>Kimi K2</td><td className="mono">384 + 1 shared</td><td className="mono">8 + 1 shared</td><td className="mono">≈ 1T / ≈ 32B</td></tr>
               <tr><td>gpt-oss-120b</td><td className="mono">128</td><td className="mono">4</td><td className="mono">≈ 117B / ≈ 5.1B</td></tr>
+              <tr><td>Qwen3.5-397B-A17B (2026)</td><td className="mono">512 + 1 shared</td><td className="mono">10 + 1 shared</td><td className="mono">397B / 17B</td></tr>
+              <tr><td>DeepSeek-V4-Pro (2026)</td><td className="mono">384 + 1 shared</td><td className="mono">6 + 1 shared</td><td className="mono">1.6T / 49B</td></tr>
             </tbody>
           </table>
         </div>
-        <p>Each DeepSeek-V3 token touches about 37B of 671B parameters, roughly 5.5%. At about 2 operations per <em>active</em> parameter it computes like a 37B dense model; the total decides how much GPU memory you must buy. And “expert” is a misleading name: routing follows low-level token patterns, not subjects. Think “sharded MLP with a learned shard key”.</p>
+        <p>Each DeepSeek-V3 token touches about 37B of 671B parameters, roughly 5.5%. At about 2 operations per <em>active</em> parameter it computes like a 37B dense model; the total decides how much GPU memory you must buy. And “expert” can mislead. In early MoEs such as Mixtral, routing tracked token-level patterns more than subjects; newer models with many small experts show some specialisation by domain (OLMoE, 2024), and how much is still debated. A safer picture is “sharded MLP with a learned shard key”.</p>
         <DeepDive title="MoE: routing, balance, and the trend to many small experts">
           <p><b>The router</b> is one small matrix: it scores every expert for the current token, keeps the top few, and mixes their outputs using those scores. It is trained along with everything else.</p>
           <p><b>Balance.</b> Left alone, a router tends to send most tokens to a few favourite experts, leaving the rest untrained and some GPUs idle. Most designs add a small balancing term to the loss. DeepSeek-V3 relies mainly on adjusting a per-expert routing bias instead.</p>
+          <p><b>Not every block.</b> Some layers often stay dense: DeepSeek-V3’s first 3 blocks use an ordinary MLP (<code>first_k_dense_replace</code> in its config), and Llama 4 Maverick alternates dense and MoE blocks.</p>
           <p><b>The trend.</b> Early MoEs had a few big experts. Newer ones have many small, fine-grained experts, pick several of them, and add a shared expert for the knowledge every token needs. Llama 4 Scout and Maverick are MoE models as well, and gpt-oss-20b uses 32 experts with 4 active. At small batch sizes each decoding step is limited by reading weights from memory, which is the second reason active parameters, not total, set the speed. Dense models remain common at small and medium sizes, where memory is tight and simplicity pays.</p>
         </DeepDive>
-        <p>Riya turns to Dev. “So the biggest one on the list uses about 32 billion parameters per token. More parameters on disk, yes. Not more work per word.” Dev frowns at the table. “Okay. That’s actually clever.”</p>
+        <p>Riya turns to Dev. “So the biggest one on the list uses about 49 billion parameters per token. More parameters on disk, yes. Not more work per word.” Dev frowns at the table. “Okay. That’s actually clever.”</p>
         <DeepDive title="Why each repair helps, and where it appears">
           <div className="table-scroll">
             <table className="plain">
@@ -518,7 +522,7 @@ y = F.scaled_dot_product_attention(q, k, v, is_causal=True)   # same y, no (T, T
               <tr><td>6. normalise</td><td className="mono">LayerNorm(x)</td><td className="mono">RMSNorm(x)</td></tr>
               <tr><td>7. MLP</td><td>Linear → GELU → Linear (4d wide)</td><td>SwiGLU (3 matrices, ≈ 8d/3 wide), or a router + experts (MoE)</td></tr>
               <tr><td>8. residual</td><td className="mono">x = x + mlp</td><td className="mono">x = x + mlp</td></tr>
-              <tr><td>biases, dropout</td><td>biases everywhere, dropout 0.1</td><td>usually no biases, no dropout in pretraining</td></tr>
+              <tr><td>biases, dropout</td><td>biases everywhere, dropout 0.1</td><td>usually no biases (some keep them on q, k, v, as Qwen2 does), no dropout in pretraining</td></tr>
             </tbody>
           </table>
         </div>
