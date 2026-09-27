@@ -39,7 +39,8 @@ describe.skipIf(!python)('Try it: every offered lesson snippet runs', () => {
       seen.add(program)
       it(`${lesson}: ${b.title ?? b.code.split('\n')[0].slice(0, 50)}`, () => {
         expect(BANNED.test(program), 'uses a package the browser does not have').toBe(false)
-        const r = spawnSync(python!, ['-c', program], { encoding: 'utf8', timeout: 20000, cwd: '/tmp' })
+        // one BLAS thread: these matrices are tiny, and thread contention on a busy machine only slows them down
+        const r = spawnSync(python!, ['-c', program], { encoding: 'utf8', timeout: 20000, cwd: '/tmp', env: { ...process.env, OMP_NUM_THREADS: '1', OPENBLAS_NUM_THREADS: '1', VECLIB_MAXIMUM_THREADS: '1', MKL_NUM_THREADS: '1' } })
         expect(r.status, `${r.stderr}\n--- program ---\n${program}`).toBe(0)
         expect(r.stdout.trim().length, `prints nothing\n--- program ---\n${program}`).toBeGreaterThan(0)
       })

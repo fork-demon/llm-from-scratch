@@ -122,6 +122,7 @@ export default function ModernArchitectureLesson() {
           </table>
         </div>
         <Callout kind="research">MLA and interleaved sliding windows are established in widely used open models. Hybrid linear-attention and sparse-attention designs are newer. They now ship in flagship open models (Qwen3.5, DeepSeek-V4), but how well they hold up on long, recall-heavy tasks compared with full attention, and what mix is best, is still being measured. Treat the ratios above as individual labs’ choices, not settled rules.</Callout>
+        <p>How the last two rows work on the inside, with numbers and code you can run, is in <a href="#/lesson/modern-architecture/new-attention">Inside the newest attention layers</a>, after the code section.</p>
 
         <h3>6. FlashAttention: same maths, less memory traffic</h3>
         <p><code>att = q @ k.transpose(-2, -1)</code> in <code>tiny_gpt.py</code> builds a full T×T table per head. At T = 4,096 in 16-bit numbers that is 4,096 × 4,096 × 2 bytes = 32 MiB; with 32 heads, 1 GiB per layer, per sequence, written to the GPU’s slow main memory and read back. The arithmetic is quick. Moving the tables takes the time.</p>
@@ -365,6 +366,106 @@ y = F.scaled_dot_product_attention(q, k, v, is_causal=True)   # same y, no (T, T
         <p>PyTorch picks a fused kernel (FlashAttention or a similar one) for this call when the hardware supports it. Same weights, same outputs up to floating-point rounding.</p>
       </CodeIt>
 
+      <section className="section" id="new-attention" data-phase="build">
+        <h2 tabIndex={-1}>Inside the newest attention layers</h2>
+        <p>Section 5 named two bold ideas: read only what matters, and keep a fixed-size memory. Here is how each one works, small enough to check by hand.</p>
+
+        <h3>Sparse and compressed attention: read only what matters</h3>
+        <p>Full attention compares every query with every earlier key. A prompt of T tokens needs about T²/2 scores per head per layer, and every new token must read the whole <G t="kv-cache">KV cache</G>, which grows with T. Double the prompt: four times the scores, twice the cache.</p>
+        <p>Yet in any row of attention weights from <a href="#/lesson/attention">the attention lesson</a>, most of the weight lands on a few tokens. So: find those few cheaply, and run real attention only on them.</p>
+        <p>One query, 8 earlier tokens, keep the top k = 3. The scores are q·k/√d, the weights are their <G t="softmax">softmax</G>:</p>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>earlier token</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead>
+            <tbody>
+              <tr><td>score</td><td className="mono">0.35</td><td className="mono"><b>3.54</b></td><td className="mono">−0.71</td><td className="mono">1.41</td><td className="mono"><b>2.83</b></td><td className="mono">−0.35</td><td className="mono"><b>2.12</b></td><td className="mono">−2.12</td></tr>
+              <tr><td>full weight</td><td className="mono">0.021</td><td className="mono"><b>0.517</b></td><td className="mono">0.007</td><td className="mono">0.062</td><td className="mono"><b>0.255</b></td><td className="mono">0.011</td><td className="mono"><b>0.126</b></td><td className="mono">0.002</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Tokens 1, 4 and 6 carry 0.517 + 0.255 + 0.126 = 0.897 of the weight. Softmax over those three alone gives 0.576, 0.284 and 0.140. With the value vectors in the code below, full attention outputs <span className="mono">[4.68, 1.23]</span> and top-3 attention outputs <span className="mono">[5.14, 1.14]</span>. Close, not equal: the missing 10% of weight is the error. The more peaked the weights, the smaller it gets.</p>
+        <Code
+          title="Full attention vs top-k attention for one query"
+          setup={`import numpy as np
+q = np.array([1.0, 2.0])
+K = np.array([[0.5, 0.0], [1.0, 2.0], [-1.0, 0.0], [0.0, 1.0],
+              [2.0, 1.0], [0.5, -0.5], [1.0, 1.0], [-1.0, -1.0]])
+V = np.array([[1.0, 0.0], [5.0, 1.0], [2.0, 2.0], [0.0, 3.0],
+              [6.0, 1.0], [3.0, 0.0], [4.0, 2.0], [2.0, 5.0]])
+def softmax(x):
+    e = np.exp(x - x.max())
+    return e / e.sum()`}
+          show={`w = softmax(scores)
+print("kept tokens:", sorted(top.tolist()), " weight they carried:", round(float(w[top].sum()), 3))
+print("full attention:  ", full.round(2))
+print("top-3 attention: ", sparse.round(2))
+print("real attention scores computed:", len(scores), "(full) vs", k, "(sparse)")`}
+        >{`
+scores = K @ q / np.sqrt(len(q))          # one score per earlier token
+full = softmax(scores) @ V                # ordinary attention over all 8
+
+k = 3
+top = np.argsort(scores)[-k:]             # the 3 best (here we cheat: the true scores)
+sparse = softmax(scores[top]) @ V[top]    # attention over 3 tokens only
+`}</Code>
+        <p>The code cheats: it picks with the true scores, which it could only know by computing all of them. Real designs pick with something much cheaper:</p>
+        <ul>
+          <li><b>A cheap scorer per token</b> (DeepSeek-V3.2, “DeepSeek Sparse Attention”). A small “lightning indexer” (a few heads, ReLU in place of softmax, 8-bit numbers) scores every earlier token. The top 2,048 per query go to the real attention. The main attention’s cost drops from growing with T² to growing with T × 2,048. The indexer still scores every pair, but each score is far cheaper.</li>
+          <li><b>Pick blocks, not tokens</b> (NSA, DeepSeek, 2025; MoBA, Moonshot AI, 2025). GPUs read neighbouring memory fast, so both choose whole blocks. NSA runs three branches and mixes them with learned gates: <em>compressed</em> (each block of 32 keys squashed into one summary), <em>selected</em> (the 16 best blocks of 64 tokens, ranked by the compressed scores) and a <em>sliding window</em> (the last 512 tokens). MoBA scores each block by the query’s dot product with the block’s average key and routes the query to the top few, like an MoE router picking experts.</li>
+          <li><b>Compress the cache itself</b> (DeepSeek-V4). Some layers merge every 4 tokens’ cache entries into one and let an indexer pick the top 1,024 of those (V4-Pro). Others merge every 128 tokens into one and read all of them. At 1 million tokens, DeepSeek reports V4-Pro needs about 10% of V3.2’s KV cache and 27% of its compute per generated token.</li>
+        </ul>
+        <p>What is established: the arithmetic above, and that these designs ship in open models with published papers. What is still being measured: how often a learned scorer skips a token that mattered, on long, recall-heavy tasks. Most published comparisons so far come from the labs that built them.</p>
+
+        <h3>Inside a hybrid: linear attention and state-space layers</h3>
+        <p>Why must softmax attention keep every past <span className="k">key</span> and <span className="v">value</span>? Because a new query’s weights come from exp(q·k) for each key separately, then get divided by their total. There is no way to add the keys up in advance. So the cache grows by one K and one V per token.</p>
+        <p><b>Linear attention</b> drops the softmax. The score becomes φ(q)·φ(k), where φ is a simple function that keeps numbers positive (Katharopoulos et al., 2020, used elu(x) + 1). Now the output for token t is a sum you can regroup:</p>
+        <p className="mono" style={{ fontSize: 14.5 }}>out<sub>t</sub> = Σ<sub>s≤t</sub> (φ(q<sub>t</sub>)·φ(k<sub>s</sub>)) v<sub>s</sub> = φ(q<sub>t</sub>)ᵀ · Σ<sub>s≤t</sub> φ(k<sub>s</sub>) v<sub>s</sub>ᵀ</p>
+        <p>The sum on the right does not involve the query. Call it the <b>state</b> S, a d × d<sub>v</sub> matrix. Each new token adds one outer product, <span className="mono">S ← S + φ(k)vᵀ</span>, and is then read with <span className="mono">out = φ(q)ᵀS</span>. That is a recurrent network: a fixed-size memory updated once per token, like keeping a running total instead of the whole list. (Many real designs also divide by a normaliser or normalise the output; the code below leaves that out.)</p>
+        <Code
+          title="Linear attention two ways: a T×T table, or a running state"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)
+T, d, d_v = 6, 4, 3
+Q = rng.normal(size=(T, d))
+K = rng.normal(size=(T, d))
+V = rng.normal(size=(T, d_v))
+def phi(x):                               # elu(x) + 1: always positive
+    return np.where(x > 0, x + 1.0, np.exp(x))`}
+          show={`out_recurrent = np.array(out_recurrent)
+print("same output:", np.allclose(out_parallel, out_recurrent))
+print("largest difference:", f"{np.abs(out_parallel - out_recurrent).max():.1e}")
+print("state S:", S.shape, "=", S.size, "numbers, for any T")
+print("softmax KV cache at T = 6:", T * (d + d_v), "numbers; at T = 100,000:", 100_000 * (d + d_v))`}
+        >{`
+# parallel form (used in training): like attention, but no softmax
+A = np.tril(phi(Q) @ phi(K).T)            # causal: token t sees tokens 0..t
+out_parallel = A @ V
+
+# recurrent form (used in generation): one fixed-size state
+S = np.zeros((d, d_v))
+out_recurrent = []
+for t in range(T):
+    S = S + np.outer(phi(K[t]), V[t])     # fold token t into the state
+    out_recurrent.append(phi(Q[t]) @ S)   # read the state with this query
+`}</Code>
+        <p>A plain sum never forgets, so after thousands of tokens S is a blur. Two fixes, now combined in most such layers:</p>
+        <ul>
+          <li><b>Forget.</b> Multiply S by a decay between 0 and 1, computed from the current token, before adding: <span className="mono">S ← a·S + kvᵀ</span>. The model learns when to wipe its memory. This is Mamba-2 (Dao and Gu, 2024); its paper shows that this “state-space model” layer is linear attention with a decay.</li>
+          <li><b>Correct.</b> Before writing, read what S already returns for this key, <span className="mono">old = Sᵀk</span>, and write only the difference: <span className="mono">S ← S + β·k(v − old)ᵀ</span>. That is the <em>delta rule</em> of DeltaNet: update the dictionary entry instead of appending a duplicate. <b>Gated DeltaNet</b> (Yang, Kautz and Hatamizadeh, ICLR 2025) does both: decay, then correct.</li>
+        </ul>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th /><th>Softmax attention</th><th>Linear attention / state-space</th></tr></thead>
+            <tbody>
+              <tr><td>memory per layer while generating</td><td>grows with T (every K and V)</td><td>fixed (the state S)</td></tr>
+              <tr><td>work per new token</td><td>grows with T</td><td>fixed</td></tr>
+              <tr><td>exact recall of one old token</td><td>strong: it is still stored</td><td>weaker: only what survived in S</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The last row is the catch. A fixed-size state cannot hold every token of a 262,144-token prompt exactly, and pure linear models have done worse on tasks such as retrieving one exact fact from far back. Hence the hybrids: Qwen3.5-397B-A17B has 60 layers in the repeating pattern three Gated DeltaNet layers, then one full (gated) attention layer. Only 15 of its 60 layers keep a cache that grows. How few full-attention layers are enough is still being measured.</p>
+      </section>
+
       <BreakIt>
         <p>Predict first, then check.</p>
         <ul>
@@ -469,6 +570,38 @@ y = F.scaled_dot_product_attention(q, k, v, is_causal=True)   # same y, no (T, T
             solution={<><p>You should see validation loss within a few hundredths of the LayerNorm run, and the parameter count drops slightly (no bias vectors: 9 norms × 128 numbers = 1,152 fewer parameters). At this scale you will not measure a speed difference: the norm is a tiny fraction of the work, and PyTorch’s LayerNorm is a fused kernel while your RMSNorm is plain Python ops.</p><p>That is the honest picture of RMSNorm. It is not a breakthrough. It is a simplification that costs nothing in quality, and at the scale of trillions of tokens small savings are worth taking.</p></>}
           >
             <p>Open <code>phase3-transformers/tiny_gpt.py</code>. Replace all three <code>nn.LayerNorm</code> uses with the <code>RMSNorm</code> class from this lesson. Before running: do you expect the validation loss after <code>--quick</code> to be much better, much worse, or about the same? How many parameters will disappear?</p>
+          </Exercise>
+
+          <Exercise
+            id="modern-architecture-sparse-topk-saving"
+            type="calculate"
+            title="How much does top-k save on a long prompt?"
+            answer={{ value: 64, tolerance: 0.5 }}
+            answerLabel="times fewer, e.g. 2"
+            hints={[
+              'With full attention, the last query of the prompt computes one real attention score per earlier token. How many is that?',
+              'With DeepSeek Sparse Attention, the real attention only sees the 2,048 tokens the indexer picked.',
+              'Divide 131,072 by 2,048.',
+            ]}
+            solution={<><p>Full attention: about 131,072 real scores for the last query. Sparse: 2,048. That is 131,072 ÷ 2,048 = <b>64 times</b> fewer, and the real attention also reads only 2,048 cache entries instead of 131,072.</p><p>It is not free: the lightning indexer still scores all 131,072 tokens, but each of its scores is far cheaper (few small heads, 8-bit numbers). And at T = 8 with k = 3, as in the worked example, there is nothing to save. Sparse attention pays off only when T is much larger than k.</p></>}
+          >
+            <p>DeepSeek-V3.2’s indexer picks 2,048 tokens for each query. Riya’s prompt is 131,072 tokens long. For the last token of the prompt, how many times fewer real attention scores does sparse attention compute than full attention?</p>
+          </Exercise>
+
+          <Exercise
+            id="modern-architecture-linear-state-vs-cache"
+            type="calculate"
+            title="When does the cache overtake the state?"
+            answer={{ value: 1024, tolerance: 1 }}
+            answerLabel="tokens"
+            hints={[
+              'The Gated DeltaNet state is one key-by-value matrix per value head: 64 × 128 × 128 numbers. It does not change with T.',
+              'The full-attention layer caches one key and one value per K/V head per token: 2 × 2 × 256 numbers per token.',
+              'Divide the state size by the cache numbers per token.',
+            ]}
+            solution={<><p>State: 64 × 128 × 128 = 1,048,576 numbers, whatever the length. Cache: 2 × 2 × 256 = 1,024 numbers per token. They are equal at 1,048,576 ÷ 1,024 = <b>1,024 tokens</b>.</p><p>Beyond that the cache keeps growing and the state does not. At the model’s native 262,144 tokens, one full-attention layer holds 268 million numbers, 256 times its neighbour’s state. That is why Qwen3.5 can afford long prompts with only 15 such layers, and why those 15 are the ones that can still look up an exact old token. (This ignores a small convolution buffer in each DeltaNet layer.)</p></>}
+          >
+            <p>In Qwen3.5-397B-A17B’s config, a Gated DeltaNet layer has 64 value heads with keys and values of 128 numbers, so its state is 64 × 128 × 128 numbers. A full-attention layer has 2 K/V heads with head_dim 256. After how many tokens does one full-attention layer’s KV cache hold more numbers than one Gated DeltaNet layer’s state?</p>
           </Exercise>
           </div>
         </details>

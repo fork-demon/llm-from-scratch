@@ -315,6 +315,98 @@ while waiting and len(running) + len(admitted) < max_batch:
         </RepoRunner>
       </CodeIt>
 
+      <section className="section" id="split-pools-and-experts" data-phase="build">
+        <h2 tabIndex={-1}>Beyond one GPU pool: split phases, and experts</h2>
+        <p>So far every GPU did both jobs for a dense model. The largest deployments change both: they give prefill and decode separate GPUs, and they serve models split into experts.</p>
+
+        <h3>A. Separate GPUs for prefill and decode</h3>
+        <p>Go back to Part 3 of the capacity plan. At 6.9 requests per second a 109.7 ms prefill lands about every 145 ms, and while it runs, all 328 streams wait. A user who expects a token every 38 ms sometimes waits about 148 ms instead. That is the TTFT and TPOT conflict in one sentence: every prefill that helps a new user’s TTFT is a stall in everyone else’s stream.</p>
+        <p>The first fix is the one you met in the mental model, under continuous batching: <b>chunked prefill</b>. A long prompt is cut into chunks that ride along with the decode steps, so no single gap is longer than one chunk’s worth of work. But the prefill arithmetic still happens on the same GPU. Big stalls become many small slowdowns, and the two phases still have to share one batch size and one way of splitting the model across GPUs.</p>
+        <p>The second fix removes the sharing: run prefill on one pool of GPUs and decode on another. When a prompt is done, the prefill GPU sends its KV cache over the network to a decode GPU, which carries on generating as if it had done the prefill itself. This is <b>disaggregated serving</b>. DistServe (Zhong et al., OSDI 2024) and Splitwise (Patel et al., ISCA 2024) made the case for it. Mooncake (FAST 2025), the serving platform behind Moonshot AI’s Kimi, built its whole design around it. NVIDIA Dynamo, llm-d, vLLM (still labelled experimental in its docs) and SGLang support it today, with libraries such as NIXL and Mooncake’s transfer engine moving the caches.</p>
+        <p><b>What it costs: the bytes.</b> Take the capacity plan’s model, 131,072 bytes of KV cache per token. A 1,000-token prompt leaves 1,000 × 131,072 = 131 MB of cache. Over a 400 Gb/s network link (50 GB/s), a common per-GPU link in current clusters, that takes 2.6 ms, about 2.4% of the 109.7 ms prefill. Over a 100 Gb/s link it takes 10.5 ms. Both the transfer and the prefill grow with prompt length, so the ratio stays roughly fixed. A model without GQA sends four times the bytes.</p>
+        <p>The bigger costs are elsewhere. You now size two pools, and the ratio of prefill to decode GPUs has to match your traffic. Put too few GPUs on prefill and TTFT queues up behind them, as the simulation below shows. vLLM’s documentation says it plainly: disaggregated prefill does not improve throughput. What it buys is control: TTFT and time per token can be tuned separately, and the tail of the token gaps stops depending on other people’s prompts. DistServe measures the gain as goodput, reporting up to 7.4 times more requests served within the latency objectives.</p>
+        <p>So it pays off when prompts are long, the per-token promise is strict, and traffic is large enough to keep two pools busy over a fast network. On a handful of GPUs with short prompts, chunked prefill is usually enough.</p>
+        <p>A tiny simulation, with the simulator’s cost model and 240 requests. Two GPUs either both do everything (mixed) or split the work, one prefill GPU and one decode GPU:</p>
+        <Code
+          title="two mixed GPUs against one prefill GPU plus one decode GPU"
+          setup={`import numpy as np
+W, KV, C, OH = 7.0, 0.00026, 0.09, 3.0   # the simulator's cost model, in ms
+XFER = 0.0105                            # ms per prompt token: 0.5 MiB of KV cache over 50 GB/s
+def decode_ms(n, ctx): return OH + max(W + KV * ctx, C * n)
+def prefill_ms(tokens): return OH + max(W, C * tokens)
+rng = np.random.default_rng(0)
+N = 240                                  # 240 requests, one every 250 ms on average
+arrive = np.cumsum(rng.exponential(250.0, N))
+reqs = [(float(a), int(p), int(o)) for a, p, o in
+        zip(arrive, rng.integers(200, 4000, N), rng.integers(50, 400, N))]`}
+          show={`g1, f1 = serve(reqs[0::2], True)                 # (a) two GPUs, each does both jobs
+g2, f2 = serve(reqs[1::2], True)
+free, ready, split_ttft = 0.0, [], []
+for a, p, o in reqs:                             # (b) GPU 1 only prefills, one prompt at a time,
+    free = max(free, a) + prefill_ms(p)
+    ready.append((free + XFER * p, p, o))        #     then ships the KV cache to GPU 2
+    split_ttft.append(free + XFER * p - a)
+split_gaps, _ = serve(sorted(ready), False)      #     GPU 2 only decodes
+for name, g, f in [("mixed", g1 + g2, f1 + f2), ("split", split_gaps, split_ttft)]:
+    print(f"{name}: token gap p50 {np.percentile(g, 50):4.0f} ms, p99 {np.percentile(g, 99):4.0f} ms"
+          f" | TTFT p50 {np.percentile(f, 50):5.0f} ms, p99 {np.percentile(f, 99):5.0f} ms")`}
+        >{`
+def serve(reqs, prefill_here):
+    t, i, run, gaps, ttft = 0.0, 0, [], [], []
+    while i < len(reqs) or run:
+        new = []
+        while i < len(reqs) and reqs[i][0] <= t:
+            new.append(reqs[i]); i += 1
+        if new and prefill_here:         # a prefill pass: every running stream waits
+            t += prefill_ms(sum(p for _, p, _ in new))
+            ttft += [t - a for a, _, _ in new]
+        run += [[p, o - 1, t if prefill_here else a] for a, p, o in new]
+        if run:                          # one decode step for everyone on board
+            t += decode_ms(len(run), sum(s[0] for s in run))
+            for s in run:
+                gaps.append(t - s[2]); s[0] += 1; s[1] -= 1; s[2] = t
+            run = [s for s in run if s[1] > 0]
+        elif i < len(reqs):
+            t = reqs[i][0]
+    return gaps, ttft
+`}</Code>
+        <Code lang="output" title="what it prints">{`
+mixed: token gap p50   16 ms, p99  300 ms | TTFT p50   225 ms, p99   541 ms
+split: token gap p50   20 ms, p99   25 ms | TTFT p50   378 ms, p99  1262 ms
+`}</Code>
+        <p>The p99 token gap falls from 300 ms to 25 ms: the decode GPU never stops for a prompt. The median gap rises a little, because one GPU now decodes everyone. And TTFT gets worse, because a single prefill GPU is busy about 70% of the time and requests queue for it. That is the pool-ratio problem in miniature. The simulation counts the KV transfer as part of the wait for the first token and runs each prefill alone; real engines overlap the transfer with other work and batch prefills.</p>
+
+        <h3>B. Serving a mixture-of-experts model</h3>
+        <p>In <a href="#/lesson/modern-architecture">Modern architecture</a> you met mixture-of-experts: DeepSeek-V3 has 256 routed experts in each MoE layer, and a router picks 8 of them per token, so about 37B of its 671B parameters work on each token. The single-stream bound from this lesson uses those <em>active</em> bytes: one token reads 37 GB, not 671 GB (in FP8, one byte per weight, the format DeepSeek-V3’s weights were released in).</p>
+        <p>But the whole model must still sit in GPU memory, because the next token may pick any expert. 671 GB is more than eight 80 GB GPUs hold. And the batching argument changes. In a dense model the whole batch shares one read of the weights. In an MoE layer, different tokens pick different experts, so the set of experts read in one step grows with the batch.</p>
+        <p>How fast? Assume each token picks its 8 experts at random. Real routers are not random, but it is a fair first guess. One token misses a given expert with probability 1 − 8/256. B tokens all miss it with probability (1 − 8/256)<sup>B</sup>. So a layer expects to touch</p>
+        <p className="mono" style={{ fontSize: 15 }}>experts touched ≈ E × (1 − (1 − k/E)<sup>B</sup>)</p>
+        <p>with E = 256 experts and k = 8 chosen. For a batch of 1 that is 8 experts, for 8 tokens 57.4, for 64 tokens 222.4. Each expert is 3 × 7,168 × 2,048 weights in each of the 58 MoE layers, about 2.55 GB in FP8. The other 17.1 GB or so (attention, the shared expert, the first 3 dense layers, embeddings) is read every step.</p>
+        <Code
+          title="experts touched, and weight bytes read per decode step"
+          setup={`E, K = 256, 8                            # routed experts per layer, experts chosen per token
+EXPERT_GB = 3 * 7168 * 2048 * 58 / 1e9   # one expert in all 58 MoE layers, FP8: 1 byte a weight
+OTHER_GB = 17.1                          # attention, shared experts, dense layers, embeddings`}
+        >{`
+def experts_touched(B, E=E, k=K):        # expected distinct experts one layer uses for B tokens
+    return E * (1 - (1 - k / E) ** B)
+
+for B in [1, 8, 64, 256]:
+    n = experts_touched(B)
+    gb = OTHER_GB + n * EXPERT_GB        # weight bytes read in one decode step
+    print(f"batch {B:3d}: {n:5.1f} experts, {gb:4.0f} GB per step, {gb / B:5.1f} GB per token")
+`}</Code>
+        <Code lang="output" title="what it prints">{`
+batch   1:   8.0 experts,   38 GB per step,  37.5 GB per token
+batch   8:  57.4 experts,  164 GB per step,  20.5 GB per token
+batch  64: 222.4 experts,  585 GB per step,   9.1 GB per token
+batch 256: 255.9 experts,  671 GB per step,   2.6 GB per token
+`}</Code>
+        <p>Batching is no longer nearly free. Going from 1 token to 8 multiplies the bytes per step by more than 4, where a dense model would barely notice. Only past a few hundred tokens is every expert read anyway, and from there extra tokens are cheap again. There is a second catch. At a batch of 64, each touched expert sees only about 64 × 8 ÷ 222.4 = 2.3 tokens, so its matrix multiply is deep in the memory-bound corner. To give each expert something like the critical batch of 75 tokens, a step needs roughly 75 × 32 = 2,400 tokens. MoE models want very large batches.</p>
+        <p>That is why they are served across many GPUs with <b>expert parallelism</b>: different experts live on different GPUs. In each MoE layer every GPU sends each token’s vector to the GPUs holding its chosen experts, and the results come back: two all-to-all exchanges per layer, on the critical path of every step. DeepSeek’s V3 report describes a decode deployment of 320 GPUs with one expert per GPU, and routing that sends each token to at most 4 nodes to limit that traffic. It also uses separate prefill and decode deployments, so topic A and topic B meet here.</p>
+        <p>The last problem is balance. A step ends when the slowest GPU finishes, and routers have favourite experts. A “hot” expert’s GPU can get far more than its share of tokens while others idle. The fix is replication: DeepSeek deploys redundant copies of high-load experts, chosen from load statistics collected while serving, and SGLang’s team reported that its expert-parallel load balancer made prefill 1.49 times and decode 2.54 times faster when serving DeepSeek-V3 on 96 H100 GPUs. How closed providers serve their MoE models is not public.</p>
+      </section>
+
       <BreakIt>
         <p>Predict first, then check.</p>
         <ul>
@@ -414,6 +506,38 @@ while waiting and len(running) + len(admitted) < max_batch:
             prompt="A product manager asks: “If the GPU can do 32 users for almost the price of one, why not run 1,000 users per GPU and cut our bill by 30?” Explain what stops you, using the two limits and the metrics from this lesson."
             modelAnswer={<p>Batching is nearly free only while the step is dominated by reading the weights, which every sequence shares. Two things end that. First, memory: every sequence needs its own KV cache, and once the caches fill the GPU no more sequences fit, however many slots we configure. Paged allocation and GQA push that limit out, they do not remove it. Second, time: each sequence adds its own cache reads and arithmetic to every step, so past some batch size the step gets slower in proportion, throughput flattens, and every user’s time per token keeps rising. Prefills for new arrivals also interrupt everyone’s stream. So throughput is bought with latency, and what we actually sell is goodput: requests that meet the TTFT and per-token objectives at p99. The right batch size is the largest one that still meets them, and we find it by measuring our own traffic.</p>}
           />
+
+          <Exercise
+            id="inference-systems-disagg-long-prompt"
+            type="calculate"
+            title="Shipping a long prompt’s KV cache"
+            answer={{ value: 84, tolerance: 2 }}
+            answerLabel="milliseconds to transfer"
+            hints={[
+              'The KV cache per token is the capacity plan’s step 3: 131,072 bytes. Multiply by the prompt length.',
+              '32,000 × 131,072 = 4,194,304,000 bytes, about 4.19 GB. A 400 Gb/s link moves 50 GB per second.',
+              '4.19 GB ÷ 50 GB/s, in milliseconds.',
+            ]}
+            solution={<><p>32,000 × 131,072 bytes = 4.19 GB. At 50 GB/s that is 0.0839 s, about <b>84 ms</b>.</p><p>Is that a lot? The prefill of the same prompt needs at least 32,000 × 16 GFLOP ÷ 150 TFLOP/s = 3,413 ms, and more in practice, because attention over a long prompt adds arithmetic that grows with its square. So the transfer is under 3% of the prefill. The ratio per token is what matters: 131,072 bytes to move against 16 GFLOP to compute. That is why disaggregation works for long prompts, and why a fast link between the pools matters more than its absolute size.</p></>}
+          >
+            <p>A Paisa Pal customer pastes a year of statements: a 32,000-token prompt, on the capacity plan’s 8B model. In a disaggregated setup the prefill GPU must send this prompt’s KV cache to a decode GPU over a 400 Gb/s link. How long does the transfer take, ignoring protocol overheads?</p>
+          </Exercise>
+
+          <Exercise
+            id="inference-systems-moe-experts-touched"
+            type="calculate"
+            title="How many experts does a small batch wake up?"
+            answer={{ value: 5.47, tolerance: 0.05 }}
+            answerLabel="experts per layer, expected"
+            hints={[
+              'Use experts touched ≈ E × (1 − (1 − k/E)^B) with E = 8, k = 2, B = 4.',
+              'One token misses a given expert with probability 1 − 2/8 = 0.75. Four tokens all miss it with probability 0.75⁴ = 0.316.',
+              '8 × (1 − 0.316).',
+            ]}
+            solution={<><p>8 × (1 − 0.75⁴) = 8 × 0.684 = <b>5.47</b> experts per layer, out of 8.</p><p>One token reads 2 experts, four tokens read about 5.5: nearly three times the expert bytes, for four times the tokens. A dense model of the same active size would read the same bytes for 1 token or 4. With only 8 experts the set fills quickly (8 tokens touch 7.2 on average), so batching soon becomes cheap again. With 256 small experts, as in DeepSeek-V3, it takes a few hundred tokens. The random-routing assumption is a first guess: real routers have favourites, which usually means fewer distinct experts and more load on the hot ones.</p></>}
+          >
+            <p>Mixtral 8x7B has 8 experts per MoE layer and picks 2 per token. A decode step carries a batch of 4 tokens. Assuming each token picks its experts at random, how many distinct experts does one layer read, on average?</p>
+          </Exercise>
           </div>
         </details>
       </Exercises>

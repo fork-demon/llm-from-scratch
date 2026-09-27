@@ -64,7 +64,7 @@ describe('repo files for the in-browser runner', () => {
 
 describe.skipIf(!python)('the assembled program runs in real Python', () => {
   it.each(paths)('%s', (p) => {
-    const r = spawnSync(python!, ['-c', buildRepoProgram(p)], { encoding: 'utf8', timeout: 60000, cwd: '/' })
+    const r = spawnSync(python!, ['-c', buildRepoProgram(p)], { encoding: 'utf8', timeout: 60000, cwd: '/', env: { ...process.env, OMP_NUM_THREADS: '1', OPENBLAS_NUM_THREADS: '1', VECLIB_MAXIMUM_THREADS: '1', MKL_NUM_THREADS: '1' } })
     expect(r.stderr).toBe('')
     expect(r.status).toBe(0)
     expect(r.stdout.length).toBeGreaterThan(100)
@@ -72,7 +72,7 @@ describe.skipIf(!python)('the assembled program runs in real Python', () => {
 
   it('runs an edited copy of the main file, and the sibling import still works', () => {
     const edited = REPO_FILES['phase6-engineering/eval_harness.py'].replace(/if __name__ == "__main__":[\s\S]*$/, 'print("EDITED", rag.__name__)\n')
-    const r = spawnSync(python!, ['-c', buildRepoProgram('phase6-engineering/eval_harness.py', edited)], { encoding: 'utf8', timeout: 60000 })
+    const r = spawnSync(python!, ['-c', buildRepoProgram('phase6-engineering/eval_harness.py', edited)], { encoding: 'utf8', timeout: 60000, env: { ...process.env, OMP_NUM_THREADS: '1', OPENBLAS_NUM_THREADS: '1', VECLIB_MAXIMUM_THREADS: '1', MKL_NUM_THREADS: '1' } })
     expect(r.stderr).toBe('')
     expect(r.stdout.trim()).toBe('EDITED mini_rag')
   }, 60000)

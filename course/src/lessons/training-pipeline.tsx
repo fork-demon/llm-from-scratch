@@ -255,6 +255,144 @@ loss = -F.logsigmoid(r_chosen - r_rejected).mean()
         <p>Want a real fine-tuning run you can execute? That comes in <a href="#/lesson/fine-tuning">Fine-tuning</a>, with <code>finetune_tiny_gpt.py</code>.</p>
       </CodeIt>
 
+      <section className="section" id="at-scale" data-phase="build">
+        <h2 tabIndex={-1}>Training at scale: one model, thousands of GPUs</h2>
+        <p>Riya’s loop fits on one GPU because her model is tiny. At scale, the first wall is memory.</p>
+
+        <h3>Why one GPU cannot hold the run</h3>
+        <p>Training keeps several numbers for every <G t="parameters">parameter</G>. With BF16 mixed precision and AdamW, the standard accounting (from the ZeRO paper, Rajbhandari et al., 2019) is 2 bytes for the 16-bit weight, 2 for its <G t="gradient">gradient</G>, 4 for a 32-bit master copy of the weight, and 8 for Adam’s two 32-bit running averages: <b>16 bytes per parameter</b>.</p>
+        <p>For a 70-billion-parameter model: 70 × 10⁹ × 16 bytes = 1.12 × 10¹² bytes, about <b>1.1 TB</b>. An H100 GPU has 80 GB. That is at least 14 GPUs only to hold the training state, before a single <G t="activation">activation</G> is stored for the backward pass.</p>
+
+        <h3>The ways to split the work</h3>
+        <p><b>Data parallelism.</b> Every GPU holds a full copy of the model and takes a different slice of the <G t="batch">batch</G>. The GPUs then average their gradients (an <em>all-reduce</em>), so every copy takes the identical step. Because the loss is an average over examples, this equals the full-batch gradient:</p>
+        <Code
+          title="data parallelism: 4 “GPUs”, one gradient"
+          setup={`import numpy as np
+rng = np.random.default_rng(0)
+X = rng.normal(size=(8, 3)).round(2)   # a batch of 8 examples, 3 features
+y = rng.normal(size=8).round(2)        # their targets
+w = np.array([0.5, -0.2, 0.1])         # current weights, the same on every GPU`}
+          show={`print("full-batch gradient:", full.round(4))
+for i, g in enumerate(per_gpu):
+    print(f"GPU {i} gradient:    ", g.round(4))
+print("average of the 4:   ", averaged.round(4))
+print("same?", np.allclose(full, averaged))`}
+        >{`
+def grad(X, y, w):                     # gradient of the mean squared error
+    return 2 * X.T @ (X @ w - y) / len(y)
+
+full = grad(X, y, w)                   # one GPU sees the whole batch
+shards = zip(np.split(X, 4), np.split(y, 4))   # 4 "GPUs", 2 examples each
+per_gpu = [grad(Xs, ys, w) for Xs, ys in shards]
+averaged = np.mean(per_gpu, axis=0)    # the all-reduce
+`}</Code>
+        <p>The four gradients disagree, yet their average matches the full batch exactly. The catch: every GPU still stores all 16 bytes per parameter.</p>
+        <p><b>FSDP / ZeRO.</b> With N GPUs, each keeps only 1/N of the weights, gradients and optimizer state. Just before a layer runs, the GPUs gather its full weights, use them, and discard the copy. (ZeRO stages 1, 2 and 3 shard the optimizer state, then gradients too, then weights too; PyTorch’s FSDP is the stage 3 idea.)</p>
+        <p><b>Tensor parallelism.</b> Each GPU holds some columns of every weight matrix and computes its slice of the output; the slices are then combined. That happens inside every layer, so it needs very fast links and usually stays within one server of 8 GPUs.</p>
+        <p><b>Pipeline parallelism.</b> Layers 1 to 20 on one GPU, 21 to 40 on the next, like an assembly line. At the start of each step the later stages wait; at the end the early ones do. That idle time is the <b>bubble</b>. Cutting the batch into m micro-batches keeps the line busier: with p stages, the idle fraction is about (p − 1) / (m + p − 1).</p>
+        <Code title="the pipeline bubble" standalone>{`
+def bubble(p, m):        # p pipeline stages, m micro-batches per step
+    return (p - 1) / (m + p - 1)
+
+for m in [1, 4, 16, 64]:
+    print(f"4 stages, {m:>2} micro-batches: {bubble(4, m):.0%} idle")
+`}</Code>
+        <p><b>Expert parallelism.</b> In a mixture-of-experts model (<a href="#/lesson/modern-architecture">Modern architecture</a>) different experts live on different GPUs, and each token is sent to the GPUs of its chosen experts and back: an <em>all-to-all</em> exchange.</p>
+        <p><b>Context (sequence) parallelism.</b> For very long sequences, split the sequence itself; the GPUs pass keys and values around so attention still sees every earlier position.</p>
+        <div className="table-scroll">
+          <table className="plain">
+            <thead><tr><th>method</th><th>what is split</th><th>what is sent between GPUs</th><th>typical use</th></tr></thead>
+            <tbody>
+              <tr><td>Data</td><td>the batch</td><td>gradients, once per step</td><td>almost always</td></tr>
+              <tr><td>FSDP / ZeRO</td><td>batch, weights, gradients, optimizer state</td><td>weights (gathered per layer), gradients</td><td>when copies do not fit</td></tr>
+              <tr><td>Tensor</td><td>each matrix multiply</td><td>partial results, inside every layer</td><td>within a server</td></tr>
+              <tr><td>Pipeline</td><td>the layers</td><td>activations between stages</td><td>across servers</td></tr>
+              <tr><td>Expert</td><td>the MoE experts</td><td>tokens, all-to-all</td><td>MoE models</td></tr>
+              <tr><td>Context</td><td>the sequence</td><td>keys and values</td><td>long-context training</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Real runs combine them. Meta trained Llama 3 405B on up to 16,384 H100 GPUs: tensor parallelism of 8 within each server, 16 pipeline stages, FSDP-style data parallelism, and 16-way context parallelism for the long-context stage. DeepSeek-V3 used 2,048 H800 GPUs: 16-way pipeline, 64-way expert parallelism across 8 servers, ZeRO-1 data parallelism, and no tensor parallelism.</p>
+
+        <h3>Keeping a huge run stable</h3>
+        <p>The fear in a weeks-long run is a <b>loss spike</b>: the loss jumps, then recovers or diverges. The common defences:</p>
+        <ul>
+          <li><b>Warmup, then decay.</b> The <G t="learning-rate">learning rate</G> climbs from near 0 over the first few thousand steps, while Adam’s running averages are still unreliable, then decays, often along a cosine. <em>Warmup-stable-decay</em> (WSD, from MiniCPM) holds it flat for most of the run and decays it sharply at the end.</li>
+          <li><b>Gradient clipping.</b> If the gradient’s overall length exceeds a limit (1.0 is common), scale it down, so one strange batch cannot throw the weights far.</li>
+          <li><b>Keep scores bounded.</b> z-loss, a tiny extra loss term, stops the output <G t="logits">logits</G> drifting to huge values (PaLM, OLMo 2). QK-norm normalises queries and keys before their dot product (OLMo 2). Soft-capping squashes logits into a fixed range with tanh (Gemma 2).</li>
+        </ul>
+        <p>When a spike still happens, teams rewind to an earlier checkpoint and skip the batches that triggered it, as the PaLM paper describes. DeepSeek-V3 reports no irrecoverable spikes and no rollbacks in its whole run.</p>
+      </section>
+
+      <section className="section" id="data-curation" data-phase="build">
+        <h2 tabIndex={-1}>Where the training text comes from</h2>
+        <p>Meta reports more than 15 trillion tokens for Llama 3. None of it arrives clean. Most comes from web crawls such as Common Crawl, a public archive of billions of pages, and turning that into training data is a chain of filters, each throwing a lot away.</p>
+        <ol>
+          <li><b>Extract.</b> Turn raw HTML into the main text: drop menus, ads and cookie banners. The FineWeb team found that extracting from the raw HTML themselves (with the trafilatura library) gave better data than the crawl’s own ready-made text.</li>
+          <li><b>Identify the language.</b> A small, fast classifier labels each page’s language. Keep the languages you want.</li>
+          <li><b>Filter for quality.</b> First heuristics: too short, too many repeated lines, few lines ending in punctuation. Then a model: FineWeb-Edu had Llama-3-70B-Instruct rate 460,000 pages for educational value from 0 to 5, trained a small classifier on those ratings, scored all 15 trillion FineWeb tokens and kept pages scoring 3 or more. That left 1.3 trillion tokens, and small models trained on it did clearly better on knowledge and reasoning benchmarks such as MMLU and ARC. Llama 3 used classifiers trained on Llama 2’s judgements in the same spirit.</li>
+          <li><b>Remove duplicates.</b> Exact copies are found by hashing. Near-copies (the same article with a new date, a mirrored forum) need MinHash, below. Repeated text wastes compute and is more likely to be memorised word for word. Llama 3 de-duplicated at the URL, document and line level.</li>
+          <li><b>Remove personal data and harmful content.</b> Mask emails, phone numbers and IP addresses; drop sites flagged as adult or unsafe.</li>
+          <li><b>Decontaminate.</b> Remove documents that overlap benchmark questions, so a test score measures ability, not memory (the contamination trap from the Evaluation step at the start of this lesson).</li>
+        </ol>
+
+        <h3>How MinHash finds near-duplicates</h3>
+        <p>Comparing every pair of billions of documents word by word is impossible. MinHash gives each document a short fingerprint instead.</p>
+        <ul>
+          <li>Cut the text into <b>shingles</b>: overlapping runs of words (FineWeb used 5 words; we use 2 for short tickets).</li>
+          <li>Similarity is the <b>Jaccard</b> score: shared shingles divided by all distinct shingles.</li>
+          <li>Hash every shingle with a random hash function and keep the smallest value. For an ideal random hash, two documents get the same minimum with probability equal to their Jaccard score. Repeat with 128 hash functions, and the fraction of the 128 positions that agree estimates it.</li>
+        </ul>
+        <Code
+          title="MinHash on five support tickets"
+          setup={`import zlib
+import numpy as np
+tickets = [
+    "My refund for the failed UPI payment has not arrived yet, please help",
+    "How do I update my KYC documents in the app",
+    "my refund for the failed UPI payment has not arrived yet please help me",
+    "Cashback for my electricity bill payment is missing",
+    "My refund for the failed card payment has not arrived",
+]
+rng = np.random.default_rng(0)
+P = 2**31 - 1                          # a large prime
+a = rng.integers(1, P, size=128)       # 128 random hash functions:
+b = rng.integers(0, P, size=128)       # h(x) = (a*x + b) mod P`}
+          show={`others = 0
+for i in range(len(tickets)):
+    for j in range(i + 1, len(tickets)):
+        A, B = shingles(tickets[i]), shingles(tickets[j])
+        true = len(A & B) / len(A | B)
+        est = estimated_jaccard(i, j)
+        flag = "  <- near-duplicate" if est > 0.8 else ""
+        if est > 0 or true > 0:
+            print(f"tickets {i} and {j}: estimated {est:.2f}, true {true:.2f}{flag}")
+        else:
+            others += 1
+print(f"{others} other pairs share nothing: estimated 0.00, true 0.00")`}
+        >{`
+def shingles(text, k=2):               # overlapping word pairs
+    words = text.lower().replace(",", "").split()
+    return {" ".join(words[i:i + k]) for i in range(len(words) - k + 1)}
+
+def signature(text):                   # 128 numbers per text
+    ids = np.array([zlib.crc32(s.encode()) % P for s in shingles(text)])
+    hashed = (a[:, None] * ids[None, :] + b[:, None]) % P   # (128, shingles)
+    return hashed.min(axis=1)          # smallest value per hash function
+
+sigs = [signature(t) for t in tickets]
+
+def estimated_jaccard(i, j):           # fraction of positions that agree
+    return np.mean(sigs[i] == sigs[j])
+`}</Code>
+        <p>Tickets 0 and 2 come out at about 0.89 (true 0.92): the same message, retyped. The card-payment ticket shares half its shingles with them and stays below the 0.8 line: similar wording, a different problem. At web scale, the signatures are also cut into bands and only documents that match on a whole band are compared, so most pairs are never looked at.</p>
+
+        <h3>The mix, the ending, and synthetic data</h3>
+        <p><b>The mixture.</b> Web text, code, maths, books, papers, other languages: the proportions are chosen by training small models on candidate mixes. Meta reports roughly 50% general knowledge, 25% maths and reasoning, 17% code and 8% multilingual tokens for Llama 3.</p>
+        <p><b>The ending.</b> As the learning rate decays at the end of pretraining, many labs switch to a smaller set of their best data (curated maths, code, reference text). This is called <em>annealing</em> or <em>mid-training</em>, and the Llama 3 report describes it. The final tokens seem to leave an outsized mark, though exact recipes are rarely published.</p>
+        <p><b>Synthetic data.</b> A model can rephrase messy web pages into cleaner question-and-answer or textbook style, or write new problems and explanations from scratch (<G t="synthetic-data">synthetic data</G>, the subject of <a href="#/lesson/distillation">Small models from big ones</a>). It helps, but it copies the writer model’s mistakes and blind spots, narrows the variety of text, and training generation after generation on model output can lead to <G t="model-collapse">model collapse</G>. How much synthetic data is too much is an open question.</p>
+      </section>
+
       <BreakIt>
         <p>Predict first, then check.</p>
         <ul>
@@ -340,6 +478,38 @@ What is a cat?<|im_end|>
               solution={<><p>The careful rater ends with weights of about [0.10, 0.67, 1.74]: “contains the answer” dominates, and the tuned model says “Paris” 99% of the time (the SFT model: 90%).</p><p>Slip only in comparisons 5 and 7 and the chance of “Paris” falls to 41%: the tuned model’s favourite reply, at 55%, is the long polite one that never answers. Slip in all three and you have reproduced the “always longer” rater exactly, because in the other five comparisons the longer answer is also a correct one. The chance of “Paris” is then 20%.</p><p>Two lazy clicks out of eight were enough. The reward model fits the raters’ actual choices, shortcuts included. Real raters work under time pressure, and a long, confident, agreeable answer is easy to mistake for a good one.</p></>}
             >
               <p>In the preference lab, keep β = 0.5. How few “lazy” choices (picking an answer because it looks more thorough, although it never states the answer) does it take before the tuned model is more likely than not to give a reply without “Paris”? Try it by hand, and watch the readout under step 3.</p>
+            </Exercise>
+
+            <Exercise
+              id="training-pipeline-scale-fsdp-memory"
+              type="calculate"
+              title="Does an 8B model fit?"
+              answer={{ value: 16, tolerance: 0.5 }}
+              answerLabel="GB of training state per GPU"
+              hints={[
+                'Start with the whole training state: parameters × 16 bytes.',
+                '8 × 10⁹ × 16 bytes = 128 × 10⁹ bytes = 128 GB. With plain data parallelism, every GPU would hold all of that.',
+                'FSDP shards weights, gradients and optimizer state evenly, so divide by the number of GPUs.',
+              ]}
+              solution={<><p>8 × 10⁹ × 16 bytes = 128 GB in total. Sharded over 8 GPUs: 128 / 8 = <b>16 GB</b> per GPU.</p><p>With plain data parallelism each GPU would need all 128 GB, more than an 80 GB GPU has, so the run would not even start. With FSDP the state fits with room to spare, and that room is needed: activations for the backward pass, and the full weights of the layer currently being gathered, also live on each GPU. The price is communication: every layer’s weights are gathered before use, in both the forward and the backward pass.</p></>}
+            >
+              <p>Riya’s team wants to train an 8-billion-parameter model on one server with 8 GPUs of 80 GB each, using BF16 mixed precision and AdamW (16 bytes per parameter). With FSDP sharding everything evenly across the 8 GPUs, how many GB of training state does each GPU hold, not counting activations?</p>
+            </Exercise>
+
+            <Exercise
+              id="training-pipeline-data-jaccard"
+              type="calculate"
+              title="Is it a near-duplicate?"
+              answer={{ value: 0.43, tolerance: 0.01 }}
+              answerLabel="Jaccard similarity, two decimals"
+              hints={[
+                'Write out the overlapping word pairs of each ticket. Each 6-word ticket has 5.',
+                'Ticket A: my refund, refund is, is not, not received, received yet. Ticket B: my refund, refund is, is still, still not, not received. Which pairs appear in both?',
+                'Three pairs are shared. The union counts each distinct pair once: 5 + 5 − 3.',
+              ]}
+              solution={<><p>Shared: “my refund”, “refund is”, “not received”, so 3. Distinct pairs in total: 5 + 5 − 3 = 7. Jaccard = 3 / 7 ≈ <b>0.43</b>. With 128 hash functions, about 0.43 × 128 ≈ 55 signature positions would agree.</p><p>That is far below a 0.8 near-duplicate threshold, although both tickets ask the same thing. MinHash measures shared wording, not shared meaning. That is what you want for de-duplication: it removes copies of a page, while different people describing the same problem in their own words stay in the data. Catching paraphrases needs embeddings (<a href="#/lesson/rag">RAG</a> uses them for search).</p></>}
+            >
+              <p>Using overlapping word pairs as shingles, what is the Jaccard similarity of these two tickets? <br /><code>my refund is not received yet</code><br /><code>my refund is still not received</code></p>
             </Exercise>
           </div>
         </details>

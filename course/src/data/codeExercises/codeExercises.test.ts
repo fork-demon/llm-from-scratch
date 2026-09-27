@@ -31,7 +31,7 @@ sys.stdout = sys.__stdout__
 print("\\n@@RESULT@@" + json.dumps(out))
 `
 const run = (code: string, tests: { name: string; code: string }[]) => {
-  const stdout = execFileSync(python!, ['-c', HARNESS], { input: JSON.stringify({ code, tests }), encoding: 'utf8', timeout: 60000 })
+  const stdout = execFileSync(python!, ['-c', HARNESS], { input: JSON.stringify({ code, tests }), encoding: 'utf8', timeout: 60000, env: { ...process.env, OMP_NUM_THREADS: '1', OPENBLAS_NUM_THREADS: '1', VECLIB_MAXIMUM_THREADS: '1', MKL_NUM_THREADS: '1' } }) // one BLAS thread, as in the browser
   return JSON.parse(stdout.slice(stdout.lastIndexOf('@@RESULT@@') + 10)) as { error: string | null; results: [string, boolean, string][] }
 }
 
