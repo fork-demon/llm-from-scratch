@@ -1,8 +1,8 @@
-import { PROJECT_PIECES } from '../data/project/paisaPal'
+import { PROJECT_PIECES } from '../data/project/nimbuPay'
 import { lessonById } from '../data/curriculum'
 import { useProgress } from '../lib/progress'
 
-/** #/project: the Paisa Pal support bot, piece by piece, and which pieces you have built. */
+/** #/project: the Nimbu Pay support bot, piece by piece, and which pieces you have built. */
 export function ProjectPage() {
   const progress = useProgress()
   const done = PROJECT_PIECES.filter((p) => progress.exercises[p.exercise]).length
@@ -10,7 +10,7 @@ export function ProjectPage() {
     <div>
       <h1 className="lesson-title">Your support bot</h1>
       <p className="lesson-question">
-        Paisa Pal wants a support bot, and in Parts 8 to 10 you build it: one piece per lesson, written by you, in the browser, checked by tests.
+        Nimbu Pay wants a support bot, and in Parts 8 to 10 you build it: one piece per lesson, written by you, in the browser, checked by tests.
       </p>
       <div className="project-progress">
         <div className="meter" role="progressbar" aria-label="Pieces built" aria-valuemin={0} aria-valuemax={PROJECT_PIECES.length} aria-valuenow={done}>
@@ -35,8 +35,8 @@ export function ProjectPage() {
         })}
       </ol>
       <p className="muted" style={{ fontSize: 14 }}>
-        Every piece starts from the same project file, <code>paisa_pal.py</code>: Paisa Pal’s help pages, twelve real customer questions,
-        two customers and their tools. Each exercise also gives you working versions of the earlier pieces it needs, so you can build them in any order.
+        Every piece starts from the same project file, <code>nimbu_pay.py</code>: Nimbu Pay’s help pages, twelve real customer questions,
+        two customers and their tools, all invented (Nimbu Pay is a fictional company). Each exercise also gives you working versions of the earlier pieces it needs, so you can build them in any order.
       </p>
     </div>
   )

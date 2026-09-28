@@ -13,7 +13,7 @@ export default function BuildGptLesson() {
   return (
     <Lesson id="build-gpt">
       <Why>
-        <p className="lede">It is past eight. The Paisa Pal office is empty except for Riya, the cleaning staff and the hum of the air conditioning.</p>
+        <p className="lede">It is past eight. The Nimbu Pay office is empty except for Riya, the cleaning staff and the hum of the air conditioning.</p>
         <p>On her second monitor is the photo she took on day one: Kabir’s whiteboard map, a row of boxes between “What is a cat?” and the answer. Back then every box was a promise. She has been ticking them off, one lesson at a time.</p>
         <p>Tonight she opens a fresh file and types <code>class GPT</code>. Her phone buzzes. Kabir: “Don’t add anything new. Plug the boxes together and follow one token through.”</p>
         <p>Look at her list:</p>

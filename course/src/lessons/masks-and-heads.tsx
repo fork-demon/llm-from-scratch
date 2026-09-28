@@ -51,7 +51,7 @@ export default function MasksAndHeadsLesson() {
           <li>What word came just before me? (because)</li>
           <li>What is this sentence about in general? (a bit of everything)</li>
         </ul>
-        <p>If “it” spends 80% of its weight on “animal”, only 20% is left for everything else. One budget, several needs. Riya recognises this from hiring: one interviewer cannot judge coding, communication and design in the same hour. That is why Paisa Pal uses a panel.</p>
+        <p>If “it” spends 80% of its weight on “animal”, only 20% is left for everything else. One budget, several needs. Riya recognises this from hiring: one interviewer cannot judge coding, communication and design in the same hour. That is why Nimbu Pay uses a panel.</p>
       </Problem>
 
       <MentalModel>

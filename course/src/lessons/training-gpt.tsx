@@ -98,7 +98,7 @@ export default function TrainingGptLesson() {
         <h3>Now train a real Transformer</h3>
         <p>This is the moment Riya waited for at 2 a.m. The model below is a real GPT: the same blocks as <code>tiny_gpt.py</code> (attention, MLP, LayerNorm, residuals), trained with AdamW and gradient clipping, all in your browser. It is small, about 28,000 parameters, so it trains in under a minute.</p>
         <ol>
-          <li>Press <b>Train</b> on the Paisa Pal support tickets. Watch both loss curves fall and the samples turn from noise into something that looks like a ticket.</li>
+          <li>Press <b>Train</b> on the Nimbu Pay support tickets. Watch both loss curves fall and the samples turn from noise into something that looks like a ticket.</li>
           <li>Switch to Shakespeare. The text is only about 4,400 characters, so watch what the validation loss does after 20 seconds. You have seen this before: overfitting.</li>
           <li>Type a prompt and open the attention heatmap. These are learned patterns, not hand-set ones.</li>
         </ol>

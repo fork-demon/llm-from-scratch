@@ -1,15 +1,15 @@
 import type { CodeExerciseDef } from './types'
-import { PAISA_PAL } from '../project/paisaPal'
+import { NIMBU_PAY } from '../project/nimbuPay'
 
-// Paisa Pal project, Part 9 and the eval harness: the retriever, the LoRA adapter, the tool loop and the eval.
-// Each prelude is paisa_pal.py plus only what that piece needs, so every exercise stands alone.
+// Nimbu Pay project, Part 9 and the eval harness: the retriever, the LoRA adapter, the tool loop and the eval.
+// Each prelude is nimbu_pay.py plus only what that piece needs, so every exercise stands alone.
 
 /* ---------- rag: the retriever ---------- */
 const RETRIEVER_GIVEN = `# ---- given: the words the retriever works with ----
 # Stop words say nothing about which page you want. The company's own name is one of them:
-# customers say "paisa pal" whatever they are asking about.
+# customers say "nimbu pay" whatever they are asking about.
 STOP = set("a an the is are was be has have to of in on for by and or but my i me you your it its "
-           "this that do does can how what why when who not no only get paisa pal".split())
+           "this that do does can how what why when who not no only get nimbu pay".split())
 
 def words(text):
     """tokenize, drop stop words, and strip a plural s, so "disputes" matches "dispute"."""
@@ -23,7 +23,7 @@ VOCAB = sorted({w for text in HELP_PAGES.values() for w in words(text)})   # one
 const LORA_GIVEN = `# ---- given: a frozen "tone" layer. Question features in, one score per reply style out. ----
 STYLES = ["formal", "warm", "safety first"]
 # formal:       "Dear Valued Customer, we deeply regret any inconvenience..." (the base model's habit)
-# warm:         two friendly sentences with the answer (the Paisa Pal brand rule)
+# warm:         two friendly sentences with the answer (the Nimbu Pay brand rule)
 # safety first: warm, but opening with "We will never ask for your PIN or OTP" (security questions)
 FEATURE_WORDS = sorted({w for q, _, _ in QUESTIONS for w in tokenize(q)})
 
@@ -57,7 +57,7 @@ const AGENT_GIVEN = `# ---- given: the convention, the tools the bot may call, a
 import re, json
 
 SYSTEM_PROMPT = (
-    "You are the Paisa Pal support bot. You may use tools.\\n"
+    "You are the Nimbu Pay support bot. You may use tools.\\n"
     "To use a tool reply EXACTLY:\\nThought: <why>\\nTOOL: <name>\\nARGS: <json>\\n"
     "When you have the answer reply:\\nThought: <why>\\nANSWER: <final answer>\\n\\n"
     "Available tools:\\n"
@@ -82,7 +82,7 @@ def scripted_model(context):
         return f'Thought: I need the balance.\\nTOOL: get_balance\\nARGS: {{"customer_id": "{cust.group()}"}}'
     if txn:
         return f'Thought: I need the refund status.\\nTOOL: refund_status\\nARGS: {{"transaction_id": "{txn.group()}"}}'
-    return "Thought: No tool can help here.\\nANSWER: Sorry, I can only help with your Paisa Pal account."
+    return "Thought: No tool can help here.\\nANSWER: Sorry, I can only help with your Nimbu Pay account."
 `
 
 /* ---------- evals: the eval harness ---------- */
@@ -97,7 +97,7 @@ def toy_bot(question):
     for page, keys in KEYWORDS.items():
         if any(k in ws for k in keys):
             return {"page": page, "answer": HELP_PAGES[page].split(". ")[0] + "."}
-    return {"page": None, "answer": "Sorry, I can only help with Paisa Pal payments."}
+    return {"page": None, "answer": "Sorry, I can only help with Nimbu Pay payments."}
 
 def bootstrap_interval(marks, resamples=2000, seed=0):
     """The middle 95% of resampled pass rates (the bootstrap from the evals lesson)."""
@@ -113,9 +113,9 @@ const exercises: CodeExerciseDef[] = [
     id: 'rag-code-bot-retriever',
     lesson: 'rag',
     project: { piece: 'Retriever' },
-    title: 'Paisa Pal’s retriever: the right help page, or none',
-    prelude: `${PAISA_PAL}\n${RETRIEVER_GIVEN}`,
-    prompt: `The bot must answer from Paisa Pal’s six help pages, not from memory. Build the retriever with the lesson’s crude embedder: rarity weights, cosine, and a threshold for “no page answers this”.
+    title: 'Nimbu Pay’s retriever: the right help page, or none',
+    prelude: `${NIMBU_PAY}\n${RETRIEVER_GIVEN}`,
+    prompt: `The bot must answer from Nimbu Pay’s six help pages, not from memory. Build the retriever with the lesson’s crude embedder: rarity weights, cosine, and a threshold for “no page answers this”.
 
 - \`idf_weights()\` returns a NumPy array with one weight per word in \`VOCAB\`: \`ln(number of pages / number of pages containing the word)\`. Use \`words(text)\` (given) to split a page.
 - \`embed(text, idf)\` returns a vector of length \`len(VOCAB)\`: for each word of \`words(text)\` that is in \`VOCAB\`, add that word’s idf to its slot. Then scale to length 1, so the dot product is the cosine. A text with no known words stays all zeros.
@@ -198,8 +198,8 @@ The threshold is the piece a bare top-k search does not have. A nearest page alw
     id: 'fine-tuning-code-bot-lora',
     lesson: 'fine-tuning',
     project: { piece: 'LoRA adapter' },
-    title: 'Teach the frozen tone layer the Paisa Pal habit',
-    prelude: `${PAISA_PAL}\n${LORA_GIVEN}`,
+    title: 'Teach the frozen tone layer the Nimbu Pay habit',
+    prelude: `${NIMBU_PAY}\n${LORA_GIVEN}`,
     prompt: `The given layer \`W_BASE\` (71 words in, 3 reply styles out) has a habit: it picks "formal" for every one of the 12 customer questions. The brand team wants "warm", and "safety first" for the two security questions (\`Y_TRAIN\`). You may not touch \`W_BASE\`. Train a LoRA adapter beside it.
 
 Write \`train_lora(X, y, W, r=2, alpha=4, steps=200, lr=1.0, seed=0)\` that returns \`(A, B, losses)\`:
@@ -268,7 +268,7 @@ assert np.allclose(X_TRAIN @ merged, lora_logits(X_TRAIN, W_BASE, A, B, 2)), "me
       'Inside the loop compute the logits and the loss first, then `G = (softmax(logits) - Y) / len(y)`. Both gradients come from G, and both must be computed before either matrix is updated.',
       'The gradient for B goes through A (`(X @ A).T @ G`) and the gradient for A goes through B (`G @ B.T`). That is why B = 0 is safe on step 0: B still learns, and A starts learning one step later.',
     ],
-    explanation: `The frozen layer never moves, so the “Paisa Pal tone” lives entirely in 148 numbers of A and B, and you can peel it off to get the original layer back exactly, or merge it into W for free at serving time. Starting B at zero means training begins at the pretrained behaviour and moves away gradually. A rank-2 correction is enough here because the wanted change is simple: push “formal” down everywhere, and push “safety first” up where PIN and OTP words appear. That is the kind of low-rank nudge LoRA is good at.
+    explanation: `The frozen layer never moves, so the “Nimbu Pay tone” lives entirely in 148 numbers of A and B, and you can peel it off to get the original layer back exactly, or merge it into W for free at serving time. Starting B at zero means training begins at the pretrained behaviour and moves away gradually. A rank-2 correction is enough here because the wanted change is simple: push “formal” down everywhere, and push “safety first” up where PIN and OTP words appear. That is the kind of low-rank nudge LoRA is good at.
 
 The toy is one tiny layer, so the saving is small (148 trained numbers against 213). In a real model LoRA wraps the attention layers of every block, W is 4096 by 4096, the gradients come from backpropagation through the whole network (PyTorch computes the two lines you wrote), and the data is a few hundred reviewed example replies rather than 12 labels.`,
     source: 'phase4-modern-llms/finetune_tiny_gpt.py',
@@ -280,7 +280,7 @@ The toy is one tiny layer, so the saving is small (148 trained numbers against 2
     lesson: 'agents',
     project: { piece: 'Tool loop' },
     title: 'The tool loop: check a balance, check a refund, then answer',
-    prelude: `${PAISA_PAL}\n${AGENT_GIVEN}`,
+    prelude: `${NIMBU_PAY}\n${AGENT_GIVEN}`,
     prompt: `Riya’s customers ask about their own money. The answers are in \`get_balance\` and \`refund_status\`, not in any page or weight. Put the model inside a loop.
 
 \`parse_action(text)\` reads ONE model reply, as in \`mini_agent.py\`:
@@ -388,7 +388,7 @@ A real agent replaces \`scripted_model\` with an API call and nothing else in th
     lesson: 'evals',
     project: { piece: 'Eval harness' },
     title: 'Score the bot on the 12 real questions',
-    prelude: `${PAISA_PAL}\n${EVAL_GIVEN}`,
+    prelude: `${NIMBU_PAY}\n${EVAL_GIVEN}`,
     prompt: `The demo looked great. Now score the bot on the 12 labelled customer questions in \`QUESTIONS\`. A bot is any function \`bot(question)\` that returns \`{"page": ..., "answer": ...}\`, with \`page = None\` meaning it refused.
 
 \`score(page, fact, out)\` marks one question and returns \`(passed, reason)\`:
@@ -451,7 +451,7 @@ for q, reason in report["failures"]:
 assert score("cashback", "48 hours", ans)[0] is True, f"right page and fact present: {score('cashback', '48 hours', ans)}"
 assert score("cashback", "100 rupees", ans)[0] is False, "right page, but the required fact is missing: must fail"
 assert score("kyc", "PAN", ans)[0] is False, "wrong page must fail"
-refusal = {"page": None, "answer": "Sorry, I can only help with Paisa Pal payments."}
+refusal = {"page": None, "answer": "Sorry, I can only help with Nimbu Pay payments."}
 assert score("refunds", "3 working days", refusal)[0] is False, "refusing an answerable question must fail"
 assert score(None, None, refusal)[0] is True and score(None, None, ans)[0] is False, "the biryani question must be refused, and answering it must fail"` },
       { name: 'the toy bot: every page right, only 8 of 12 answers right', code: `r = evaluate(toy_bot)

@@ -53,7 +53,7 @@ export default function TokenizationLesson() {
         <p>It happens in three small hops:</p>
         <TextToVector focus="token" id={4217} idNote="(number made up)" vector="[0.2, −1.3, …]" />
         <p>This lesson is about the first two hops. They sound like plumbing. They are not.</p>
-        <p>The way text is cut into pieces decides what the model can <em>see</em>. It also decides what Paisa Pal’s bill is, and why a model that writes sonnets can miscount the letters in “strawberry”.</p>
+        <p>The way text is cut into pieces decides what the model can <em>see</em>. It also decides what Nimbu Pay’s bill is, and why a model that writes sonnets can miscount the letters in “strawberry”.</p>
         <p>A model never sees letters or words. It sees a list of integers. The component that produces those integers is the <b>tokenizer</b>, and it is built <em>before</em> the neural network is trained, by a surprisingly simple algorithm.</p>
       </Why>
 

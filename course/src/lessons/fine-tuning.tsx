@@ -11,9 +11,9 @@ export default function FineTuningLesson() {
   return (
     <Lesson id="fine-tuning">
       <Why>
-        <p className="lede">The bot now finds the right policy. It still does not sound like Paisa Pal.</p>
+        <p className="lede">The bot now finds the right policy. It still does not sound like Nimbu Pay.</p>
         <p>The brand team’s rule is short: two warm sentences, no “Dear Valued Customer”, and a fixed JSON format so the app can show the reply. Riya reads a sample of the bot’s answers during lunch. One begins “We deeply regret any inconvenience this may have caused” and goes on for a whole paragraph.</p>
-        <p>She has described all of that in the prompt. It mostly works. But the description is now 800 tokens long, Paisa Pal pays for it on every call, and one request in fifty still comes back as a chatty paragraph.</p>
+        <p>She has described all of that in the prompt. It mostly works. But the description is now 800 tokens long, Nimbu Pay pays for it on every call, and one request in fifty still comes back as a chatty paragraph.</p>
         <p>Adding documents with <a href="#/lesson/rag">RAG</a> will not help. The model is not missing <em>information</em>. It is missing a <em>habit</em>.</p>
         <p>Kabir puts it in one line: “Habits live in the weights.” To change a habit, you change the weights.</p>
         <p>Part 9’s question again: <b>what exactly changes?</b> RAG changed the prompt and left the weights alone. Fine-tuning is the mirror image: <b>the weights change, and the prompt can stay short</b>.</p>
@@ -225,7 +225,7 @@ opt = torch.optim.AdamW(params, lr=lr)
       </BreakIt>
 
       <Exercises>
-        <p>Riya’s lunch-time sample, fixed for real. In this piece of the <a href="#/project">Paisa Pal support bot</a>, a frozen layer that answers every customer in “Dear Valued Customer” style learns the Paisa Pal tone through two small matrices, and its own weights never move.</p>
+        <p>Riya’s lunch-time sample, fixed for real. In this piece of the <a href="#/project">Nimbu Pay support bot</a>, a frozen layer that answers every customer in “Dear Valued Customer” style learns the Nimbu Pay tone through two small matrices, and its own weights never move.</p>
         <CodeExercise id="fine-tuning-code-bot-lora" />
         <CodeExercise id="fine-tuning-code-lora" />
         <Exercise

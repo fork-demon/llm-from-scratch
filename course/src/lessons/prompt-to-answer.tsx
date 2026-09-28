@@ -8,7 +8,7 @@ export default function PromptToAnswerLesson() {
   return (
     <Lesson id="prompt-to-answer">
       <Why title="What happens when you press Enter?">
-        <p className="lede">Monday morning at Paisa Pal, a fintech office in Bengaluru. The CEO has one line on the all-hands slide: “Our own ChatGPT for customer support.”</p>
+        <p className="lede">Monday morning at Nimbu Pay, a fintech office in Bengaluru. The CEO has one line on the all-hands slide: “Our own ChatGPT for customer support.”</p>
         <p>By lunch, Riya has been moved to the new AI team. She is a good backend developer. Java, Python, queues, databases. She has never trained a model in her life.</p>
         <p>To start somewhere, she opens the vendor chatbot the team is trialling and types a test question:</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 22 }}>What is a cat?</div>

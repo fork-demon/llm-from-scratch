@@ -1,5 +1,5 @@
 // Small built-in training texts for the in-browser GPT trainer (GptTrainer).
-// Shakespeare is public domain. The Paisa Pal tickets are written for this course (Paisa Pal is the course's
+// Shakespeare is public domain. The Nimbu Pay tickets are written for this course (Nimbu Pay is the course's
 // fictional Indian fintech) and generated from a small seeded grammar, so the text is deterministic.
 import { makeRng } from './rng'
 import { makeCorpus } from './tinyLm'
@@ -155,25 +155,25 @@ const KINDS: Kind[] = [
   },
   {
     tag: 'REFUND',
-    ask: (f) => `${f.payee} cancelled my order ${f.when} but the refund of ${f.amount} is not showing in Paisa Pal.`,
+    ask: (f) => `${f.payee} cancelled my order ${f.when} but the refund of ${f.amount} is not showing in Nimbu Pay.`,
     reply: (f) => `Hi ${f.name}, merchant refunds take 5 to 7 working days. If it is not credited by then, reply to this ticket.`,
   },
   {
     tag: 'WALLET',
-    ask: (f) => `I added ${f.amount} to my Paisa Pal wallet ${f.when} using ${f.bank} net banking but the wallet balance is still zero.`,
+    ask: (f) => `I added ${f.amount} to my Nimbu Pay wallet ${f.when} using ${f.bank} net banking but the wallet balance is still zero.`,
     reply: (f) => `Thank you for waiting, ${f.name}. The ${f.amount} has now been added to your wallet. Please refresh the app.`,
   },
 ]
 
 /** A deterministic set of support tickets and replies, in a slightly formal Indian-English register. */
-export const makePaisaPalTickets = (count = 220, seed = 42): string => {
+export const makeNimbuPayTickets = (count = 220, seed = 42): string => {
   const rng = makeRng(seed)
   const pick = <T,>(a: T[]): T => a[rng.int(a.length)]
   let out = ''
   for (let i = 0; i < count; i++) {
     const f: Fill = { name: pick(NAMES), payee: pick(PAYEES), amount: pick(AMOUNTS), bank: pick(BANKS), when: pick(WHEN) }
     const k = pick(KINDS)
-    out += `Ticket ${4100 + i} [${k.tag}]\n${f.name}: ${k.ask(f)}\nPaisa Pal: ${k.reply(f)}\n\n`
+    out += `Ticket ${4100 + i} [${k.tag}]\n${f.name}: ${k.ask(f)}\nNimbu Pay: ${k.reply(f)}\n\n`
   }
   return out
 }
@@ -182,6 +182,6 @@ export interface Corpus { id: string; label: string; blurb: string; text: string
 
 export const CORPORA: Corpus[] = [
   { id: 'shakespeare', label: 'Shakespeare', blurb: 'Famous speeches and sonnets (public domain). Hard: every line is different.', text: SHAKESPEARE },
-  { id: 'tickets', label: 'Paisa Pal tickets', blurb: 'Support tickets and replies written for this course. Very repetitive, so the model learns the pattern fast.', text: makePaisaPalTickets() },
+  { id: 'tickets', label: 'Nimbu Pay tickets', blurb: 'Support tickets and replies written for this course. Very repetitive, so the model learns the pattern fast.', text: makeNimbuPayTickets() },
   { id: 'sentences', label: 'Simple sentences', blurb: 'Tiny made-up sentences from a small grammar (the same text as the MLP trainer).', text: makeCorpus(7, 400) },
 ]

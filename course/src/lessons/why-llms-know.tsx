@@ -12,8 +12,8 @@ export default function WhyLlmsKnowLesson() {
     <Lesson id="why-llms-know">
       <Why>
         <p className="lede">Thursday. The support team forwards Riya a screenshot from the vendor chatbot they are testing. A customer asked about refunds.</p>
-        <div className="card" style={{ fontFamily: 'var(--serif)' }}>“As per Paisa Pal’s 14-day refund policy, failed UPI payments are refunded within 3 working days, and you are entitled to a ₹100 inconvenience credit.”</div>
-        <p>Paisa Pal has no 14-day policy. There is no ₹100 credit. The whole policy was invented, in perfect customer-service English.</p>
+        <div className="card" style={{ fontFamily: 'var(--serif)' }}>“As per Nimbu Pay’s 14-day refund policy, failed UPI payments are refunded within 3 working days, and you are entitled to a ₹100 inconvenience credit.”</div>
+        <p>Nimbu Pay has no 14-day policy. There is no ₹100 credit. The whole policy was invented, in perfect customer-service English.</p>
         <p>Dev, reading over her shoulder: “But it sounded so sure. It must have got that from somewhere.” Did it? To find out, ask a model two simpler questions.</p>
         <div className="grid-2">
           <div className="card">
@@ -25,7 +25,7 @@ export default function WhyLlmsKnowLesson() {
             <p>You may get a title, authors, a journal and a year. Well formatted. Confident. <b>And the paper may not exist.</b></p>
           </div>
         </div>
-        <p>These look like opposite behaviours: knowing and inventing. This lesson argues they are <em>the same mechanism</em>, working on well-covered and on thinly-covered ground. The refund policy is the second card, wearing a Paisa Pal badge.</p>
+        <p>These look like opposite behaviours: knowing and inventing. This lesson argues they are <em>the same mechanism</em>, working on well-covered and on thinly-covered ground. The refund policy is the second card, wearing a Nimbu Pay badge.</p>
         <p>A trained model is a fixed set of numbers plus a fixed recipe of arithmetic. Everything it “knows” must be somewhere in those numbers.</p>
         <p>This part of the course is also where certainty runs out. From here on, every important claim carries one of three labels: <b>established</b> (well understood, or measured many times), <b>model</b> (a simplification that helps you think, not literally true) and <b>research</b> (still being worked out, or actively disputed).</p>
       </Why>
@@ -193,7 +193,7 @@ idx = torch.cat([idx, nxt], dim=1)              # feed back in
       </BreakIt>
 
       <Exercises>
-        <p>Riya’s first piece of the <a href="#/project">Paisa Pal support bot</a> is a guard in front of its mouth: before the bot answers, check how sure it is, and hand over to a human when it is not. Build it, then see what it cannot catch.</p>
+        <p>Riya’s first piece of the <a href="#/project">Nimbu Pay support bot</a> is a guard in front of its mouth: before the bot answers, check how sure it is, and hand over to a human when it is not. Build it, then see what it cannot catch.</p>
         <CodeExercise id="why-llms-know-code-bot-confidence" />
 
         <Exercise

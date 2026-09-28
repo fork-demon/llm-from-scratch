@@ -11,7 +11,7 @@ export default function AgentsLesson() {
   return (
     <Lesson id="agents">
       <Why>
-        <p className="lede">Monday morning, and the support bot finally answers from the policy PDFs and in the Paisa Pal tone. Then the first real ticket of the week comes in.</p>
+        <p className="lede">Monday morning, and the support bot finally answers from the policy PDFs and in the Nimbu Pay tone. Then the first real ticket of the week comes in.</p>
         <div className="card center" style={{ fontFamily: 'var(--serif)', fontSize: 21 }}>“I paid ₹2,340 to my landlord yesterday. Money gone, landlord says nothing came. Transaction PP-88213. Where is it?”</div>
         <p>Riya reads the bot’s reply twice. It is polite. It is well formatted. And it has no idea, because the status of PP-88213 lives in the payments database, not in any PDF and not in any weight.</p>
         <p>“So we connect it to the database,” Dev says, stirring his chai. “It can just check, na?”</p>
@@ -331,7 +331,7 @@ if len(transcript) > context_budget and len(scratchpad) > 2:
       </BreakIt>
 
       <Exercises>
-        <p>Back to the landlord ticket. In this piece of the <a href="#/project">Paisa Pal support bot</a>, the bot stops guessing: it asks for <code>get_balance</code> or <code>refund_status</code>, your loop runs the real function, and the model answers from the result.</p>
+        <p>Back to the landlord ticket. In this piece of the <a href="#/project">Nimbu Pay support bot</a>, the bot stops guessing: it asks for <code>get_balance</code> or <code>refund_status</code>, your loop runs the real function, and the model answers from the result.</p>
         <CodeExercise id="agents-code-bot-tool-loop" />
         <OrderExercise
           id="agents-trace-loop"

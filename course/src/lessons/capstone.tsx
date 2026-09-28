@@ -26,7 +26,7 @@ export default function CapstoneLesson() {
   return (
     <Lesson id="capstone">
       <Why title="Can you wire every piece together yourself?">
-        <p className="lede">Launch day. At 10 a.m. the Paisa Pal support bot goes live for every customer. By 10:20 the team WhatsApp group is all green ticks and one cake photo from Dev, who is not even on the team.</p>
+        <p className="lede">Launch day. At 10 a.m. the Nimbu Pay support bot goes live for every customer. By 10:20 the team WhatsApp group is all green ticks and one cake photo from Dev, who is not even on the team.</p>
         <p>The bot answers from the policy PDFs, checks transaction status with a tool, stays inside its budgets, and passed 200 real tickets in the eval. Riya knows each of those pieces from a lesson.</p>
         <p>That evening she stays back anyway. Kabir stops at her desk with his bag on his shoulder. “Happy?” “Almost,” she says. “I want to wire every piece together myself. Small. Once.” He smiles. “Don’t memorise it. Build it.”</p>
         <p>So far, every program in the repository ran alone. The tokenizer never met the GPT. The GPT never met the retriever. The agent used a scripted stand-in instead of a model.</p>
@@ -384,7 +384,7 @@ def test_unknown_tool_does_not_crash():
 
       <section className="section" id="support-bot" data-phase="build">
         <div className="section-head"><span className="section-kicker">In your browser</span></div>
-        <h2>Assemble the Paisa Pal support bot</h2>
+        <h2>Assemble the Nimbu Pay support bot</h2>
         <p>The six milestones ran on your own machine. The support bot you built piece by piece in Parts 8 to 10 comes together right here in the page: the retriever, the guardrails around the tools, and the eval, all waiting in the project code.</p>
         <p>Monday morning, Kabir forwards Riya the twelve real customer questions and one line: “Make it pass all twelve, and never move a rupee on its own.” Your pieces so far are listed on <a href="#/project">Your support bot</a>.</p>
         <CodeExercise id="capstone-code-bot-assemble" />

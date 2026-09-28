@@ -9,7 +9,7 @@ export default function NextTokenLesson() {
   return (
     <Lesson id="next-token">
       <Why>
-        <p className="lede">It is Saturday. Riya has exported two years of old Paisa Pal support tickets and written forty lines of Python. For each character, her program counts which character tends to come next. Then it writes, one character at a time.</p>
+        <p className="lede">It is Saturday. Riya has exported two years of old Nimbu Pay support tickets and written forty lines of Python. For each character, her program counts which character tends to come next. Then it writes, one character at a time.</p>
         <p>She presses Run. The screen fills with: “refund not recived pls chek amont debted twise acount”.</p>
         <p>Dev reads it from the sofa and laughs. “That is exactly what our tickets look like.”</p>
         <p>He is right, and that is what bothers her. It means nothing, yet it <em>sounds</em> like a ticket. Forty lines of counting got that far. How?</p>

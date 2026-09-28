@@ -326,7 +326,7 @@ loss = (s_logp - t_logp).mean()               # estimate of reverse KL
       </BreakIt>
 
       <Exercises>
-        <p>The support team’s laptops need a small bot. In this piece of the <a href="#/project">Paisa Pal support bot</a>, the small bot learns the next word of a refund answer from the big bot’s softened probabilities, not only from its top pick.</p>
+        <p>The support team’s laptops need a small bot. In this piece of the <a href="#/project">Nimbu Pay support bot</a>, the small bot learns the next word of a refund answer from the big bot’s softened probabilities, not only from its top pick.</p>
         <CodeExercise id="distillation-code-bot-soft-labels" />
 
         <Exercise

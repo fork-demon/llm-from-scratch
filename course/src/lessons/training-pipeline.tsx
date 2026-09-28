@@ -78,7 +78,7 @@ export default function TrainingPipelineLesson() {
           </table>
         </div>
         <Callout kind="analogy">
-          Think of a bright new joiner on Paisa Pal’s support team. In week one she reads the whole wiki (pretraining). In week two she sits next to a senior and copies how tickets are answered (SFT). In week three she answers tickets herself, and a reviewer marks them: “this reply was better than that one” (preference feedback).
+          Think of a bright new joiner on Nimbu Pay’s support team. In week one she reads the whole wiki (pretraining). In week two she sits next to a senior and copies how tickets are answered (SFT). In week three she answers tickets herself, and a reviewer marks them: “this reply was better than that one” (preference feedback).
           <br /><br />
           Where the analogy stops: the joiner understands <em>why</em> a reply was preferred. The model only receives a number that moves its weights. If reviewers happen to favour long replies, the model gets longer, not wiser.
         </Callout>
@@ -405,7 +405,7 @@ def estimated_jaccard(i, j):           # fraction of positions that agree
       </BreakIt>
 
       <Exercises>
-        <p>The new joiner learns from real tickets, and so does the <a href="#/project">Paisa Pal support bot</a>. This piece turns a support conversation into training data: the chat template, and the mask that grades only the bot’s own answer.</p>
+        <p>The new joiner learns from real tickets, and so does the <a href="#/project">Nimbu Pay support bot</a>. This piece turns a support conversation into training data: the chat template, and the mask that grades only the bot’s own answer.</p>
         <CodeExercise id="training-pipeline-code-bot-chat-template" />
 
         <Exercise

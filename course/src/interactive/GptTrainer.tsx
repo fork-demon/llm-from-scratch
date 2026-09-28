@@ -16,7 +16,7 @@ const SIZES: { id: GptTrainerSize; label: string; sizes: GptSizes; note: string 
   { id: 'small', label: 'Small', sizes: { nLayer: 2, nHead: 4, nEmbd: 32, contextLen: 32 }, note: 'the default' },
   { id: 'bigger', label: 'Bigger', sizes: { nLayer: 2, nHead: 4, nEmbd: 48, contextLen: 32 }, note: 'about 2× slower per step' },
 ]
-const DEFAULT_PROMPTS: Record<string, string> = { shakespeare: 'To be, or not to be, that is', tickets: 'Paisa Pal: Sorry for the', sentences: 'the cat sat on the mat. a', custom: '' }
+const DEFAULT_PROMPTS: Record<string, string> = { shakespeare: 'To be, or not to be, that is', tickets: 'Nimbu Pay: Sorry for the', sentences: 'the cat sat on the mat. a', custom: '' }
 const PAUSE_EVERY = 1000 // steps: never burn the learner's battery forever
 const CHUNK_MS = 150
 const MAX_PASTE = 100_000

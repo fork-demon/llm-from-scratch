@@ -1,11 +1,11 @@
-// The Paisa Pal support-bot project: one running build through Parts 8 to 10.
+// The Nimbu Pay support-bot project: one running build through Parts 8 to 10.
 // Riya's company wants a support bot (the story's premise). Each later lesson adds one piece, written by the
-// learner in the browser against hidden tests. Every piece starts from paisa_pal.py (the shared data) plus,
+// learner in the browser against hidden tests. Every piece starts from nimbu_pay.py (the shared data) plus,
 // where it needs them, reference versions of earlier pieces, so no exercise depends on the learner having
 // finished another one. The capstone assembles the whole bot.
-import PAISA_PAL from './paisa_pal.py?raw'
+import NIMBU_PAY from './nimbu_pay.py?raw'
 
-export { PAISA_PAL }
+export { NIMBU_PAY }
 
 export interface ProjectPiece { lesson: string; exercise: string; piece: string; does: string }
 
@@ -20,7 +20,7 @@ export const PROJECT_PIECES: ProjectPiece[] = [
   { lesson: 'interpretability', exercise: 'interpretability-code-bot-probe', piece: 'Refund detector', does: 'finds the direction inside the model that means “refund”' },
   { lesson: 'reasoning-models', exercise: 'reasoning-models-code-bot-best-of-n', piece: 'Checked answers', does: 'best-of-N with a checker, measured against majority vote' },
   { lesson: 'rag', exercise: 'rag-code-bot-retriever', piece: 'Retriever', does: 'finds the help page that answers a question, or none' },
-  { lesson: 'fine-tuning', exercise: 'fine-tuning-code-bot-lora', piece: 'LoRA adapter', does: 'teaches a frozen layer the Paisa Pal tone with two small matrices' },
+  { lesson: 'fine-tuning', exercise: 'fine-tuning-code-bot-lora', piece: 'LoRA adapter', does: 'teaches a frozen layer the Nimbu Pay tone with two small matrices' },
   { lesson: 'agents', exercise: 'agents-code-bot-tool-loop', piece: 'Tool loop', does: 'calls get_balance and refund_status, then answers' },
   { lesson: 'evals', exercise: 'evals-code-bot-eval', piece: 'Eval harness', does: 'scores the bot on the real questions, with a confidence interval' },
   { lesson: 'making-models-cheaper', exercise: 'making-models-cheaper-code-bot-int8', piece: 'int8 weights', does: 'shrinks the bot almost 4× and measures what it costs' },

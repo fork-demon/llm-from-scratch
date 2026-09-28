@@ -290,7 +290,7 @@ assert abs(measured - end_to_end) < 1e-3
             hints={['The measured value is 12. Which combination of 4, 1 and 3 gives 12?', 'Think of the currency exchange: do you add exchange rates or multiply them?']}
             solution={<><p>The amplifications must be <b>multiplied</b>, not added: 4 × 1 × 3 = 12. A nudge is stretched by stage 1, and the <em>stretched</em> nudge is what stage 2 receives, and so on.</p><p>Notice that the nudge check caught the bug without anyone reasoning about calculus. Keep that habit: whenever you derive a gradient by hand, measure it too.</p></>}
           >
-            <p>A colleague at Paisa Pal analyses the pipeline <code>x → square → +1 → ×3</code> at x = 2. His code says 8. The nudge experiment prints 12.0. What is wrong?</p>
+            <p>A colleague at Nimbu Pay analyses the pipeline <code>x → square → +1 → ×3</code> at x = 2. His code says 8. The nudge experiment prints 12.0. What is wrong?</p>
             <Code
               setup={`def nudge_derivative(f, x, h=1e-6):
     return (f(x + h) - f(x)) / h`}

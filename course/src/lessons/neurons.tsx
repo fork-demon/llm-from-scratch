@@ -15,7 +15,7 @@ export default function NeuronsLesson() {
     <Lesson id="neurons">
       <Why>
         <Diagnostic id="diag-neural-nets" part={DIAGNOSTICS["neural-nets"].part} questions={DIAGNOSTICS["neural-nets"].questions} />
-        <p className="lede">Monday morning, Paisa Pal. Kabir gives Riya her first real task: 300 dots on a plane, in three spiral arms that curl around each other. “Tell me which arm each dot belongs to.”</p>
+        <p className="lede">Monday morning, Nimbu Pay. Kabir gives Riya her first real task: 300 dots on a plane, in three spiral arms that curl around each other. “Tell me which arm each dot belongs to.”</p>
         <p>She uses the loop from the weekend. A linear classifier, gradient descent, 300 steps. Accuracy: 54%. She trains for 3,000 steps. 54%. Twenty thousand. Still 54%.</p>
         <p>Kabir looks at her plot. The model has cut the plane into three wedges with straight edges, and the arms curl straight through all of them.</p>
         <p>“A straight line cannot fold,” he says. “Training longer won’t teach it to.”</p>

@@ -13,9 +13,14 @@ a WhatsApp group). Light humour. Kindness. A small lesson in each moment, never 
 
 ## The cast (keep them consistent everywhere)
 
-- **Riya** (26). Backend developer (Java and Python) at *Paisa Pal*, a mid-size fintech in Bengaluru.
+Everyone here, and Nimbu Pay, is fictional. The company was renamed from "Paisa Pal" in September 2026 because
+a real app used that name; before introducing any new company, product or person, search that the name is not in
+real use.
+
+
+- **Riya** (26). Backend developer (Java and Python) at *Nimbu Pay*, a mid-size fintech in Bengaluru.
   Good engineer, zero ML. Curious, a little stubborn, hates magic she cannot explain. The reader is Riya.
-- **Kabir** (38). Staff ML engineer at Paisa Pal. Calm, dry humour, draws everything on a whiteboard.
+- **Kabir** (38). Staff ML engineer at Nimbu Pay. Calm, dry humour, draws everything on a whiteboard.
   Catchphrase, used rarely: "Don't memorise it. Build it." Never lectures for more than a few lines.
 - **Amma**. Riya's mother, retired school maths teacher in Mysuru, on the phone or visiting.
   Source of everyday analogies (cooking by taste, a teacher correcting 40 notebooks, the ration shop
@@ -26,7 +31,7 @@ a WhatsApp group). Light humour. Kindness. A small lesson in each moment, never 
 
 ## The arc (who is where, lesson by lesson)
 
-Part 0. Paisa Pal's CEO wants "our own ChatGPT for customer support". Riya is moved to the new AI
+Part 0. Nimbu Pay's CEO wants "our own ChatGPT for customer support". Riya is moved to the new AI
 team. She realises she uses LLMs daily and cannot explain one. Kabir: "Good. Then we start at the bottom."
 - prompt-to-answer: Riya types "What is a cat?" to test the vendor chatbot; watches it stream; Dev says "it looked it up".
 - surprising-idea: Riya's phone keyboard predicting "Happy birthday ___" on Amma's birthday.
@@ -57,7 +62,7 @@ Part 7. build-gpt: Riya traces one token through her own GPT, late evening, offi
 training-gpt: 2 a.m., the loss curve falls for the first time; she sends Kabir a screenshot; he replies with one thumbs-up word.
 inference: the demo to the team is slow; the KV cache as not re-reading the whole chat every time.
 
-Part 8. why-llms-know: the chatbot confidently invents a Paisa Pal refund policy. Dev: "but it sounded so sure".
+Part 8. why-llms-know: the chatbot confidently invents a Nimbu Pay refund policy. Dev: "but it sounded so sure".
 modern-architecture: Kabir opens a real 2026 open model config; everything Riya built is there, plus new tricks.
 training-pipeline: from a model that continues text to one that answers; like a bright new joiner learning the company's way of replying.
 distillation: a senior teaching a junior, tuition-class style; the small model on the support team's laptops.
@@ -66,7 +71,7 @@ multimodal: customers send photos of failed-payment screenshots; how the model r
 interpretability: Riya asks "what is it actually thinking?"; Kabir shows what we can and cannot read.
 reasoning-models: Amma solving a puzzle aloud versus answering instantly.
 
-Part 9. rag: the bot must answer from Paisa Pal's policy PDFs, not memory. fine-tuning: making it reply in the
+Part 9. rag: the bot must answer from Nimbu Pay's policy PDFs, not memory. fine-tuning: making it reply in the
 company's tone. agents: letting it check a real transaction status with a tool, and the first scary prompt injection.
 
 Part 10. evals: "the demo looked great" versus 200 real tickets. inference-systems: Diwali sale traffic.

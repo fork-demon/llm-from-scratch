@@ -1,8 +1,8 @@
-import { PAISA_PAL } from '../project/paisaPal'
+import { NIMBU_PAY } from '../project/nimbuPay'
 import type { CodeExerciseDef } from './types'
 
-// The Paisa Pal project, first four pieces (Part 8): a confidence check, rotary positions,
-// the chat template with its loss mask, and the distillation loss. Each starts from paisa_pal.py
+// The Nimbu Pay project, first four pieces (Part 8): a confidence check, rotary positions,
+// the chat template with its loss mask, and the distillation loss. Each starts from nimbu_pay.py
 // plus a small toy model given in the prelude, so none depends on another being finished.
 const exercises: CodeExerciseDef[] = [
   /* ---------- why-llms-know: Confidence check ---------- */
@@ -11,7 +11,7 @@ const exercises: CodeExerciseDef[] = [
     lesson: 'why-llms-know',
     title: 'The bot’s confidence check',
     project: { piece: 'Confidence check' },
-    prelude: PAISA_PAL + '\n' + `
+    prelude: NIMBU_PAY + '\n' + `
 # ---- given: a toy bot ----
 # For a few questions, its logits over six candidate answers: made-up numbers of the kind a trained
 # model produces. "14 days" is the refund policy the vendor bot invented in this lesson's story.
@@ -21,13 +21,13 @@ BOT_LOGITS = {
     QUESTIONS[2][0]: [0.8, 3.9, 1.2, 0.5, 0.6, 0.3],    # how long does cashback take?
     QUESTIONS[10][0]: [0.5, 0.4, 0.7, 0.3, 0.5, 0.6],   # the biryani question
     QUESTIONS[11][0]: [0.9, 0.3, 1.4, 0.2, 0.6, 0.8],   # the share price
-    "what is the paisa pal refund policy": [0.7, 0.2, 0.3, 0.1, 0.5, 4.6],
+    "what is the nimbu pay refund policy": [0.7, 0.2, 0.3, 0.1, 0.5, 4.6],
 }
 NOT_SURE = "I am not sure. Let me connect you to a human."
 `,
     prompt: `The vendor bot always answers, because softmax always produces a winner. Riya adds a check before the bot speaks.
 
-- \`confidence(logits)\` turns the logits into probabilities (\`softmax\` is in \`paisa_pal.py\`) and returns \`(best_index, top_probability)\`.
+- \`confidence(logits)\` turns the logits into probabilities (\`softmax\` is in \`nimbu_pay.py\`) and returns \`(best_index, top_probability)\`.
 - \`reply(question, threshold=0.6)\` looks up \`BOT_LOGITS[question]\`. If the top probability is at least \`threshold\`, it returns that entry of \`ANSWERS\`. Otherwise it returns \`NOT_SURE\`.
 
 Then read the last test carefully: it is the point of the lesson.`,
@@ -63,7 +63,7 @@ for q in BOT_LOGITS:
       { name: 'confident questions get their answer', code: `r1 = reply(QUESTIONS[0][0]); r2 = reply(QUESTIONS[2][0])\nassert r1 == "3 working days", f"refund question: got {r1!r}"\nassert r2 == "48 hours", f"cashback question: got {r2!r}"` },
       { name: 'the biryani question and the share price: the bot says it is not sure', code: `b = confidence(BOT_LOGITS[QUESTIONS[10][0]])[1]\nassert b < 0.25, f"the biryani logits are nearly flat, top probability should be about 0.20, got {b}"\nfor q in (QUESTIONS[10][0], QUESTIONS[11][0]):\n    r = reply(q)\n    assert r == NOT_SURE, f"{q!r}: got {r!r}, expected NOT_SURE"` },
       { name: 'the threshold is a setting: at 0.95 even the refund answer is held back', code: `r = reply(QUESTIONS[0][0], threshold=0.95)\nassert r == NOT_SURE, f"top probability 0.904 is below 0.95, so expected NOT_SURE, got {r!r}"` },
-      { name: 'the point: the invented policy passes the check, because confidence is not truth', code: `best, top = confidence(BOT_LOGITS["what is the paisa pal refund policy"])\nr = reply("what is the paisa pal refund policy")\nassert abs(top - 0.9313) < 1e-3, f"top probability should be about 0.9313, got {top}"\nassert r == "14 days", f"got {r!r}. The invention (93.1%) is MORE confident than the true refund answer (90.4%): no threshold can separate them"` },
+      { name: 'the point: the invented policy passes the check, because confidence is not truth', code: `best, top = confidence(BOT_LOGITS["what is the nimbu pay refund policy"])\nr = reply("what is the nimbu pay refund policy")\nassert abs(top - 0.9313) < 1e-3, f"top probability should be about 0.9313, got {top}"\nassert r == "14 days", f"got {r!r}. The invention (93.1%) is MORE confident than the true refund answer (90.4%): no threshold can separate them"` },
     ],
     hints: [
       '`p = softmax(logits)`, then `best = int(np.argmax(p))` and the top probability is `float(p[best])`.',
@@ -83,11 +83,11 @@ Real systems read the same signal from a model’s token probabilities (sometime
     lesson: 'modern-architecture',
     title: 'Rotary positions for the bot’s attention',
     project: { piece: 'Rotary positions' },
-    prelude: PAISA_PAL + '\n' + `
+    prelude: NIMBU_PAY + '\n' + `
 # ---- given: one attention head of the bot (random, untrained weights: the point is the positions) ----
 rng = np.random.default_rng(8)
 HEAD_DIM = 8
-VOCAB = sorted({w for q, _, _ in QUESTIONS for w in tokenize(q)} | set(tokenize("hi paisa pal team")))
+VOCAB = sorted({w for q, _, _ in QUESTIONS for w in tokenize(q)} | set(tokenize("hi nimbu pay team")))
 EMB = {w: rng.normal(size=HEAD_DIM) for w in VOCAB}
 Wq = rng.normal(size=(HEAD_DIM, HEAD_DIM)) / np.sqrt(HEAD_DIM)
 Wk = rng.normal(size=(HEAD_DIM, HEAD_DIM)) / np.sqrt(HEAD_DIM)
@@ -102,7 +102,7 @@ def queries_and_keys(text):
 - \`rope(x, pos, base=10000.0)\`: \`x\` has shape (T, hd), \`pos\` has T positions. Treat each row as hd/2 pairs: (x[0], x[1]), (x[2], x[3]), ... Pair i turns at speed \`base ** (-2i / hd)\` per position, so its angle is \`pos × speed\`. Rotate each pair by its angle: [a, b] becomes [a·cos − b·sin, a·sin + b·cos]. Return the same shape, pairs in the same places.
 - \`rope_scores(text, start=0)\`: get Q and K from \`queries_and_keys(text)\`, give the tokens positions start, start + 1, ..., rotate both Q and K, and return the (T, T) scores \`Q_rot @ K_rot.T / sqrt(hd)\`.
 
-A customer who opens with “hi paisa pal team” pushes every word 4 places later. The scores between the words of the question must not change.`,
+A customer who opens with “hi nimbu pay team” pushes every word 4 places later. The scores between the words of the question must not change.`,
     starter: `def rope(x, pos, base=10000.0):
     """Rotate each pair (x[..., 2i], x[..., 2i+1]) by pos * base**(-2i/hd). Same shape out."""
     ...
@@ -114,7 +114,7 @@ def rope_scores(text, start=0):
 # When both work, uncomment:
 # q = QUESTIONS[0][0]
 # print(rope_scores(q)[8, 3])                              # "deducted" looking at "failed"
-# print(rope_scores("hi paisa pal team " + q)[12, 7])      # the same two words, 4 places later
+# print(rope_scores("hi nimbu pay team " + q)[12, 7])      # the same two words, 4 places later
 `,
     solution: `def rope(x, pos, base=10000.0):
     """Rotate each pair (x[..., 2i], x[..., 2i+1]) by pos * base**(-2i/hd). Same shape out."""
@@ -136,14 +136,14 @@ def rope_scores(text, start=0):
 
 q = QUESTIONS[0][0]
 print(rope_scores(q)[8, 3])                              # "deducted" looking at "failed"
-print(rope_scores("hi paisa pal team " + q)[12, 7])      # the same two words, 4 places later
+print(rope_scores("hi nimbu pay team " + q)[12, 7])      # the same two words, 4 places later
 `,
     tests: [
       { name: 'the lesson’s hand example: q = k = [1, 0], 30° per step, positions (5, 3) and (105, 103) both score 0.5', code: `import numpy as np\nx = np.array([[1.0, 0.0], [1.0, 0.0]])\nfor p in ([5, 3], [105, 103]):\n    r = rope(x, np.array(p) * np.pi / 6)   # hd = 2: one pair, speed 1 radian, so pos * pi/6 means 30 degrees a step\n    s = float(r[0] @ r[1])\n    assert abs(s - 0.5) < 1e-9, f"positions {p}: score {s}, expected cos(60 degrees) = 0.5"` },
       { name: 'each pair turns at its own speed, and pairs stay in place', code: `import numpy as np\nout = rope(np.array([[1.0, 0.0, 1.0, 0.0]]), np.array([1]))\nexp = np.array([[np.cos(1), np.sin(1), np.cos(0.01), np.sin(0.01)]])\nassert out.shape == (1, 4), f"shape {out.shape}"\nassert np.allclose(out, exp), f"got {out.round(4)}; pair 0 turns 1 radian, pair 1 turns 10000**(-2/4) = 0.01"` },
       { name: 'position 0 changes nothing, and rotation keeps every vector’s length', code: `import numpy as np\nQ, _ = queries_and_keys(QUESTIONS[3][0])\nassert np.allclose(rope(Q[:1], np.array([0])), Q[:1]), "at position 0 the angle is 0, so the vector must be unchanged"\nR = rope(Q, np.arange(len(Q)))\nassert np.allclose(np.linalg.norm(R, axis=1), np.linalg.norm(Q, axis=1)), "a rotation must not change lengths"` },
       { name: 'rope_scores: shape, and positions really change the scores', code: `import numpy as np\nq = QUESTIONS[0][0]\nS = rope_scores(q)\nQ, K = queries_and_keys(q)\nassert S.shape == (15, 15), f"15 tokens, so (15, 15); got {S.shape}"\nplain = Q @ K.T / np.sqrt(8)\nassert not np.allclose(S, plain), "the scores equal the no-position scores: were Q and K rotated?"\nassert np.allclose(np.diag(S), np.diag(plain)), "a token looking at itself sees no rotation (offset 0)"` },
-      { name: 'the point: “hi paisa pal team” shifts the question by 4, and no score between its words changes', code: `import numpy as np\nq = QUESTIONS[0][0]\nS = rope_scores(q)\nS2 = rope_scores("hi paisa pal team " + q)\nassert np.allclose(S2[4:, 4:], S), "with the greeting in front, the question-to-question scores changed"\nassert np.allclose(rope_scores(q, start=1000), S), "starting 1,000 positions later changed the scores"\nassert abs(S2[12, 7] - S[8, 3]) < 1e-9, f"deducted -> failed: {S[8, 3]:.4f} vs {S2[12, 7]:.4f}"` },
+      { name: 'the point: “hi nimbu pay team” shifts the question by 4, and no score between its words changes', code: `import numpy as np\nq = QUESTIONS[0][0]\nS = rope_scores(q)\nS2 = rope_scores("hi nimbu pay team " + q)\nassert np.allclose(S2[4:, 4:], S), "with the greeting in front, the question-to-question scores changed"\nassert np.allclose(rope_scores(q, start=1000), S), "starting 1,000 positions later changed the scores"\nassert abs(S2[12, 7] - S[8, 3]) < 1e-9, f"deducted -> failed: {S[8, 3]:.4f} vs {S2[12, 7]:.4f}"` },
     ],
     hints: [
       'Split the pairs with `a, b = x[..., 0::2], x[..., 1::2]`. The speeds are `base ** (-np.arange(0, hd, 2) / hd)`.',
@@ -163,7 +163,7 @@ A real model does exactly this in every layer and every head, on the GPU, for q 
     lesson: 'training-pipeline',
     title: 'The bot’s chat template and loss mask',
     project: { piece: 'Chat template and loss mask' },
-    prelude: PAISA_PAL + '\n' + `
+    prelude: NIMBU_PAY + '\n' + `
 # ---- given: the lesson's toy tokenizer and two conversations ----
 import re
 IM_START, IM_END = "<|im_start|>", "<|im_end|>"
@@ -178,12 +178,12 @@ CAT_CHAT = [
     {"role": "assistant", "content": "A cat is a small furry animal."},
 ]
 SUPPORT_CHAT = [
-    {"role": "system", "content": "You are Paisa Pal's support assistant. Answer only from the help pages."},
+    {"role": "system", "content": "You are Nimbu Pay's support assistant. Answer only from the help pages."},
     {"role": "user", "content": QUESTIONS[0][0]},
     {"role": "assistant", "content": "The refund reaches your bank account within 3 working days."},
 ]
 `,
-    prompt: `Turn Paisa Pal support conversations into SFT training data, ChatML style. Each message becomes
+    prompt: `Turn Nimbu Pay support conversations into SFT training data, ChatML style. Each message becomes
 
 \`<|im_start|>\`, the role, \`"\\n"\`, the tokens of \`split_content(content)\`, \`<|im_end|>\`, \`"\\n"\`
 
@@ -231,7 +231,7 @@ print(len(tokens), "tokens,", sum(mask), "graded:", "".join(t for t, m in zip(to
 `,
     tests: [
       { name: 'the lesson’s cat conversation: 34 tokens, 9 graded', code: `tokens, mask = render_chat(CAT_CHAT)\nassert len(tokens) == len(mask), f"{len(tokens)} tokens but {len(mask)} mask entries"\nassert len(tokens) == 34, f"expected 34 tokens as in the lesson, got {len(tokens)}"\nassert sum(mask) == 9, f"expected 9 graded tokens (8 of the answer + <|im_end|>), got {sum(mask)}"\nassert tokens[:3] == [IM_START, "system", "\\n"], f"starts with {tokens[:3]}"` },
-      { name: 'Paisa Pal: only the answer and its <|im_end|> are graded', code: `tokens, mask = render_chat(SUPPORT_CHAT)\ngraded = [t for t, m in zip(tokens, mask) if m]\nassert graded[-1] == IM_END, f"the last graded token should be <|im_end|>, got {graded[-1]!r}"\nassert "".join(graded[:-1]) == SUPPORT_CHAT[2]["content"], f"graded text: {''.join(graded[:-1])!r}"\nassert not mask[-1], "the final newline is not part of the answer"` },
+      { name: 'Nimbu Pay: only the answer and its <|im_end|> are graded', code: `tokens, mask = render_chat(SUPPORT_CHAT)\ngraded = [t for t, m in zip(tokens, mask) if m]\nassert graded[-1] == IM_END, f"the last graded token should be <|im_end|>, got {graded[-1]!r}"\nassert "".join(graded[:-1]) == SUPPORT_CHAT[2]["content"], f"graded text: {''.join(graded[:-1])!r}"\nassert not mask[-1], "the final newline is not part of the answer"` },
       { name: 'two turns: both answers graded, the follow-up question not', code: `chat = SUPPORT_CHAT + [{"role": "user", "content": "and if it has not come after 3 days?"}, {"role": "assistant", "content": "Raise a dispute from the transaction screen."}]\ntokens, mask = render_chat(chat)\ngraded = "".join(t for t, m in zip(tokens, mask) if m)\nassert graded.count(IM_END) == 2, f"expected two graded <|im_end|>, got {graded!r}"\nassert "dispute" in graded and "refund" in graded, f"both answers must be graded, got {graded!r}"\nassert "come after" not in graded and "deducted" not in graded, f"a user message was graded: {graded!r}"` },
       { name: 'generation prompt: ends with an open assistant turn', code: `p = generation_prompt(SUPPORT_CHAT[:2])\nassert p[-3:] == [IM_START, "assistant", "\\n"], f"the prompt must end with the assistant header, it ends with {p[-3:]}"\nassert " refund" not in p, "the answer must not be in the prompt"\nassert p[:-3] == render_chat(SUPPORT_CHAT[:2])[0], "before the header, the prompt must be exactly the rendered chat (same template as training)"` },
       { name: 'the point: the loss ignores how badly the model would write the customer’s question', code: `import numpy as np\ntokens, mask = render_chat(SUPPORT_CHAT)\nlosses = np.where(mask, 0.5, 9.0)    # the model is bad at imitating users, good at answering\nm = masked_mean(losses, mask)\nassert abs(m - 0.5) < 1e-9, f"masked mean should be 0.5 (only answer tokens), got {m}; the plain mean would be {losses.mean():.2f}"` },
@@ -252,7 +252,7 @@ The real version does the same with a real tokenizer (each marker is one special
     lesson: 'distillation',
     title: 'A small bot learns from a big one',
     project: { piece: 'Distillation loss' },
-    prelude: PAISA_PAL + '\n' + `
+    prelude: NIMBU_PAY + '\n' + `
 # ---- given: the big bot's logits for one next token ----
 # Context: "If a UPI payment fails, the refund reaches your bank account within 3 working ..."
 # (the same numbers as the teacher in the lesson's lab)
@@ -262,7 +262,7 @@ SMALL_BOT = np.zeros(6)      # the laptop-sized student, untrained: every token 
 `,
     prompt: `The support team’s laptop bot should learn from the big bot’s probabilities, not only from its top answer.
 
-- \`distill_loss(student_logits, teacher_logits, T)\` returns T² × KL(p ‖ q), where p = softmax(teacher_logits / T) and q = softmax(student_logits / T). KL(p ‖ q) = Σ p × ln(p ÷ q). (\`softmax\` is in \`paisa_pal.py\`.)
+- \`distill_loss(student_logits, teacher_logits, T)\` returns T² × KL(p ‖ q), where p = softmax(teacher_logits / T) and q = softmax(student_logits / T). KL(p ‖ q) = Σ p × ln(p ÷ q). (\`softmax\` is in \`nimbu_pay.py\`.)
 - \`distill_step(student_logits, teacher_logits, T, lr=0.5)\` returns new student logits after one gradient step. The gradient of that loss with respect to the student’s logits is T × (q − p).
 
 Both models must be softened by the same T.`,

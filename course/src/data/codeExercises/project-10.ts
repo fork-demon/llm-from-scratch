@@ -1,7 +1,7 @@
 import type { CodeExerciseDef } from './types'
-import { PAISA_PAL } from '../project/paisaPal'
+import { NIMBU_PAY } from '../project/nimbuPay'
 
-// Part 10 of the Paisa Pal project: shrink the bot to int8, and put guardrails around its tools.
+// Part 10 of the Nimbu Pay project: shrink the bot to int8, and put guardrails around its tools.
 // Each stands alone: the prelude holds everything the piece needs that is not the point of the lesson.
 
 // A small support bot, trained in the prelude so the int8 exercise has real weights to shrink.
@@ -65,7 +65,7 @@ const exercises: CodeExerciseDef[] = [
     lesson: 'making-models-cheaper',
     project: { piece: 'int8 weights' },
     title: 'Shrink the support bot to int8, and measure what it costs',
-    prelude: `${PAISA_PAL}\n${GIVEN_BOT}`,
+    prelude: `${NIMBU_PAY}\n${GIVEN_BOT}`,
     prompt: `Finance wants the bot cheaper. The project code above trains Riya's small support bot: \`BOT\` is a dict of two float32 matrices, and \`predict(bot, question)\` returns the help page it would answer from ("none" means refuse).
 
 Write three functions:
@@ -143,7 +143,7 @@ What the real version adds: int8 kernels that multiply the codes directly on the
     lesson: 'production-agents',
     project: { piece: 'Guardrails' },
     title: 'Guardrails: validate every tool call, and ask before money moves',
-    prelude: `${PAISA_PAL}\n${GIVEN_TOOLS}`,
+    prelude: `${NIMBU_PAY}\n${GIVEN_TOOLS}`,
     prompt: `The bot's model proposes tool calls as a name and a dict of arguments, and a model guesses. Write \`guarded_call(name, args, approve=deny_all)\`, the only door to the tools. Check in this order and return a string that starts with \`"ERROR:"\` at the first problem, saying what was wrong so the model can fix it:
 
 1. **Known tool.** \`name\` must be in \`TOOLS\`. Say which tools exist.

@@ -204,7 +204,7 @@ best = accepted[0] if accepted else candidates[0]
       </BreakIt>
 
       <Exercises>
-        <p>Amma checks her margin; the support bot can check its answers too. In this piece of the <a href="#/project">Paisa Pal support bot</a>, a noisy bot answers each customer question several times, and you measure a checker against a majority vote on the real questions.</p>
+        <p>Amma checks her margin; the support bot can check its answers too. In this piece of the <a href="#/project">Nimbu Pay support bot</a>, a noisy bot answers each customer question several times, and you measure a checker against a majority vote on the real questions.</p>
         <CodeExercise id="reasoning-models-code-bot-best-of-n" />
 
         <Exercise
@@ -363,7 +363,7 @@ best = Counter(answers).most_common(1)[0][0]
         <Callout kind="research">
           <b>Not public, and not settled.</b> Proprietary reasoning models do not publish their recipes, so claims like “model X runs a tree search inside” are guesses unless documented. Whether traces are faithful explanations is open: experiments have found stated reasoning that omits what actually changed the answer. Also open: how far training on checkable domains transfers to fuzzy ones, and whether RL teaches new abilities or mainly makes the model reliable at what it could already do sometimes.
         </Callout>
-        <p>That evening Riya sets the Paisa Pal bot’s thinking budget to zero for “what is my balance” questions, and leaves it on for disputed refunds, since thinking tokens are billed like any other output. Amma, told about it on the phone, approves. “Nobody needs a pencil for seven eights.”</p>
+        <p>That evening Riya sets the Nimbu Pay bot’s thinking budget to zero for “what is my balance” questions, and leaves it on for disputed refunds, since thinking tokens are billed like any other output. Amma, told about it on the phone, approves. “Nobody needs a pencil for seven eights.”</p>
       </RealLLM>
 
       <BeforeMovingOn

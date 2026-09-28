@@ -276,7 +276,7 @@ logits = language_model(x)      # from here on: the GPT you already built
       </BreakIt>
 
       <Exercises>
-        <p>Back to the ticket with no text. This piece of the <a href="#/project">Paisa Pal support bot</a> turns the failed-payment screenshot into tokens: cut it into patches, project them, add positions, and put them in the same sequence as the customer’s words.</p>
+        <p>Back to the ticket with no text. This piece of the <a href="#/project">Nimbu Pay support bot</a> turns the failed-payment screenshot into tokens: cut it into patches, project them, add positions, and put them in the same sequence as the customer’s words.</p>
         <CodeExercise id="multimodal-code-bot-screenshot" />
 
         <Exercise
@@ -358,7 +358,7 @@ def patchify(img, p):
               ]}
               solution={<><p>600 s × 100 = 60,000 columns, halved = <b>30,000</b> encoder vectors (one per 20 ms).</p><p>That is far more than a typical transcript of the same call (a few thousand text tokens). Audio models pool further, and many systems still transcribe first when they only need the words.</p></>}
             >
-              <p>Paisa Pal wants to analyse recorded support calls. A Whisper-style encoder makes one spectrogram column per 10 ms and then halves the sequence length. How many encoder output vectors for a 10-minute call? (Ignore the 30-second chunking; the total is the same.)</p>
+              <p>Nimbu Pay wants to analyse recorded support calls. A Whisper-style encoder makes one spectrogram column per 10 ms and then halves the sequence length. How many encoder output vectors for a 10-minute call? (Ignore the 30-second chunking; the total is the same.)</p>
             </Exercise>
           </div>
         </details>

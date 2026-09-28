@@ -1,8 +1,8 @@
 import type { CodeExerciseDef } from './types'
-import { PAISA_PAL } from '../project/paisaPal'
+import { NIMBU_PAY } from '../project/nimbuPay'
 
-// The Paisa Pal support-bot project, Part 8 (second half): preference loss, screenshot tokens,
-// a refund detector inside the model, and checked answers. Each starts from paisa_pal.py plus a small
+// The Nimbu Pay support-bot project, Part 8 (second half): preference loss, screenshot tokens,
+// a refund detector inside the model, and checked answers. Each starts from nimbu_pay.py plus a small
 // given toy, so every exercise stands alone.
 
 /* ---------- alignment-safety: DPO ---------- */
@@ -12,7 +12,7 @@ const DPO_GIVEN = `
 # by adding up the log-probabilities of its tokens; the loss below does not change.
 REPLIES = [
     "If a UPI payment fails but money is deducted, the refund reaches your bank account within 3 working days. (From the refunds help page.)",
-    "Paisa Pal refunds every failed payment instantly, and adds 50 rupees for the trouble.",
+    "Nimbu Pay refunds every failed payment instantly, and adds 50 rupees for the trouble.",
     "Sorry, I cannot help with payments.",
 ]
 CHOSEN, REJECTED = 0, 1        # a rater preferred the honest, cited reply over the invented policy
@@ -132,7 +132,7 @@ const exercises: CodeExerciseDef[] = [
 \`dpo_loss(logp, ref_logp, chosen, rejected, beta=0.1)\` takes log-probabilities from the policy and from the reference. Compute the margin \`m = beta * ((logp[chosen] - ref_logp[chosen]) - (logp[rejected] - ref_logp[rejected]))\` and return \`-log(sigmoid(m))\` as a float.
 
 \`dpo_step(logits, ref_logits, chosen, rejected, beta=0.1, lr=1.0)\` does one gradient step on the policy’s logits and returns new logits (do not change the input). The gradient of the loss is \`-sigmoid(-m) * beta\` for the chosen logit, \`+sigmoid(-m) * beta\` for the rejected one, and 0 for every other reply. Use \`log_probs\` and \`sigmoid\` from the given code.`,
-    prelude: PAISA_PAL + '\n' + DPO_GIVEN,
+    prelude: NIMBU_PAY + '\n' + DPO_GIVEN,
     starter: `def dpo_loss(logp, ref_logp, chosen, rejected, beta=0.1):
     """-log sigmoid(beta * (how much more the policy likes chosen than the reference does,
     minus the same for rejected))."""
@@ -232,7 +232,7 @@ The real version differs in scale, not in the loss. The policy is the whole Tran
 \`screenshot_tokens(img)\`: patchify with the given \`P\` (4), multiply by \`W_E\`, add \`POS\`. Returns (16, D) for the 16 × 16 screenshot.
 
 \`ticket_sequence(img, message)\`: the screenshot tokens followed by \`embed(message)\`, as one (T, D) array.`,
-    prelude: PAISA_PAL + '\n' + SHOT_GIVEN,
+    prelude: NIMBU_PAY + '\n' + SHOT_GIVEN,
     starter: `def patchify(img, p):
     """(H, W, 3) image -> (num_patches, p * p * 3), one square patch per row, in reading order."""
     ...
@@ -325,7 +325,7 @@ Build a linear probe the simplest way, by difference of means (the same recipe a
 \`fit_probe(H, y)\`: \`H\` is (n, D) hidden states, \`y\` the 0/1 labels. The direction \`d\` is the mean of the refund rows minus the mean of the other rows, scaled to length 1. The threshold \`t\` is halfway between the two class means projected onto \`d\`. Return \`(d, t)\`.
 
 \`is_refund(question, d, t)\`: True if \`hidden_state(question) @ d > t\`.`,
-    prelude: PAISA_PAL + '\n' + PROBE_GIVEN,
+    prelude: NIMBU_PAY + '\n' + PROBE_GIVEN,
     starter: `def fit_probe(H, y):
     """Difference-of-means probe. Returns (unit direction d, threshold t)."""
     ...
@@ -420,7 +420,7 @@ In a real model, the hidden states come from hooks on a middle layer of a Transf
 \`best_of_n(answers, fact)\`: the first answer that passes the checker; if none does, \`answers[0]\`.
 
 \`evaluate(N, question_ids, trials=200, seed=0)\`: with \`rng = random.Random(seed)\`, for each trial and each question id, sample N answers, then score both methods with \`has_fact\` against that question’s fact. Return \`(vote_accuracy, checked_accuracy)\`.`,
-    prelude: PAISA_PAL + '\n' + BON_GIVEN,
+    prelude: NIMBU_PAY + '\n' + BON_GIVEN,
     starter: `def has_fact(answer, fact):
     ...
 

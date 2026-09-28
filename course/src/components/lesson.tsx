@@ -17,6 +17,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { LESSONS, LLM_TREE, REPO_URL, lessonById, sourceUrl, type FlatLesson, type TreeNode } from '../data/curriculum'
 import { completeLesson, updateProgress, useProgress } from '../lib/progress'
 import { Quiz, type QuizQuestion } from './exercise'
+import { lastChecked } from '../data/freshness'
 import { ErrorBoundary } from './ErrorBoundary'
 import { TokenTitle } from './TokenTitle'
 
@@ -339,6 +340,7 @@ export function Lesson({ id, children }: { id: string; children: ReactNode }) {
             <span>Lesson {lesson.code}</span>
             <span>About {lesson.minutes >= 90 ? `${Math.round(lesson.minutes / 60)} hours` : `${lesson.minutes} minutes`}</span>
             {lesson.sources?.length ? <span>Code: {lesson.sources.map((s) => s.path.split('/').pop()).join(', ')}</span> : null}
+            {lastChecked(id) && <span title="The dated facts in this lesson (models, tools, papers) were last checked against their sources on this date.">Facts checked {new Date(lastChecked(id)!).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}</span>}
             {done && <span style={{ color: 'var(--good)', fontWeight: 600 }}>Completed</span>}
           </div>
         </header>

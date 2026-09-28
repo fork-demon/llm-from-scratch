@@ -232,7 +232,7 @@ export function CodeExercise({ id, children }: { id: string; children?: ReactNod
         {children}
         {def.prelude && (
           <details className="py-prelude">
-            <summary>{def.project ? 'Project code you already have (paisa_pal.py)' : 'Code that runs before yours'}</summary>
+            <summary>{def.project ? 'Project code you already have (nimbu_pay.py)' : 'Code that runs before yours'}</summary>
             <pre className="py-solution"><code>{highlight(def.prelude.trim()).map((t, i) => (t.kind ? <span key={i} className={`tok-${t.kind}`}>{t.text}</span> : t.text))}</code></pre>
           </details>
         )}

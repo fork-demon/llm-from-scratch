@@ -114,6 +114,11 @@ export function Home() {
           }}
         />
       </section>
+
+      <p className="muted" style={{ fontSize: 13.5, marginTop: 48 }}>
+        Riya, Kabir, Amma, Dev and Nimbu Pay are fictional. Any resemblance to real people or companies is a coincidence, and the
+        help pages, refund rules and customers in the exercises are invented for teaching.
+      </p>
     </div>
   )
 }

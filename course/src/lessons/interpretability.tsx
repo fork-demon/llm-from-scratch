@@ -62,8 +62,8 @@ export default function InterpretabilityLesson() {
         <TrainedGptExplorer />
 
         <h3>3. Some attention heads have readable jobs</h3>
-        <p>A few heads jump out. A <b>previous-token head</b> always looks one position back. An <b>induction head</b> is cleverer: if the text contains “Paisa Pal … Paisa”, it looks at what followed the earlier “Paisa” and pushes the model to predict “Pal” again.</p>
-        <p>Induction heads (Olsson et al., Anthropic, 2022) work as a two-head circuit: a previous-token head in an earlier layer writes “the token before me was Paisa” into each position, and the induction head in a later layer uses that to find where the current token appeared before. They appear fairly suddenly early in training, together with a jump in the model’s use of context. The evidence is strongest in small attention-only models, partly correlational in large ones. Most heads in a large model have no one-line job description.</p>
+        <p>A few heads jump out. A <b>previous-token head</b> always looks one position back. An <b>induction head</b> is cleverer: if the text contains “Nimbu Pay … Nimbu”, it looks at what followed the earlier “Nimbu” and pushes the model to predict “Pay” again.</p>
+        <p>Induction heads (Olsson et al., Anthropic, 2022) work as a two-head circuit: a previous-token head in an earlier layer writes “the token before me was Nimbu” into each position, and the induction head in a later layer uses that to find where the current token appeared before. They appear fairly suddenly early in training, together with a jump in the model’s use of context. The evidence is strongest in small attention-only models, partly correlational in large ones. Most heads in a large model have no one-line job description.</p>
 
         <h3>4. Features and superposition</h3>
         <p>If single neurons are not the unit of meaning, what is? The current best answer is <b>directions</b>.</p>
@@ -272,7 +272,7 @@ for layer, h in enumerate(out.hidden_states):
       </BreakIt>
 
       <Exercises>
-        <p>Kabir’s probes are the part Riya can use on Monday. In this piece of the <a href="#/project">Paisa Pal support bot</a>, you look inside a toy model’s middle layer for the direction that means “this customer wants money back”, and check it on questions it has never seen.</p>
+        <p>Kabir’s probes are the part Riya can use on Monday. In this piece of the <a href="#/project">Nimbu Pay support bot</a>, you look inside a toy model’s middle layer for the direction that means “this customer wants money back”, and check it on questions it has never seen.</p>
         <CodeExercise id="interpretability-code-bot-probe" />
 
         <Exercise

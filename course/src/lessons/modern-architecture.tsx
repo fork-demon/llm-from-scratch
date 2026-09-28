@@ -477,7 +477,7 @@ for t in range(T):
       </BreakIt>
 
       <Exercises>
-        <p>Kabir’s config rotates <span className="q">q</span> and <span className="k">k</span>, so the <a href="#/project">Paisa Pal support bot</a> will too. This piece gives the bot’s attention head rotary positions: a customer who opens with “hi paisa pal team” should not change how the words of their question look at each other.</p>
+        <p>Kabir’s config rotates <span className="q">q</span> and <span className="k">k</span>, so the <a href="#/project">Nimbu Pay support bot</a> will too. This piece gives the bot’s attention head rotary positions: a customer who opens with “hi nimbu pay team” should not change how the words of their question look at each other.</p>
         <CodeExercise id="modern-architecture-code-bot-rope" />
 
         <Exercise

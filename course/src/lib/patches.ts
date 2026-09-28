@@ -46,7 +46,7 @@ const triangle = (img: Img, a: [number, number], b: [number, number], c3: [numbe
     }
 }
 
-/** A phone screenshot of a failed payment: the picture Paisa Pal's customers actually send. */
+/** A phone screenshot of a failed payment: the picture Nimbu Pay's customers actually send. */
 const screenshot = (): Img => {
   const img = blank(IMG, IMG, [244, 245, 247])
   rect(img, 0, 0, IMG, 14, [31, 58, 95]) // app bar

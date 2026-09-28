@@ -175,7 +175,7 @@ pytest                            # run the repository's tests
           ]}
           solution={<><p><b>Layer 3, specifically RAG.</b> The handbook is not in the model’s parameters, and it changes often. The cheap, reliable fix is to find the relevant passages at question time and put them into the prompt, so they become part of the “text so far” that the function reads.</p><p>Fine-tuning (changing the numbers) is for changing <em>behaviour</em>: tone, format, a specialised skill. It is a poor way to add facts that change. You will measure this yourself in Part 9.</p></>}
         >
-          <p>Paisa Pal wants its chatbot to answer questions about the internal policy handbook, which is updated weekly. From the map alone: which of the boxes is the natural place to solve this, and why not the others?</p>
+          <p>Nimbu Pay wants its chatbot to answer questions about the internal policy handbook, which is updated weekly. From the map alone: which of the boxes is the natural place to solve this, and why not the others?</p>
         </Exercise>
 
         <Exercise

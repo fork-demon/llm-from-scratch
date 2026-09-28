@@ -12,7 +12,7 @@ export default function RagLesson() {
   return (
     <Lesson id="rag">
       <Why>
-        <p className="lede">Tuesday morning, and the Paisa Pal support bot has invented a policy again.</p>
+        <p className="lede">Tuesday morning, and the Nimbu Pay support bot has invented a policy again.</p>
         <p>A customer asked how long they have to dispute a failed payment. The bot replied, very politely, with a number it made up. The real answer sits on page 14 of a policy PDF that the bot has never seen.</p>
         <p>Dev reads the chat log over Riya’s shoulder. “Just tell it to read the PDFs, na. It’s AI.”</p>
         <p>Kabir walks past with his chai. “It can read. It cannot go and find. Finding is our job.” He suggests a small rehearsal before the real policy PDFs: the engineering wiki, four short documents. Riya asks it a question she already knows the answer to:</p>
@@ -74,7 +74,7 @@ export default function RagLesson() {
         <p>Start with the first question and walk stages 1 to 6. Pay most attention to stage 5: that text is everything the LLM would ever see.</p>
         <RagPlayground />
         <h3>At scale: do we have to compare with every vector?</h3>
-        <p>Riya’s wiki has 19 chunks, so search is 19 dot products. Paisa Pal’s policy library will be bigger. How far does the simple approach go?</p>
+        <p>Riya’s wiki has 19 chunks, so search is 19 dot products. Nimbu Pay’s policy library will be bigger. How far does the simple approach go?</p>
         <p>Further than you might think. As you saw in <a href="#/lesson/matrices">Matrices</a>, comparing one question against N stored vectors is a single matrix multiply. That stays fast up to around a million vectors. It is worth knowing how far the boring solution goes.</p>
         <p>At hundreds of millions of vectors, comparing against everything is too slow and too costly. The fix is the same one a database uses: an <b>index</b> that lets you skip most of the data.</p>
         <p>One simple kind is called IVF, for “inverted file”. Group the vectors into clusters once. Then, at query time, search only the few clusters nearest the question. The number of clusters you search is called <b>nprobe</b>, and it is the one dial.</p>
@@ -384,7 +384,7 @@ def search_ivf(self, qvec, k=5, nprobe=1):
       </BreakIt>
 
       <Exercises>
-        <p>Back to Tuesday’s invented policy. The first piece of the <a href="#/project">Paisa Pal support bot</a> is its retriever: find the help page that answers the customer, and say so honestly when no page does.</p>
+        <p>Back to Tuesday’s invented policy. The first piece of the <a href="#/project">Nimbu Pay support bot</a> is its retriever: find the help page that answers the customer, and say so honestly when no page does.</p>
         <CodeExercise id="rag-code-bot-retriever" />
         <CodeExercise id="rag-code-chunk" />
         <CodeExercise id="rag-code-retrieve" />

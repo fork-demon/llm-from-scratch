@@ -12,7 +12,7 @@ export default function InferenceSystemsLesson() {
   return (
     <Lesson id="inference-systems">
       <Why>
-        <p className="lede">Three weeks before Diwali, the marketing team at Paisa Pal announces a cashback sale. The support bot will be on the home screen. Someone in the meeting says, “Expect ten times the usual chats.”</p>
+        <p className="lede">Three weeks before Diwali, the marketing team at Nimbu Pay announces a cashback sale. The support bot will be on the home screen. Someone in the meeting says, “Expect ten times the usual chats.”</p>
         <p>Riya has run the model for one user many times. It streams nicely on her screen. Now she pictures a thousand people opening the chat in the same minute, all asking where their cashback went.</p>
         <p>Dev, on the sofa that evening: “Just buy a faster GPU, na?” Kabir, the next morning, draws two boxes on the whiteboard and a thin pipe between them. “Faster at what?” he asks. Two facts about that picture decide everything.</p>
         <div className="grid-2">
@@ -192,7 +192,7 @@ export default function InferenceSystemsLesson() {
         </ul>
         <h3>Part 3: the promise to users</h3>
         <p>There is a catch in that ceiling. Prefills keep interrupting, so decode steps only get the GPU 24% of the time (34.7 of every 144.4 ms). Each user sees a token every 38.0 ÷ 0.24 = <b>158 ms</b>, not every 38 ms.</p>
-        <p>If Paisa Pal promises 50 ms per token, the ceiling is useless. The load that keeps the promise is <b>5.9 requests per second with 88 conversations in flight</b>. The promise costs about 15% of the capacity, and the memory that could hold 328 conversations now holds 88.</p>
+        <p>If Nimbu Pay promises 50 ms per token, the ceiling is useless. The load that keeps the promise is <b>5.9 requests per second with 88 conversations in flight</b>. The promise costs about 15% of the capacity, and the memory that could hold 328 conversations now holds 88.</p>
         <p>Chunked prefill, or separate GPU pools for prefill and decode, exist to win that gap back. The algebra is below if you want it.</p>
         <DeepDive title="How 5.9 comes out: goodput with Little’s law">
           <p>Find the load that meets a 50 ms objective. Let λ be requests per second. Prefill takes a fraction 0.1097 × λ of the GPU.</p>
@@ -520,7 +520,7 @@ batch 256: 255.9 experts,  671 GB per step,   2.6 GB per token
             ]}
             solution={<><p>32,000 × 131,072 bytes = 4.19 GB. At 50 GB/s that is 0.0839 s, about <b>84 ms</b>.</p><p>Is that a lot? The prefill of the same prompt needs at least 32,000 × 16 GFLOP ÷ 150 TFLOP/s = 3,413 ms, and more in practice, because attention over a long prompt adds arithmetic that grows with its square. So the transfer is under 3% of the prefill. The ratio per token is what matters: 131,072 bytes to move against 16 GFLOP to compute. That is why disaggregation works for long prompts, and why a fast link between the pools matters more than its absolute size.</p></>}
           >
-            <p>A Paisa Pal customer pastes a year of statements: a 32,000-token prompt, on the capacity plan’s 8B model. In a disaggregated setup the prefill GPU must send this prompt’s KV cache to a decode GPU over a 400 Gb/s link. How long does the transfer take, ignoring protocol overheads?</p>
+            <p>A Nimbu Pay customer pastes a year of statements: a 32,000-token prompt, on the capacity plan’s 8B model. In a disaggregated setup the prefill GPU must send this prompt’s KV cache to a decode GPU over a 400 Gb/s link. How long does the transfer take, ignoring protocol overheads?</p>
           </Exercise>
 
           <Exercise
