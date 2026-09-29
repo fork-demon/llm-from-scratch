@@ -4,6 +4,7 @@ import { exportProgress, importProgress, nextUp, parseProgressFile, resetProgres
 import { PartArt } from '../illustrations/scenes'
 import { PipelineStrip } from '../illustrations/PipelineStrip'
 import { TokenTitle } from '../components/TokenTitle'
+import { FAST_TRACK, fastTrackMinutes } from '../data/tracks'
 
 export function Home() {
   const progress = useProgress()
@@ -41,6 +42,24 @@ export function Home() {
         <div><b>See it before the formula</b><span>Each lesson goes from a question to a picture, an experiment, the numbers, the maths, and then the code.</span></div>
         <div><b>Connected to real code</b><span>Every demo mirrors a runnable Python file in this repository. Your progress stays in your browser.</span></div>
       </div>
+
+      <section className="home-section fast-track">
+        <h2>Short on time? Take the fast track</h2>
+        <p>
+          {FAST_TRACK.length} lessons, about {Math.round(fastTrackMinutes() / 60)} hours: from what happens when you type a prompt to a GPT you
+          understand end to end, finishing with the real GPT-2 running in your browser. The rest of the course is there when you want to go deeper,
+          and every lesson links back to anything the track skipped.
+        </p>
+        <ol className="fast-track-list">
+          {FAST_TRACK.map((id) => {
+            const l = lessonById(id)!
+            return <li key={id}><a href={`#/lesson/${id}`} className={progress.completed[id] ? 'done' : undefined}>{l.title}</a><span>{l.minutes} min</span></li>
+          })}
+        </ol>
+        <a className="btn primary" href={`#/lesson/${FAST_TRACK.find((id) => !progress.completed[id]) ?? FAST_TRACK[0]}`}>
+          {FAST_TRACK.some((id) => progress.completed[id]) ? 'Continue the fast track' : 'Start the fast track'}
+        </a>
+      </section>
 
       <section className="home-section">
         <h2>From your text to the next token</h2>

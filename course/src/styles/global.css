@@ -607,3 +607,21 @@ kbd { font-family: var(--mono); font-size: 0.85em; border: 1px solid var(--rule-
 .project-pieces a b::before { content: counter(piece) ". "; color: var(--ink-3); font-weight: 600; }
 .project-does { display: block; font-size: 14.5px; color: var(--ink-2); }
 .project-lesson { display: block; font-size: 13px; color: var(--ink-3); }
+
+/* ---------- the fast track ---------- */
+.fast-track { padding: 22px 24px; border-radius: 14px; background: var(--accent-soft); }
+.fast-track h2 { margin-top: 0; }
+.fast-track > p { color: var(--ink-2); max-width: 44em; }
+.fast-track-list { columns: 2; column-gap: 32px; margin: 14px 0 18px; padding-left: 1.4em; }
+@media (max-width: 640px) { .fast-track-list { columns: 1; } }
+.fast-track-list li { break-inside: avoid; margin: 0 0 6px; }
+.fast-track-list a { color: var(--ink); text-decoration: none; font-weight: 600; }
+.fast-track-list a:hover { color: var(--accent-ink); text-decoration: underline; }
+.fast-track-list a.done { color: var(--good); }
+.fast-track-list span { margin-left: 8px; font-size: 13px; color: var(--ink-3); }
+.nav-fast { display: inline-block; width: 6px; height: 6px; margin: 0 0 2px 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
+.lesson-fast { color: var(--accent-ink); font-weight: 600; }
+.fast-skipped { margin: 14px 0 0; padding: 10px 14px; border-radius: 10px; background: var(--paper-2); font-size: 14px; color: var(--ink-2); }
+.fast-next { display: block; padding: 14px 18px; border-radius: 12px; background: var(--accent-soft); text-decoration: none; color: var(--ink); font-family: var(--display); font-weight: 700; }
+.fast-next small { display: block; font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--accent-ink); }
+.fast-done { padding: 14px 18px; border-radius: 12px; background: var(--accent-soft); margin: 0; }

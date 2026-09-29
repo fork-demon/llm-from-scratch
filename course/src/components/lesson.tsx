@@ -18,6 +18,7 @@ import { LESSONS, LLM_TREE, REPO_URL, lessonById, sourceUrl, type FlatLesson, ty
 import { completeLesson, updateProgress, useProgress } from '../lib/progress'
 import { Quiz, type QuizQuestion } from './exercise'
 import { lastChecked } from '../data/freshness'
+import { nextOnFastTrack, onFastTrack, skippedBefore } from '../data/tracks'
 import { ErrorBoundary } from './ErrorBoundary'
 import { TokenTitle } from './TokenTitle'
 
@@ -340,11 +341,17 @@ export function Lesson({ id, children }: { id: string; children: ReactNode }) {
             <span>Lesson {lesson.code}</span>
             <span>About {lesson.minutes >= 90 ? `${Math.round(lesson.minutes / 60)} hours` : `${lesson.minutes} minutes`}</span>
             {lesson.sources?.length ? <span>Code: {lesson.sources.map((s) => s.path.split('/').pop()).join(', ')}</span> : null}
+            {onFastTrack(id) && <span className="lesson-fast">On the fast track</span>}
             {lastChecked(id) && <span title="The dated facts in this lesson (models, tools, papers) were last checked against their sources on this date.">Facts checked {new Date(lastChecked(id)!).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}</span>}
             {done && <span style={{ color: 'var(--good)', fontWeight: 600 }}>Completed</span>}
           </div>
         </header>
         <WhereAreWe here={lesson.here} />
+        {onFastTrack(id) && skippedBefore(id).length > 0 && (
+          <p className="fast-skipped">
+            On the fast track you skipped {skippedBefore(id).map((l, i, a) => <span key={l.id}>{i > 0 && (i === a.length - 1 ? ' and ' : ', ')}<a href={`#/lesson/${l.id}`}>{l.title}</a></span>)}. You can read on without {skippedBefore(id).length > 1 ? 'them' : 'it'}; open {skippedBefore(id).length > 1 ? 'one' : 'it'} if something here needs it.
+          </p>
+        )}
         <ResumeBar lessonId={id} sections={sections} active={active} go={go} />
         <div ref={anchor} className="lesson-anchor" />
         <LessonRail sections={sections} active={active} seen={seen} go={go} />
@@ -365,6 +372,9 @@ export function Lesson({ id, children }: { id: string; children: ReactNode }) {
                 {done ? 'Mark as not done' : 'Mark complete'}
               </button>
             </div>
+            {onFastTrack(id) && (nextOnFastTrack(id)
+              ? <a className="fast-next" href={`#/lesson/${nextOnFastTrack(id)!.id}`}><small>Next on the fast track</small>{nextOnFastTrack(id)!.title}</a>
+              : <p className="fast-done">That is the end of the fast track: you have followed text all the way to a working GPT. The rest of the course goes deeper, from <a href="#/lesson/training-gpt">training it</a> to <a href="#/lesson/rag">building with it</a>.</p>)}
             <nav className="prevnext" aria-label="Previous and next lesson">
               {prev ? <a href={`#/lesson/${prev.id}`}><small>Previous lesson</small>{prev.title}</a> : <span />}
               {next ? <a className="next" href={`#/lesson/${next.id}`}><small>Next lesson</small>{next.title}</a> : <a className="next" href="#/"><small>Finished</small>Back to the course map</a>}

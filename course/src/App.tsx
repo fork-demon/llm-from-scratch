@@ -9,6 +9,7 @@ import { ConceptMapPage } from './pages/ConceptMap'
 import { SelfTestPage } from './pages/SelfTest'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ReviewPage } from './pages/Review'
+import { onFastTrack } from './data/tracks'
 import { ProjectPage } from './pages/Project'
 // the GPT-2 Explainer page is code-split: its engine and worker load only when someone opens it
 const Gpt2Page = lazy(() => import('./pages/Gpt2Page'))
@@ -111,7 +112,7 @@ function Sidebar({ open, current, onNavigate, theme, toggleTheme, onCollapse }: 
                 return (
                   <a key={l.id} className="nav-link" href={`#/lesson/${l.id}`} aria-current={current === l.id ? 'page' : undefined} onClick={onNavigate}>
                     <span className={`nav-tick${done ? ' done' : ''}`} aria-hidden>✓</span>
-                    <span>{l.title}{done && <span className="sr-only"> (completed)</span>}</span>
+                    <span>{l.title}{onFastTrack(l.id) && <span className="nav-fast" title="On the fast track"><span className="sr-only"> (fast track)</span></span>}{done && <span className="sr-only"> (completed)</span>}</span>
                   </a>
                 )
               })}
@@ -209,7 +210,14 @@ export function App() {
   else if (route.page === 'project') body = <ProjectPage />
   else if (route.page === 'python') body = <Suspense fallback={<p className="muted">Loading the playground…</p>}><PlaygroundPage /></Suspense>
   else if (route.page === 'gpt2') body = <Suspense fallback={<p className="muted">Loading the GPT-2 Explainer…</p>}><Gpt2Page arg={route.arg} /></Suspense>
-  else body = <Home />
+  else if (route.page === 'home') body = <Home />
+  else body = (
+    <div>
+      <h1 className="lesson-title">That page does not exist</h1>
+      <p className="lesson-question">The link may be old or mistyped.</p>
+      <p><a className="btn primary" href="#/">Back to the course</a></p>
+    </div>
+  )
 
   return (
     <div className={`shell${collapsed ? ' collapsed' : ''}`}>
