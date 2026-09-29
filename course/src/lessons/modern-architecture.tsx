@@ -24,7 +24,7 @@ export default function ModernArchitectureLesson() {
   return (
     <Lesson id="modern-architecture">
       <Why>
-        <p className="lede">Friday afternoon. Kabir plugs his laptop into the big screen in the meeting room and opens a plain text file. “This is the config of DeepSeek-V3,” he says. “An open-weight model from late 2024. DeepSeek has since superseded it with V3.2 and V4, but many 2025 and 2026 models borrow its design, and it is still the clearest config to learn from.”</p>
+        <p className="lede">Friday afternoon. Kabir plugs his laptop into the big screen in the meeting room and opens a plain text file. “This is the config of DeepSeek-V3,” he says. “An open-weight model from late 2024. DeepSeek has since superseded it with V3.2, V4 and V4.1-Flash, but many 2025 and 2026 models borrow its design, and it is still the clearest config to learn from.”</p>
         <Code lang="output" title="config.json (a few lines of it)">{`
 "num_hidden_layers": 61,
 "hidden_size": 7168,
@@ -412,7 +412,7 @@ sparse = softmax(scores[top]) @ V[top]    # attention over 3 tokens only
         <ul>
           <li><b>A cheap scorer per token</b> (DeepSeek-V3.2, “DeepSeek Sparse Attention”). A small “lightning indexer” (a few heads, ReLU in place of softmax, 8-bit numbers) scores every earlier token. The top 2,048 per query go to the real attention. The main attention’s cost drops from growing with T² to growing with T × 2,048. The indexer still scores every pair, but each score is far cheaper.</li>
           <li><b>Pick blocks, not tokens</b> (NSA, DeepSeek, 2025; MoBA, Moonshot AI, 2025). GPUs read neighbouring memory fast, so both choose whole blocks. NSA runs three branches and mixes them with learned gates: <em>compressed</em> (each block of 32 keys squashed into one summary), <em>selected</em> (the 16 best blocks of 64 tokens, ranked by the compressed scores) and a <em>sliding window</em> (the last 512 tokens). MoBA scores each block by the query’s dot product with the block’s average key and routes the query to the top few, like an MoE router picking experts.</li>
-          <li><b>Compress the cache itself</b> (DeepSeek-V4). Some layers merge every 4 tokens’ cache entries into one and let an indexer pick the top 1,024 of those (V4-Pro). Others merge every 128 tokens into one and read all of them. At 1 million tokens, DeepSeek reports V4-Pro needs about 10% of V3.2’s KV cache and 27% of its compute per generated token.</li>
+          <li><b>Compress the cache itself</b> (DeepSeek-V4). Some layers merge every 4 tokens’ cache entries into one and let an indexer pick the top 1,024 of those (V4-Pro). Others merge every 128 tokens into one and read all of them. At 1 million tokens, DeepSeek reports V4-Pro needs about 10% of V3.2’s KV cache and 27% of its compute per generated token. DeepSeek-V4.1-Flash (September 2026) goes further: later layers reuse an earlier layer’s cache and top-k picks, and the cache is stored in 4-bit floats. DeepSeek reports about a quarter of V4-Flash’s cache.</li>
         </ul>
         <p>What is established: the arithmetic above, and that these designs ship in open models with published papers. What is still being measured: how often a learned scorer skips a token that mattered, on long, recall-heavy tasks. Most published comparisons so far come from the labs that built them.</p>
 

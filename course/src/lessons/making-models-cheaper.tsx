@@ -61,7 +61,7 @@ export default function MakingModelsCheaperLesson() {
             name="Microscaling FP4 (MXFP4, NVFP4)"
             plain={<>A 4-bit float (1 sign bit, 2 exponent, 1 mantissa) can only be 0, 0.5, 1, 1.5, 2, 3, 4 or 6, positive or negative. So every small block of weights gets its own scale.</>}
             example={<>MXFP4: blocks of 32 values share one 8-bit power-of-two scale, so 4 + 8 ÷ 32 = 4.25 bits per weight. NVFP4: blocks of 16 share an FP8 scale, plus one scale for the whole tensor, so about 4.5 bits.</>}
-            formal={<>MXFP4 is defined in the Open Compute Project’s Microscaling (MX) specification (2023). NVFP4 is NVIDIA’s variant. Blackwell GPUs (B200, B300) compute on FP4 in hardware.</>}
+            formal={<>MXFP4 is defined in the Open Compute Project’s Microscaling (MX) specification (2023). NVFP4 is NVIDIA’s variant. Blackwell GPUs (B200, B300) compute on FP4 in hardware. On AMD MI350X and MI355X, SGLang can convert an NVFP4 checkpoint to MXFP4 as it loads.</>}
           />
           <p>Here is the block-scale idea on a block of 4 weights (real MXFP4 blocks hold 32): <span className="mono">[0.30, −0.12, 0.05, 0.71]</span>.</p>
           <div className="table-scroll">
@@ -79,7 +79,7 @@ export default function MakingModelsCheaperLesson() {
           <p>Stored: four 4-bit codes and one 8-bit exponent. The grid’s levels sit close together near zero and far apart near the top, so small weights keep their detail. That suits bell-shaped weights, the same reason NF4 spaces its levels that way.</p>
           <p>Blackwell’s tensor cores run FP4 matrix multiplies natively, at a higher peak rate than FP8.</p>
         </DeepDive>
-        <p>The <b>KV cache</b> can be stored in low precision too, which raises the number of sequences that fit. vLLM offers an FP8 cache, and research such as KIVI (ICML 2024) goes as low as 2 bits.</p>
+        <p>The <b>KV cache</b> can be stored in low precision too, which raises the number of sequences that fit. vLLM offers an FP8 cache, DeepSeek-V4.1-Flash (2026) ships with its main KV cache in FP4, and research such as KIVI (ICML 2024) goes as low as 2 bits.</p>
         <Callout kind="model">
           A widely reported regularity, not a law: 8-bit weights, integer or FP8, are usually close to lossless, and 4-bit weights cost a small but measurable amount of quality that many applications accept. It varies with the model, its size, the method and above all the task: long reasoning chains and code tend to be more sensitive than short chat. Do not trust a leaderboard for this. Run your own <a href="#/lesson/evals">evals</a> on the quantized model before you ship it.
         </Callout>

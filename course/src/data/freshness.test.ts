@@ -16,7 +16,7 @@ describe('the freshness register', () => {
   it('works out what is due and when a lesson was last checked', () => {
     expect(dueForReview('2026-09-28')).toEqual([])
     expect(dueForReview('2027-01-01').some((c) => c.every === 3)).toBe(true)
-    expect(lastChecked('modern-architecture')).toBe('2026-09-27')
+    expect(lastChecked('modern-architecture')).toBe('2026-09-29')
     expect(lastChecked('vectors')).toBeNull()
   })
 })

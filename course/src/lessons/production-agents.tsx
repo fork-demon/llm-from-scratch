@@ -70,7 +70,7 @@ export default function ProductionAgentsLesson() {
           name="MCP (Model Context Protocol)"
           plain={<>A standard plug for tools. Write a server once that exposes your system’s capabilities, and any compatible LLM application can connect to it.</>}
           example={<>A “GitHub server” offers tools such as creating an issue. Your editor’s assistant and a chat app can both use it without custom glue.</>}
-          formal={<>An open protocol, introduced by Anthropic in November 2024 and since donated to a Linux Foundation fund. Client and server exchange JSON-RPC 2.0 messages over stdio (local) or HTTP (remote). Servers expose tools (functions the model may call), resources (data to read) and prompts (reusable templates).</>}
+          formal={<>An open protocol, introduced by Anthropic in November 2024 and since donated to the Linux Foundation’s Agentic AI Foundation, which since August 2026 also hosts A2A, a protocol for agents talking to other agents. Client and server exchange JSON-RPC 2.0 messages over stdio (local) or HTTP (remote). Servers expose tools (functions the model may call), resources (data to read) and prompts (reusable templates). The July 2026 revision made the core stateless, with no session or handshake, so every request carries what the server needs, and moved long-running tasks into an optional extension.</>}
         />
         <p>MCP standardises the wiring, not the judgement. A tool that arrives over MCP still spends context on its definition, still returns text that lands in your window, and still needs the permission checks below.</p>
 
@@ -121,7 +121,7 @@ export default function ProductionAgentsLesson() {
           <li>Without caching the run costs <b>$0.225</b>.</li>
           <li>With caching it costs <b>$0.087</b>, which is 61% less.</li>
         </ul>
-        <p>The window did not change by one token: call 10 is still 11,000 tokens long. <b>Caching is a discount, not a compression.</b> And it only works while the prefix is byte-for-byte identical. Rewrite the history, reorder the tools, or put a timestamp in the system prompt, and everything after the change is a cache miss. Entries also expire after minutes without use. Real providers also skip short prompts (a minimum of about 1,024 tokens is common) and some cache only up to breakpoints you mark in the request; the numbers here assume every shared prefix is cacheable, so treat them as the best case.</p>
+        <p>The window did not change by one token: call 10 is still 11,000 tokens long. <b>Caching is a discount, not a compression.</b> And it only works while the prefix is byte-for-byte identical. Rewrite the history, reorder the tools, or put a timestamp in the system prompt, and everything after the change is a cache miss. Entries also expire after minutes without use; OpenAI’s newest models keep a cached prefix for 30 minutes after its last use. Real providers also skip short prompts (a minimum of about 1,024 tokens is common) and some cache only up to breakpoints you mark in the request; the numbers here assume every shared prefix is cacheable, so treat them as the best case.</p>
         <p><b>The real run.</b> This is Riya’s stuck agent, reproduced by <code>python phase6-engineering/agent_budget.py</code>: 8 steps, tokens estimated as characters ÷ 4, the same example prices. Three strategies, each costed with and without caching:</p>
         <figure style={{ margin: '12px 0' }}>
           <div className="table-scroll">
